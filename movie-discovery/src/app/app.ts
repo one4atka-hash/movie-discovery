@@ -1,12 +1,19 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ErrorBannerComponent } from '@shared/ui/error-banner/error-banner.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ErrorBannerComponent],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class App {
-  protected readonly title = signal('movie-discovery');
+  readonly isDark = signal(true);
+
+  toggleTheme(): void {
+    this.isDark.update((v) => !v);
+    document.documentElement.classList.toggle('theme-light', !this.isDark());
+  }
 }

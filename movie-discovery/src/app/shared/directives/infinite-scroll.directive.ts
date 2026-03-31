@@ -6,6 +6,7 @@ import { DestroyRef, Directive, ElementRef, EventEmitter, Input, Output, inject 
 })
 export class InfiniteScrollDirective {
   private readonly host = inject(ElementRef<HTMLElement>).nativeElement;
+  private readonly destroyRef = inject(DestroyRef);
 
   @Input() disabled = false;
   @Input() rootMargin = '200px 0px';
@@ -17,7 +18,7 @@ export class InfiniteScrollDirective {
 
   ngOnInit(): void {
     // ensure cleanup
-    inject(DestroyRef).onDestroy(() => this.disconnect());
+    this.destroyRef.onDestroy(() => this.disconnect());
 
     this.observer = new IntersectionObserver(
       (entries) => {

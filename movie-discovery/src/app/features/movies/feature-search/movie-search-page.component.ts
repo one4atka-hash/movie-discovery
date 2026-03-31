@@ -43,6 +43,10 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
 
       <app-loader *ngIf="loading()"></app-loader>
 
+      <div class="skeleton-grid" *ngIf="loading()">
+        <div class="skeleton-card" *ngFor="let i of [1, 2, 3, 4, 5, 6]"></div>
+      </div>
+
       <app-empty-state
         *ngIf="!loading() && error()"
         title="Ошибка"
@@ -116,6 +120,29 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
         text-decoration: none;
         color: inherit;
       }
+      .grid__item:hover {
+        transform: translateY(-2px);
+        transition: transform 0.18s ease;
+      }
+
+      .skeleton-grid {
+        margin-top: 1rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.9rem;
+      }
+      .skeleton-card {
+        height: 300px;
+        border-radius: 14px;
+        background: linear-gradient(
+          100deg,
+          rgba(255, 255, 255, 0.06) 20%,
+          rgba(255, 255, 255, 0.16) 35%,
+          rgba(255, 255, 255, 0.06) 50%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.25s linear infinite;
+      }
 
       .more {
         margin-top: 1rem;
@@ -123,6 +150,12 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
 
       .sentinel {
         height: 1px;
+      }
+
+      @keyframes shimmer {
+        to {
+          background-position-x: -200%;
+        }
       }
     `
   ]

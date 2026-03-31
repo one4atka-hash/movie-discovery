@@ -48,6 +48,12 @@ import { FavoritesService } from '../../data-access/services/favorites.service';
         border: 1px solid var(--border-subtle);
         border-radius: 16px;
         overflow: hidden;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.26);
       }
 
       .card__poster {
