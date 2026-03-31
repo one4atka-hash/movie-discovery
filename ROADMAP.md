@@ -25,20 +25,20 @@
 ### Этап 2. Архитектура ядра и shared‑слоя
 
 #### 2.1 Core layer
-- [ ] Создать папку `core/`.
-- [ ] Реализовать `ApiInterceptor` (подстановка base URL и API key).
-- [ ] Реализовать `ErrorInterceptor` (единая обработка HTTP‑ошибок).
-- [ ] Добавить глобальные сервисы: `LoggerService`, `ConfigService` и т.п.
+- [x] Создать папку `core/`.
+- [x] Реализовать `ApiInterceptor` (подстановка base URL и API key).
+- [x] Реализовать `ErrorInterceptor` (единая обработка HTTP‑ошибок).
+- [x] Добавить глобальные сервисы: `LoggerService`, `ConfigService` и т.п.
 
 #### 2.2 Shared layer
-- [ ] Создать папку `shared/`.
-- [ ] Реализовать UI‑компоненты:
-  - [ ] `Button`
-  - [ ] `Loader` (spinner + skeleton)
-  - [ ] `EmptyState`
-- [ ] Реализовать pipes:
-  - [ ] `DateFormatPipe`
-  - [ ] `ImageFallbackPipe`
+- [x] Создать папку `shared/`.
+- [x] Реализовать UI‑компоненты:
+  - [x] `Button`
+  - [x] `Loader` (spinner + skeleton)
+  - [x] `EmptyState`
+- [x] Реализовать pipes:
+  - [x] `DateFormatPipe`
+  - [x] `ImageFallbackPipe`
 
 ---
 
