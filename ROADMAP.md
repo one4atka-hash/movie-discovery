@@ -13,7 +13,7 @@
 ---
 
 ### Этап 1. Инициализация проекта
-- [ ] Создать Angular‑проект через `Angular CLI`.
+- [x] Создать Angular‑проект через `Angular CLI`.
 - [ ] Настроить структуру **feature-based** (папки `core/`, `shared/`, `features/`).
 - [ ] Подключить **ESLint + Prettier**.
 - [ ] Настроить **alias‑пути** (tsconfig paths).
