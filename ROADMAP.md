@@ -62,28 +62,28 @@
 ---
 
 ### Этап 4. State Management (Signals + Facade)
-- [ ] Создать `MovieStore` на сигналах:
-  - [ ] `movies` signal
-  - [ ] `loading` signal
-  - [ ] `error` signal
-  - [ ] `selectedMovie` signal
-- [ ] Реализовать методы стора:
-  - [ ] `search(query)`
-  - [ ] `loadMovie(id)`
-  - [ ] `loadNextPage()`
-- [ ] Создать `MovieFacade`:
-  - [ ] Публичные сигналы/observable: `movies$`, `loading$`, `error$`, `selectedMovie$`
-  - [ ] Методы прокидывают вызовы к стору и сервису.
+- [x] Создать `MovieStore` на сигналах:
+  - [x] `movies` signal
+  - [x] `loading` signal
+  - [x] `error` signal
+  - [x] `selectedMovie` signal
+- [x] Реализовать методы стора:
+  - [x] `search(query)`
+  - [x] `loadMovie(id)`
+  - [x] `loadNextPage()`
+- [x] Создать `MovieFacade`:
+  - [x] Публичные сигналы/observable: `movies$`, `loading$`, `error$`, `selectedMovie$`
+  - [x] Методы прокидывают вызовы к стору и сервису.
 
 ---
 
 ### Этап 5. Feature: Movies (базовый модуль фильмов)
-- [ ] Создать `features/movies/`:
-  - [ ] `data-access/` — использование `MovieService`, маппинг DTO → view‑model.
-  - [ ] `ui/` — карточки фильмов.
-  - [ ] `feature-search/` — контейнер поиска.
-  - [ ] `feature-details/` — контейнер деталей.
-  - [ ] `feature-favorites/` — контейнер избранного.
+- [x] Создать `features/movies/`:
+  - [x] `data-access/` — использование `MovieService`, маппинг DTO → view‑model.
+  - [x] `ui/` — карточки фильмов.
+  - [x] `feature-search/` — контейнер поиска.
+  - [x] `feature-details/` — контейнер деталей.
+  - [x] `feature-favorites/` — контейнер избранного.
 
 ---
 
