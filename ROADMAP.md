@@ -14,10 +14,10 @@
 
 ### Этап 1. Инициализация проекта
 - [x] Создать Angular‑проект через `Angular CLI`.
-- [ ] Настроить структуру **feature-based** (папки `core/`, `shared/`, `features/`).
-- [ ] Подключить **ESLint + Prettier**.
-- [ ] Настроить **alias‑пути** (tsconfig paths).
-- [ ] Настроить **environments** (`dev` / `prod`) и хранение API key.
+- [x] Настроить структуру **feature-based** (папки `core/`, `shared/`, `features/`).
+- [ ] Подключить **ESLint + Prettier** (есть конфиг, но npm install ведёт себя нестабильно — помечено как проблемный подпункт).
+- [x] Настроить **alias‑пути** (tsconfig paths).
+- [x] Настроить **environments** (`dev` / `prod`) и хранение API key.
 - [ ] Сделать базовый **layout** (`ShellComponent`): шапка, область контента, футер (опционально место под блок монетизации).
 
 ---
