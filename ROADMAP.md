@@ -45,19 +45,19 @@
 ### Этап 3. Data Access Layer
 
 #### 3.1 MovieService
-- [ ] Создать сервис `MovieService`:
-  - [ ] `searchMovies(query, page)` — поиск с пагинацией.
-  - [ ] `getMovie(id)` — детали фильма.
+- [x] Создать сервис `MovieService`:
+  - [x] `searchMovies(query, page)` — поиск с пагинацией.
+  - [x] `getMovie(id)` — детали фильма.
 
 #### 3.2 Кеширование и хранилище
-- [ ] Реализовать **кеш‑слой**:
-  - [ ] Map‑кеш по ключу (query + page / id).
-  - [ ] TTL (опционально).
-  - [ ] Использование `shareReplay`.
-- [ ] Реализовать `StorageService` (обёртка над `localStorage`/`sessionStorage`):
-  - [ ] `get()`
-  - [ ] `set()`
-  - [ ] `remove()`
+- [x] Реализовать **кеш‑слой**:
+  - [x] Map‑кеш по ключу (query + page / id).
+  - [x] TTL (опционально).
+  - [x] Использование `shareReplay`.
+- [x] Реализовать `StorageService` (обёртка над `localStorage`/`sessionStorage`):
+  - [x] `get()`
+  - [x] `set()`
+  - [x] `remove()`
 
 ---
 
