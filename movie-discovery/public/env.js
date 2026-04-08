@@ -1,6 +1,8 @@
 /**
- * Локальная конфигурация TMDB (подхватывается до старта Angular).
- * Вставьте v3 API key с https://www.themoviedb.org/settings/api
+ * Опционально переопределяет ключ без пересборки (прод или локально).
+ * Оставьте TMDB_API_KEY пустым — тогда возьмётся ключ из environment.ts (dev).
+ *
+ * Сюда нужен только v3 API Key (hex), НЕ JWT из панели TMDB.
  */
 window.__env = window.__env || {};
 window.__env.TMDB_API_KEY = '';
