@@ -2,10 +2,18 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { debounceTime, distinctUntilChanged, filter, switchMap, tap } from 'rxjs';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  of,
+  switchMap,
+  tap
+} from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { Movie } from '../data-access/models/movie.model';
+import { Movie, MovieSearchResponse } from '../data-access/models/movie.model';
 import { MovieService } from '../data-access/services/movie.service';
 import { LoaderComponent } from '@shared/ui/loader/loader.component';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
@@ -421,7 +429,15 @@ export class MovieSearchPageComponent {
           this._loading.set(true);
           this._loadingMore.set(false);
         }),
-        switchMap((q) => this.api.searchMovies(q.trim(), 1)),
+        switchMap((q) =>
+          this.api.searchMovies(q.trim(), 1).pipe(
+            catchError((err: unknown) => {
+              this._error.set(errorMessage(err));
+              this._loading.set(false);
+              return of(EMPTY_SEARCH_RESPONSE);
+            })
+          )
+        ),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe({
@@ -430,10 +446,6 @@ export class MovieSearchPageComponent {
           this._query.set(this.queryControl.value.trim());
           this._page.set(res.page ?? 1);
           this._totalPages.set(res.total_pages ?? 1);
-          this._loading.set(false);
-        },
-        error: (err: unknown) => {
-          this._error.set(err instanceof Error ? err.message : 'Search failed');
           this._loading.set(false);
         }
       });
@@ -449,16 +461,24 @@ export class MovieSearchPageComponent {
 
     this.api
       .searchMovies(query, nextPage)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        catchError((err: unknown) => {
+          this._error.set(errorMessage(err));
+          this._loadingMore.set(false);
+          return of({
+            page: nextPage,
+            results: [] as Movie[],
+            total_pages: this._totalPages(),
+            total_results: 0
+          } satisfies MovieSearchResponse);
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe({
         next: (res) => {
           this._movies.set([...this._movies(), ...(res.results ?? [])]);
           this._page.set(res.page ?? nextPage);
           this._totalPages.set(res.total_pages ?? this._totalPages());
-          this._loadingMore.set(false);
-        },
-        error: (err: unknown) => {
-          this._error.set(err instanceof Error ? err.message : 'Load next page failed');
           this._loadingMore.set(false);
         }
       });
@@ -504,6 +524,22 @@ export class MovieSearchPageComponent {
         }
       });
   }
+}
+
+const EMPTY_SEARCH_RESPONSE: MovieSearchResponse = {
+  page: 1,
+  results: [],
+  total_pages: 1,
+  total_results: 0
+};
+
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'object' && err !== null && 'message' in err) {
+    const m = (err as { message?: unknown }).message;
+    if (typeof m === 'string' && m.length) return m;
+  }
+  return 'Ошибка запроса';
 }
 
 function shuffleInPlace<T>(items: T[]): void {
