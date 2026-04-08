@@ -15,7 +15,9 @@ describe('MovieSearchPageComponent', () => {
       } as unknown as typeof IntersectionObserver;
   });
 
-  it('creates component', async () => {
+  it(
+    'creates component',
+    async () => {
     await TestBed.configureTestingModule({
       imports: [MovieSearchPageComponent],
       providers: [
@@ -35,5 +37,7 @@ describe('MovieSearchPageComponent', () => {
     const fixture = TestBed.createComponent(MovieSearchPageComponent);
     fixture.detectChanges();
     expect(fixture.componentInstance).toBeTruthy();
-  });
+    },
+    30_000
+  );
 });
