@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, Signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, switchMap } from 'rxjs';
 
 import { Movie, MovieVideo } from '../data-access/models/movie.model';
+import { TMDB_GENRE_LABELS } from '../data-access/tmdb-genres';
 import { movieResolver } from './movie.resolver';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
 import { FavoritesService } from '../data-access/services/favorites.service';
@@ -36,8 +37,8 @@ import { MovieService } from '../data-access/services/movie.service';
               <span class="muted">{{ m.release_date || '—' }}</span>
               <span class="rating">★ {{ m.vote_average | number: '1.1-1' }}</span>
             </div>
-            <div class="genres" *ngIf="m.genres?.length">
-              <span class="genre" *ngFor="let g of m.genres">{{ g.name }}</span>
+            <div class="genres" *ngIf="genreLabels(m).length">
+              <span class="genre" *ngFor="let label of genreLabels(m)">{{ label }}</span>
             </div>
             <p class="overview">{{ m.overview || 'Описание отсутствует.' }}</p>
 
@@ -213,18 +214,18 @@ export class MovieDetailsPageComponent {
 
   readonly hasMovie = computed(() => Boolean(this.movie()));
 
-  readonly videos = toSignal <MovieVideo[]>(
+  readonly videos = toSignal(
     this.route.paramMap.pipe(
       map((pm) => Number(pm.get('id'))),
       filter((id) => Number.isFinite(id) && id > 0),
       switchMap((id) => this.movies.getMovieVideos(id)),
       map((res) => res.results ?? [])
     ),
+    { initialValue: [] as MovieVideo[] }
   );
 
   readonly trailer = computed(() => {
     const vids = this.videos();
-    if (vids === undefined) return null
     const youtube = vids.filter((v) => (v.site ?? '').toLowerCase() === 'youtube');
     const byType = (t: string) => youtube.find((v) => (v.type ?? '').toLowerCase() === t.toLowerCase());
 
@@ -241,6 +242,15 @@ export class MovieDetailsPageComponent {
 
   toggleFavorite(m: Movie): void {
     this.favorites.toggle(m);
+  }
+
+  genreLabels(m: Movie): readonly string[] {
+    if (m.genres?.length) {
+      return m.genres.map((g) => g.name);
+    }
+    const ids = m.genre_ids;
+    if (!ids?.length) return [];
+    return ids.map((id) => TMDB_GENRE_LABELS[id] ?? `id:${id}`);
   }
 
   posterUrl(path: string): string {

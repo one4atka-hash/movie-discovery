@@ -4,7 +4,7 @@ import { Pipe, PipeTransform } from '@angular/core';
   name: 'imageFallback',
 })
 export class ImageFallbackPipe implements PipeTransform {
-  transform(value: unknown, ...args: unknown[]): unknown {
+  transform(_value: unknown, ..._args: unknown[]): unknown {
     return null;
   }
 }

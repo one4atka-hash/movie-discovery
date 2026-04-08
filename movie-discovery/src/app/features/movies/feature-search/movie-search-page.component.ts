@@ -29,8 +29,24 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
     <section class="page">
       <header class="page__header">
         <h2 class="page__title">Поиск</h2>
-        <p class="page__subtitle">Введите минимум 2 символа.</p>
+        <p class="page__subtitle">Введите минимум 2 символа — покажем совпадения из TMDB.</p>
       </header>
+
+      <div class="welcome" *ngIf="showHero()">
+        <div class="welcome__inner">
+          <p class="welcome__kicker">Домашний каталог</p>
+          <h3 class="welcome__title">Найдите фильм за пару секунд</h3>
+          <p class="welcome__text">
+            Подсказки ниже — быстрый старт. Или введите свой запрос: жанр, год, часть названия.
+          </p>
+          <div class="welcome__chips" role="group" aria-label="Быстрый поиск">
+            <button type="button" class="chip" (click)="pickSuggestion('Inception')">Inception</button>
+            <button type="button" class="chip" (click)="pickSuggestion('The Matrix')">The Matrix</button>
+            <button type="button" class="chip" (click)="pickSuggestion('Dune')">Dune</button>
+            <button type="button" class="chip" (click)="pickSuggestion('Interstellar')">Interstellar</button>
+          </div>
+        </div>
+      </div>
 
       <div class="search">
         <input
@@ -38,28 +54,27 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
           [formControl]="queryControl"
           placeholder="Например: Inception"
           autocomplete="off"
+          aria-label="Поиск фильма"
         />
       </div>
 
-      <app-loader *ngIf="loading()"></app-loader>
-
-      <div class="skeleton-grid" *ngIf="loading()">
-        <div class="skeleton-card" *ngFor="let i of [1, 2, 3, 4, 5, 6]"></div>
+      <div class="skeleton-grid" *ngIf="loading() && !showHero()">
+        <div class="skeleton-card" *ngFor="let _ of skeletonSlots; trackBy: trackByIndex"></div>
       </div>
 
       <app-empty-state
-        *ngIf="!loading() && error()"
+        *ngIf="!showHero() && !loading() && error()"
         title="Ошибка"
         [subtitle]="error()"
       />
 
       <app-empty-state
-        *ngIf="!loading() && !error() && showEmpty()"
+        *ngIf="!showHero() && !loading() && !error() && showEmpty()"
         title="Ничего не найдено"
         subtitle="Попробуйте другой запрос."
       />
 
-      <div class="grid" *ngIf="!loading() && !error() && movies().length">
+      <div class="grid" *ngIf="!showHero() && !loading() && !error() && movies().length">
         <a class="grid__item" *ngFor="let m of movies(); trackBy: trackById" [routerLink]="['/movie', m.id]">
           <app-movie-card [movie]="m" />
         </a>
@@ -91,6 +106,57 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
       .page__subtitle {
         margin: 0;
         opacity: 0.7;
+      }
+
+      .welcome {
+        margin: 0 0 1rem;
+        border-radius: 18px;
+        border: 1px solid var(--border-subtle);
+        background:
+          radial-gradient(1200px 400px at 10% 0%, rgba(255, 107, 107, 0.18), transparent 55%),
+          radial-gradient(900px 360px at 90% 20%, rgba(255, 195, 113, 0.14), transparent 50%),
+          rgba(255, 255, 255, 0.03);
+        padding: 1.1rem 1.15rem;
+      }
+      .welcome__inner {
+        max-width: 52rem;
+      }
+      .welcome__kicker {
+        margin: 0 0 0.35rem;
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+      .welcome__title {
+        margin: 0 0 0.5rem;
+        font-size: 1.25rem;
+        line-height: 1.25;
+      }
+      .welcome__text {
+        margin: 0 0 0.85rem;
+        line-height: 1.55;
+        color: var(--text-muted);
+      }
+      .welcome__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .chip {
+        border-radius: 9999px;
+        border: 1px solid var(--border-subtle);
+        background: rgba(0, 0, 0, 0.25);
+        color: var(--text);
+        padding: 0.45rem 0.75rem;
+        font: inherit;
+        cursor: pointer;
+        transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+      }
+      .chip:hover {
+        transform: translateY(-1px);
+        border-color: rgba(255, 195, 113, 0.45);
+        background: rgba(255, 195, 113, 0.1);
       }
 
       .search {
@@ -166,6 +232,9 @@ export class MovieSearchPageComponent {
 
   readonly queryControl = new FormControl<string>('', { nonNullable: true });
 
+  /** Слоты для skeleton — отдельный массив, чтобы strict шаблон не ругался на литералы в *ngFor */
+  readonly skeletonSlots = [0, 1, 2, 3, 4, 5] as const;
+
   private readonly _movies = signal<Movie[]>([]);
   private readonly _loading = signal(false);
   private readonly _loadingMore = signal(false);
@@ -174,11 +243,13 @@ export class MovieSearchPageComponent {
   private readonly _query = signal<string>('');
   private readonly _page = signal(1);
   private readonly _totalPages = signal(1);
+  private readonly _draft = signal('');
 
   readonly movies = computed(() => this._movies());
   readonly loading = computed(() => this._loading());
   readonly loadingMore = computed(() => this._loadingMore());
   readonly error = computed(() => this._error());
+  readonly showHero = computed(() => this._draft().trim().length < 2);
   readonly showEmpty = computed(() => this._hasSearched() && this._movies().length === 0);
   readonly canLoadMore = computed(
     () =>
@@ -191,8 +262,10 @@ export class MovieSearchPageComponent {
   );
 
   constructor() {
+    this._draft.set(this.queryControl.value);
     this.queryControl.valueChanges
       .pipe(
+        tap((q) => this._draft.set(q)),
         debounceTime(350),
         distinctUntilChanged(),
         tap(() => {
@@ -249,6 +322,14 @@ export class MovieSearchPageComponent {
 
   trackById(_: number, m: Movie): number {
     return m.id;
+  }
+
+  trackByIndex(i: number): number {
+    return i;
+  }
+
+  pickSuggestion(value: string): void {
+    this.queryControl.setValue(value);
   }
 }
 

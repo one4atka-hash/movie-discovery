@@ -1,13 +1,13 @@
 <div class="shell">
   <header class="shell__header">
-    <a class="brand" routerLink="/search">🎬 Cinema</a>
+    <a class="brand" routerLink="/search" aria-label="На главную поиска">🎬 Cinema</a>
 
-    <nav class="nav">
+    <nav class="nav" aria-label="Основная навигация">
       <a routerLink="/search" routerLinkActive="is-active">Поиск</a>
       <a routerLink="/favorites" routerLinkActive="is-active">Избранное</a>
     </nav>
 
-    <button class="theme-btn" type="button" (click)="toggleTheme()">
+    <button class="theme-btn" type="button" (click)="toggleTheme()" [attr.aria-pressed]="isDark()">
       {{ isDark() ? '☀ Светлая' : '🌙 Тёмная' }}
     </button>
   </header>
@@ -18,19 +18,15 @@
     <router-outlet />
   </main>
 
-  <aside class="promo">
+  <aside class="promo" aria-labelledby="promo-title">
     <div class="promo__head">
-      <strong>Поддержать проект</strong>
+      <strong id="promo-title">Поддержать проект</strong>
       <span class="promo__sub">Донат на развитие и новые фичи</span>
     </div>
 
-    <div class="promo__actions" role="group" aria-label="Donation links">
-      <a class="promo__btn" href="https://boosty.to/" target="_blank" rel="noreferrer noopener">
-        Boosty
-      </a>
-      <a class="promo__btn" href="https://patreon.com/" target="_blank" rel="noreferrer noopener">
-        Patreon
-      </a>
+    <div class="promo__actions" role="group" aria-label="Ссылки для доната">
+      <a class="promo__btn" href="https://boosty.to/" target="_blank" rel="noreferrer noopener">Boosty</a>
+      <a class="promo__btn" href="https://patreon.com/" target="_blank" rel="noreferrer noopener"> Patreon </a>
       <a class="promo__btn promo__btn--primary" href="https://paypal.me/" target="_blank" rel="noreferrer noopener">
         PayPal
       </a>
@@ -43,4 +39,3 @@
 
   <footer class="shell__footer">Portfolio project · Angular Movie Discovery</footer>
 </div>
-
