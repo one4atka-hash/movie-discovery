@@ -1,9 +1,6 @@
-[build]
-  command = "npm run build"
-  publish = "dist/movie-discovery/browser"
-
+# Прокси TMDB без CORS (тот же паттерн, что proxy.conf.json при ng serve)
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from = "/tmdb/*"
+  to = "https://api.themoviedb.org/3/:splat"
   status = 200
-
+  force = true

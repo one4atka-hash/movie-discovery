@@ -28,4 +28,17 @@ describe('friendlyHttpErrorMessage', () => {
     const err = new HttpErrorResponse({ status: 429, statusText: 'Too Many Requests' });
     expect(friendlyHttpErrorMessage(err)).toContain('429');
   });
+
+  it('maps JSON parse failure with HTTP 200', () => {
+    const err = new HttpErrorResponse({
+      status: 200,
+      statusText: 'OK',
+      url: 'http://localhost:4200/tmdb/search/movie',
+      error: '<!doctype html>'
+    });
+    Object.assign(err, {
+      message: 'Http failure during parsing for http://localhost:4200/tmdb/search/movie'
+    });
+    expect(friendlyHttpErrorMessage(err)).toContain('не JSON');
+  });
 });

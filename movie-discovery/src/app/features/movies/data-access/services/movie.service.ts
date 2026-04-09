@@ -1,6 +1,6 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, shareReplay } from 'rxjs';
+import { Observable, map, shareReplay } from 'rxjs';
 
 import { ConfigService } from '@core/config.service';
 import { Movie, MovieSearchResponse, MovieVideosResponse } from '../models/movie.model';
@@ -30,9 +30,8 @@ export class MovieService {
         .set('page', String(page))
         .set('api_key', this.config.api.apiKey ?? '');
 
-      return this.http.get<MovieSearchResponse>(`${this.config.api.baseUrl}/search/movie`, {
-        params
-      });
+      const url = `${this.config.api.baseUrl}/search/movie`;
+      return this.getJson<MovieSearchResponse>(url, params);
     });
   }
 
@@ -45,9 +44,8 @@ export class MovieService {
         .set('page', String(page))
         .set('api_key', this.config.api.apiKey ?? '');
 
-      return this.http.get<MovieSearchResponse>(`${this.config.api.baseUrl}/movie/popular`, {
-        params
-      });
+      const url = `${this.config.api.baseUrl}/movie/popular`;
+      return this.getJson<MovieSearchResponse>(url, params);
     });
   }
 
@@ -56,7 +54,8 @@ export class MovieService {
 
     return this.getOrCreate<Movie>(cacheKey, () => {
       const params = new HttpParams().set('api_key', this.config.api.apiKey ?? '');
-      return this.http.get<Movie>(`${this.config.api.baseUrl}/movie/${id}`, { params });
+      const url = `${this.config.api.baseUrl}/movie/${id}`;
+      return this.getJson<Movie>(url, params);
     });
   }
 
@@ -65,12 +64,49 @@ export class MovieService {
 
     return this.getOrCreate<MovieVideosResponse>(cacheKey, () => {
       const params = new HttpParams().set('api_key', this.config.api.apiKey ?? '');
-      return this.http.get<MovieVideosResponse>(`${this.config.api.baseUrl}/movie/${id}/videos`, { params });
+      const url = `${this.config.api.baseUrl}/movie/${id}/videos`;
+      return this.getJson<MovieVideosResponse>(url, params);
     });
   }
 
   clearCache(): void {
     this.cache.clear();
+  }
+
+  /**
+   * HttpClient JSON mode throws «Http failure during parsing» when the body is HTML (e.g. SPA index)
+   * or non-JSON. We read text and parse explicitly to surface a clear error via HttpErrorResponse.
+   */
+  private getJson<T>(url: string, params: HttpParams): Observable<T> {
+    return this.http.get(url, { params, responseType: 'text' }).pipe(
+      map((text) => this.parseTmdbJson<T>(text, url))
+    );
+  }
+
+  private parseTmdbJson<T>(text: string, url: string): T {
+    const t = text.trim();
+    if (t.length === 0) {
+      throw new HttpErrorResponse({ status: 502, statusText: 'Empty body', url });
+    }
+    const head = t.slice(0, 12).toLowerCase();
+    if (t.startsWith('<!') || head.startsWith('<html')) {
+      throw new HttpErrorResponse({
+        status: 200,
+        statusText: 'OK',
+        url,
+        error: { tmdbNonJson: true }
+      });
+    }
+    try {
+      return JSON.parse(t) as T;
+    } catch {
+      throw new HttpErrorResponse({
+        status: 200,
+        statusText: 'OK',
+        url,
+        error: { tmdbNonJson: true }
+      });
+    }
   }
 
   private getOrCreate<T>(key: string, factory: () => Observable<T>): Observable<T> {

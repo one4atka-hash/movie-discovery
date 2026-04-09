@@ -1,7 +1,8 @@
 {
-  "framework": null,
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist/movie-discovery/browser",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/tmdb/:path*",
+      "destination": "https://api.themoviedb.org/3/:path*"
+    }
+  ]
 }
-

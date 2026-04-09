@@ -39,7 +39,7 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
     <section class="page">
       <header class="page__header">
         <h2 class="page__title">Поиск</h2>
-        <p class="page__subtitle">Введите минимум 2 символа — покажем совпадения из TMDB.</p>
+        <p class="page__subtitle">Введите минимум 2 символа.</p>
       </header>
 
       <div class="api-warning" *ngIf="!hasTmdbApiKey" role="status">
@@ -63,16 +63,8 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
         <div class="welcome__inner">
           <p class="welcome__kicker">Домашний каталог</p>
           <h3 class="welcome__title">Найдите фильм за пару секунд</h3>
-          <p class="welcome__text">
-            Ниже — случайная витрина из популярного на TMDB и быстрые подсказки. Или введите свой запрос.
-          </p>
 
-          <div class="spotlight" aria-labelledby="spotlight-heading">
-            <div class="spotlight__head">
-              <h3 id="spotlight-heading" class="spotlight__heading">Случайная витрина</h3>
-              <span class="spotlight__hint">Популярное на TMDB — каждый раз другая страница и порядок</span>
-            </div>
-
+          <div class="spotlight">
             <div class="spotlight__strip" *ngIf="spotlightLoading()">
               <div class="spotlight__skel" *ngFor="let _ of spotlightSkeletonSlots; trackBy: trackByIndex"></div>
             </div>
@@ -202,39 +194,14 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
         color: var(--text-muted);
       }
       .welcome__title {
-        margin: 0 0 0.5rem;
+        margin: 0 0 1rem;
         font-size: 1.25rem;
         line-height: 1.25;
-      }
-      .welcome__text {
-        margin: 0 0 1rem;
-        line-height: 1.55;
-        color: var(--text-muted);
       }
 
       .spotlight {
         margin: 0 0 1.1rem;
         padding: 0;
-      }
-      .spotlight__head {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 0.5rem 1rem;
-        margin-bottom: 0.75rem;
-      }
-      .spotlight__heading {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 650;
-        letter-spacing: 0.01em;
-      }
-      .spotlight__hint {
-        font-size: 0.82rem;
-        color: var(--text-muted);
-        max-width: 28rem;
-        line-height: 1.35;
       }
       .spotlight__strip {
         display: grid;

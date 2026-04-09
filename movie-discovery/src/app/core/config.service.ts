@@ -21,8 +21,9 @@ export class ConfigService {
     const key = (fromScript && fromScript.length ? fromScript : fromBuild) || '';
     const rawBase = window.__env?.TMDB_BASE_URL?.trim();
     const fromEnvFile = environment.apiBaseUrl?.trim();
-    const baseUrl =
-      (rawBase && rawBase.length ? rawBase : fromEnvFile) || 'https://api.themoviedb.org/3';
+    const baseUrl = (
+      (rawBase && rawBase.length ? rawBase : fromEnvFile) || 'https://api.themoviedb.org/3'
+    ).replace(/\/+$/, '');
     return {
       baseUrl,
       apiKey: key || undefined
