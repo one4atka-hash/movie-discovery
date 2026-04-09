@@ -19,8 +19,12 @@ export class ConfigService {
     const fromScript = window.__env?.TMDB_API_KEY?.trim();
     const fromBuild = environment.apiKey?.trim();
     const key = (fromScript && fromScript.length ? fromScript : fromBuild) || '';
+    const rawBase = window.__env?.TMDB_BASE_URL?.trim();
+    const fromEnvFile = environment.apiBaseUrl?.trim();
+    const baseUrl =
+      (rawBase && rawBase.length ? rawBase : fromEnvFile) || 'https://api.themoviedb.org/3';
     return {
-      baseUrl: (window.__env?.TMDB_BASE_URL ?? environment.apiBaseUrl) || 'https://api.themoviedb.org/3',
+      baseUrl,
       apiKey: key || undefined
     };
   })();
