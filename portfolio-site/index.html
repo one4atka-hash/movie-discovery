@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Portfolio</title>
+    <meta
+      name="description"
+      content="Portfolio page describing architecture decisions and skills across multiple projects."
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #050510;
+        --text: #f8f8ff;
+        --muted: #9ca3c9;
+        --border: rgba(255, 255, 255, 0.08);
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+        background: radial-gradient(circle at top, #141432 0, #050510 55%);
+        color: var(--text);
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 2rem 1rem 3rem;
+        display: grid;
+        gap: 1.2rem;
+      }
+      .hero {
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 1.2rem;
+        background: rgba(255, 255, 255, 0.03);
+      }
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.6rem;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 0.8rem;
+      }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 0.95rem;
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .card h2 {
+        margin: 0 0 0.4rem;
+        font-size: 1.05rem;
+      }
+      .card ul {
+        margin: 0.4rem 0 0;
+        padding-left: 1.1rem;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      a {
+        color: #ffc371;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero">
+        <h1>Portfolio</h1>
+        <p>
+          Standalone portfolio page (separate project). Here we’ll document architectural decisions and demonstrated skills
+          across multiple projects.
+        </p>
+        <p style="margin-top: 0.6rem">
+          Project: <a href="../movie-discovery/">Movie Discovery</a>
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>Architecture</h2>
+          <ul>
+            <li>Feature-first structure</li>
+            <li>Core/shared separation</li>
+            <li>Data-access vs UI boundaries</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h2>Product features</h2>
+          <ul>
+            <li>Search + favorites</li>
+            <li>Release reminders</li>
+            <li>Free public-domain cinema</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h2>Quality & DX</h2>
+          <ul>
+            <li>Linting/formatting</li>
+            <li>Build configuration</li>
+            <li>Performance-aware UI</li>
+          </ul>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
+

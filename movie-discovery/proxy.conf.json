@@ -6,5 +6,13 @@
     "pathRewrite": {
       "^/tmdb": ""
     }
+  },
+  "/imgtmdb": {
+    "target": "https://image.tmdb.org",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/imgtmdb": "/t/p"
+    }
   }
 }

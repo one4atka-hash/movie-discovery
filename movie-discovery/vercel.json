@@ -3,6 +3,10 @@
     {
       "source": "/tmdb/:path*",
       "destination": "https://api.themoviedb.org/3/:path*"
+    },
+    {
+      "source": "/imgtmdb/:path*",
+      "destination": "https://image.tmdb.org/t/p/:path*"
     }
   ]
 }

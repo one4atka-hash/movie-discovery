@@ -18,16 +18,43 @@ export class ConfigService {
   readonly api: ApiConfig = (() => {
     const fromScript = window.__env?.TMDB_API_KEY?.trim();
     const fromBuild = environment.apiKey?.trim();
-    const key = (fromScript && fromScript.length ? fromScript : fromBuild) || '';
+    const rawKey = (fromScript && fromScript.length ? fromScript : fromBuild) || '';
+    const key = isValidTmdbV3ApiKey(rawKey) ? rawKey : '';
+    if (rawKey && !key) {
+      console.warn('[Config] Invalid TMDB v3 API key format. Expected 32-hex string.', { rawKeyLength: rawKey.length });
+    }
     const rawBase = window.__env?.TMDB_BASE_URL?.trim();
     const fromEnvFile = environment.apiBaseUrl?.trim();
-    const baseUrl = (
+    const candidate = (
       (rawBase && rawBase.length ? rawBase : fromEnvFile) || 'https://api.themoviedb.org/3'
-    ).replace(/\/+$/, '');
+    )
+      .trim()
+      .replace(/\/+$/, '');
+
+    /**
+     * В dev мы ожидаем тот же origin (`/tmdb`) и прокси (proxy.conf.json).
+     * Прямые вызовы `https://api.themoviedb.org/3` из браузера часто ломаются из‑за CORS.
+     */
+    const baseUrl = (() => {
+      if (!environment.production) {
+        if (/^https?:\/\//i.test(candidate)) {
+          console.warn(
+            '[Config] Direct TMDB baseUrl in dev detected. Falling back to /tmdb to avoid CORS.',
+            { candidate }
+          );
+          return '/tmdb';
+        }
+      }
+      return candidate;
+    })();
     return {
       baseUrl,
       apiKey: key || undefined
     };
   })();
+}
+
+function isValidTmdbV3ApiKey(v: string): boolean {
+  return /^[a-f0-9]{32}$/i.test(v);
 }
 

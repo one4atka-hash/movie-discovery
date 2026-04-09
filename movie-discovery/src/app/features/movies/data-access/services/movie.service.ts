@@ -4,6 +4,7 @@ import { Observable, map, shareReplay } from 'rxjs';
 
 import { ConfigService } from '@core/config.service';
 import { Movie, MovieSearchResponse, MovieVideosResponse } from '../models/movie.model';
+import { TmdbWatchProvidersResponse } from '../models/watch-providers.model';
 
 interface CacheEntry<T> {
   readonly timestamp: number;
@@ -66,6 +67,15 @@ export class MovieService {
       const params = new HttpParams().set('api_key', this.config.api.apiKey ?? '');
       const url = `${this.config.api.baseUrl}/movie/${id}/videos`;
       return this.getJson<MovieVideosResponse>(url, params);
+    });
+  }
+
+  getMovieWatchProviders(id: number): Observable<TmdbWatchProvidersResponse> {
+    const cacheKey = `movie:providers:${id}`;
+    return this.getOrCreate<TmdbWatchProvidersResponse>(cacheKey, () => {
+      const params = new HttpParams().set('api_key', this.config.api.apiKey ?? '');
+      const url = `${this.config.api.baseUrl}/movie/${id}/watch/providers`;
+      return this.getJson<TmdbWatchProvidersResponse>(url, params);
     });
   }
 

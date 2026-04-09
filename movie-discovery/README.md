@@ -1,8 +1,8 @@
-# Movie Discovery (Angular Portfolio Project)
+# Movie Discovery
 
 ## Кратко (RU)
 
-Каталог фильмов на Angular (портфолио): поиск TMDB, карточка, избранное, тёмная/светлая тема.
+Каталог фильмов на Angular: поиск TMDB, карточка, избранное, тёмная/светлая тема, уведомления о релизах и free‑cinema (public domain).
 
 | | |
 |---|---|
@@ -26,9 +26,8 @@
 
 ---
 
-Movie Discovery is an online cinema catalog application built as a portfolio project.
-Main goal: demonstrate practical Angular engineering skills in a realistic product scenario.
-Additional goal: provide a convenient home movie discovery experience with room for future monetization.
+Movie Discovery is an online cinema catalog application.
+Goal: provide a convenient movie discovery experience with room for future monetization.
 
 ## Project goals
 
@@ -71,7 +70,7 @@ Additional goal: provide a convenient home movie discovery experience with room 
 
 ### Prerequisites
 
-- Node.js 20+ (LTS recommended)
+- Node.js **20.19+** (required by Angular CLI)
 - npm 10+
 
 ### Install
@@ -98,6 +97,15 @@ TMDB_API_KEY=your_tmdb_api_key_here
 
 Current environment files are in `src/environments`.
 For deployment, configure the same key in your hosting provider environment settings.
+
+### Dev proxy (CORS-free)
+
+In development the app is configured to call TMDB through a same-origin proxy prefix:
+
+- Base URL: `/tmdb`
+- Proxy config: `proxy.conf.json` (wired in `angular.json`)
+
+This avoids browser CORS issues. Do **not** set `TMDB_BASE_URL=https://api.themoviedb.org/3` in `public/env.js` when running `npm start`.
 
 ## Scripts
 
@@ -140,20 +148,9 @@ Recommended settings:
 - Publish directory: `dist/movie-discovery/browser`
 - Add environment variable(s): `TMDB_API_KEY`
 
-## Portfolio value (for HR / team lead)
-
-This project demonstrates:
-
-- Practical Angular architecture for medium-sized feature growth.
-- Confident work with routing, lazy loading, and resolver strategy.
-- Reactive UI patterns with RxJS + Signals.
-- Structured error handling and API-layer concerns through interceptors.
-- Developer workflow maturity: linting, formatting, commit conventions, hooks.
-- Test-first readiness with unit and component test coverage skeleton.
-
 ## Screenshots / demo
 
-Add screenshots or GIFs to make portfolio review faster:
+Add screenshots or GIFs to make review faster:
 
 - `docs/screenshots/search-page.png`
 - `docs/screenshots/details-page.png`

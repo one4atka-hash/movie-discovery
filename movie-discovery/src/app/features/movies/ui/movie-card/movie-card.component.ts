@@ -16,7 +16,10 @@ import { FavoritesService } from '../../data-access/services/favorites.service';
           *ngIf="movie().poster_path as p"
           class="card__img"
           [src]="posterUrl(p)"
+          [attr.srcset]="posterSrcSet(p)"
+          sizes="(max-width: 520px) 45vw, (max-width: 980px) 22vw, 160px"
           [alt]="movie().title"
+          referrerpolicy="no-referrer"
           loading="lazy"
           decoding="async"
         />
@@ -139,7 +142,15 @@ export class MovieCardComponent {
   }
 
   posterUrl(path: string): string {
-    return `https://image.tmdb.org/t/p/w342${path}`;
+    return `/imgtmdb/w185${path}`;
+  }
+
+  posterSrcSet(path: string): string {
+    return [
+      `/imgtmdb/w92${path} 92w`,
+      `/imgtmdb/w185${path} 185w`,
+      `/imgtmdb/w342${path} 342w`
+    ].join(', ');
   }
 }
 

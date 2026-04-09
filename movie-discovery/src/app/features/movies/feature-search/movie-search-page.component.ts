@@ -37,11 +37,6 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <header class="page__header">
-        <h2 class="page__title">Поиск</h2>
-        <p class="page__subtitle">Введите минимум 2 символа.</p>
-      </header>
-
       <div class="api-warning" *ngIf="!hasTmdbApiKey" role="status">
         <strong>Ключ TMDB не задан.</strong>
         Укажите его в файле <code>public/env.js</code> (поле <code>TMDB_API_KEY</code>) или в переменных окружения при сборке.
@@ -49,11 +44,12 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
         <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer noopener">themoviedb.org → Settings → API</a>.
       </div>
 
-      <div class="search">
+      <div class="searchBar">
+        <span class="searchBar__hint" aria-hidden="true">🔎 Поиск — минимум 2 символа</span>
         <input
-          class="search__input"
+          class="searchBar__input"
           [formControl]="queryControl"
-          placeholder="Например: Inception"
+          placeholder="Введите название фильма…"
           autocomplete="off"
           aria-label="Поиск фильма"
         />
@@ -61,9 +57,6 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
 
       <div class="welcome" *ngIf="showHero()">
         <div class="welcome__inner">
-          <p class="welcome__kicker">Домашний каталог</p>
-          <h3 class="welcome__title">Найдите фильм за пару секунд</h3>
-
           <div class="spotlight">
             <div class="spotlight__strip" *ngIf="spotlightLoading()">
               <div class="spotlight__skel" *ngFor="let _ of spotlightSkeletonSlots; trackBy: trackByIndex"></div>
@@ -80,7 +73,10 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
                     *ngIf="m.poster_path as p"
                     class="spotlight__img"
                     [src]="posterUrl(p)"
+                    [attr.srcset]="posterSrcSet(p)"
+                    sizes="(max-width: 520px) 30vw, 120px"
                     [alt]="m.title"
+                    referrerpolicy="no-referrer"
                     loading="lazy"
                     decoding="async"
                   />
@@ -92,13 +88,6 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
             <p class="spotlight__err" *ngIf="!spotlightLoading() && spotlightError()" role="status">
               {{ spotlightError() }}
             </p>
-          </div>
-
-          <div class="welcome__chips" role="group" aria-label="Быстрый поиск">
-            <button type="button" class="chip" (click)="pickSuggestion('Inception')">Inception</button>
-            <button type="button" class="chip" (click)="pickSuggestion('The Matrix')">The Matrix</button>
-            <button type="button" class="chip" (click)="pickSuggestion('Dune')">Dune</button>
-            <button type="button" class="chip" (click)="pickSuggestion('Interstellar')">Interstellar</button>
           </div>
         </div>
       </div>
@@ -142,16 +131,6 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
       .page {
         padding: 1rem 0 2rem;
       }
-      .page__header {
-        margin-bottom: 0.75rem;
-      }
-      .page__title {
-        margin: 0 0 0.25rem;
-      }
-      .page__subtitle {
-        margin: 0;
-        opacity: 0.7;
-      }
 
       .api-warning {
         margin: 0 0 1rem;
@@ -173,6 +152,31 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
         color: #ffc371;
       }
 
+      .searchBar {
+        margin: 0 0 1rem;
+        display: grid;
+        gap: 0.5rem;
+      }
+      .searchBar__hint {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        line-height: 1.2;
+      }
+      .searchBar__input {
+        width: 100%;
+        padding: 0.95rem 1rem;
+        border-radius: 16px;
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-elevated);
+        color: var(--text);
+        outline: none;
+        font-size: 1.02rem;
+      }
+      .searchBar__input:focus {
+        border-color: rgba(255, 107, 107, 0.45);
+        box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.12);
+      }
+
       .welcome {
         margin: 0 0 1rem;
         border-radius: 18px;
@@ -186,19 +190,6 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
       .welcome__inner {
         max-width: 52rem;
       }
-      .welcome__kicker {
-        margin: 0 0 0.35rem;
-        font-size: 0.78rem;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--text-muted);
-      }
-      .welcome__title {
-        margin: 0 0 1rem;
-        font-size: 1.25rem;
-        line-height: 1.25;
-      }
-
       .spotlight {
         margin: 0 0 1.1rem;
         padding: 0;
@@ -275,44 +266,6 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
         margin: 0.5rem 0 0;
         font-size: 0.88rem;
         color: var(--text-muted);
-      }
-
-      .welcome__chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-      }
-      .chip {
-        border-radius: 9999px;
-        border: 1px solid var(--border-subtle);
-        background: rgba(0, 0, 0, 0.25);
-        color: var(--text);
-        padding: 0.45rem 0.75rem;
-        font: inherit;
-        cursor: pointer;
-        transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-      }
-      .chip:hover {
-        transform: translateY(-1px);
-        border-color: rgba(255, 195, 113, 0.45);
-        background: rgba(255, 195, 113, 0.1);
-      }
-
-      .search {
-        margin: 0 0 1rem;
-      }
-      .search__input {
-        width: 100%;
-        padding: 0.9rem 1rem;
-        border-radius: 14px;
-        border: 1px solid var(--border-subtle);
-        background: var(--bg-elevated);
-        color: var(--text);
-        outline: none;
-      }
-      .search__input:focus {
-        border-color: rgba(255, 107, 107, 0.45);
-        box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.12);
       }
 
       .grid {
@@ -494,12 +447,16 @@ export class MovieSearchPageComponent {
     return i;
   }
 
-  pickSuggestion(value: string): void {
-    this.queryControl.setValue(value);
+  posterUrl(path: string): string {
+    return `/imgtmdb/w185${path}`;
   }
 
-  posterUrl(path: string): string {
-    return `https://image.tmdb.org/t/p/w342${path}`;
+  posterSrcSet(path: string): string {
+    return [
+      `/imgtmdb/w92${path} 92w`,
+      `/imgtmdb/w185${path} 185w`,
+      `/imgtmdb/w342${path} 342w`
+    ].join(', ');
   }
 
   private loadSpotlight(): void {
