@@ -11,11 +11,13 @@ type AppliedRow = { name: string; sha256: string };
 export class MigrationsService implements OnModuleInit {
   constructor(
     private readonly pool: Pool,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
   ) {}
 
   async onModuleInit(): Promise<void> {
-    const enabled = (this.config.get<string>('DB_RUN_MIGRATIONS') ?? '').toLowerCase();
+    const enabled = (
+      this.config.get<string>('DB_RUN_MIGRATIONS') ?? ''
+    ).toLowerCase();
     if (!['1', 'true', 'yes', 'on'].includes(enabled)) return;
     await this.run();
   }
@@ -42,13 +44,18 @@ export class MigrationsService implements OnModuleInit {
     const lockKey = 9_740_313; // arbitrary constant for this app
     await this.pool.query('select pg_advisory_lock($1)', [lockKey]);
     try {
-      const applied = await this.pool.query<AppliedRow>('select name, sha256 from schema_migrations');
+      const applied = await this.pool.query<AppliedRow>(
+        'select name, sha256 from schema_migrations',
+      );
       const appliedMap = new Map(applied.rows.map((r) => [r.name, r.sha256]));
 
       for (const f of files) {
         const full = path.join(dir, f);
         const sql = fs.readFileSync(full, 'utf8');
-        const sha256 = crypto.createHash('sha256').update(sql, 'utf8').digest('hex');
+        const sha256 = crypto
+          .createHash('sha256')
+          .update(sql, 'utf8')
+          .digest('hex');
 
         const already = appliedMap.get(f);
         if (already) {
@@ -62,7 +69,10 @@ export class MigrationsService implements OnModuleInit {
         try {
           await client.query('begin');
           await client.query(sql);
-          await client.query('insert into schema_migrations(name, sha256) values($1, $2)', [f, sha256]);
+          await client.query(
+            'insert into schema_migrations(name, sha256) values($1, $2)',
+            [f, sha256],
+          );
           await client.query('commit');
         } catch (e) {
           await client.query('rollback');
@@ -76,4 +86,3 @@ export class MigrationsService implements OnModuleInit {
     }
   }
 }
-

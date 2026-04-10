@@ -9,7 +9,7 @@ import { ZodBodyPipe } from '../common/zod-body.pipe';
 const UpsertSchema = z.object({
   tmdbId: z.number().int().positive(),
   value: z.enum(['like', 'dislike', 'hide', 'neutral']),
-  reason: z.string().max(280).optional()
+  reason: z.string().max(280).optional(),
 });
 
 @UseGuards(JwtAuthGuard)
@@ -25,10 +25,9 @@ export class FeedbackController {
   @Post()
   async upsert(
     @CurrentUser() u: AuthedUser,
-    @Body(new ZodBodyPipe(UpsertSchema)) body: z.infer<typeof UpsertSchema>
+    @Body(new ZodBodyPipe(UpsertSchema)) body: z.infer<typeof UpsertSchema>,
   ) {
     await this.feedback.upsert(u.id, body);
     return { ok: true };
   }
 }
-

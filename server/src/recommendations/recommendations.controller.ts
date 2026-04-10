@@ -14,4 +14,3 @@ export class RecommendationsController {
     return await this.recs.recommendForUser(u.id);
   }
 }
-

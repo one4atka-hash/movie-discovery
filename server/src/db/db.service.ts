@@ -5,7 +5,10 @@ import { Pool } from 'pg';
 export class DbService implements OnModuleDestroy {
   constructor(private readonly pool: Pool) {}
 
-  async query<T = unknown>(sql: string, params: readonly unknown[] = []): Promise<T[]> {
+  async query<T = unknown>(
+    sql: string,
+    params: readonly unknown[] = [],
+  ): Promise<T[]> {
     const res = await this.pool.query(sql, [...params]);
     return res.rows as T[];
   }
@@ -18,4 +21,3 @@ export class DbService implements OnModuleDestroy {
     await this.pool.end();
   }
 }
-

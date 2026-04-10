@@ -14,7 +14,7 @@ export class FavoritesService {
        from favorites
        where user_id = $1
        order by created_at desc`,
-      [userId]
+      [userId],
     );
     return rows.map((r) => ({ tmdbId: r.tmdb_id, createdAt: r.created_at }));
   }
@@ -24,12 +24,14 @@ export class FavoritesService {
       `insert into favorites(user_id, tmdb_id)
        values ($1, $2)
        on conflict do nothing`,
-      [userId, tmdbId]
+      [userId, tmdbId],
     );
   }
 
   async remove(userId: string, tmdbId: number): Promise<void> {
-    await this.db.exec(`delete from favorites where user_id = $1 and tmdb_id = $2`, [userId, tmdbId]);
+    await this.db.exec(
+      `delete from favorites where user_id = $1 and tmdb_id = $2`,
+      [userId, tmdbId],
+    );
   }
 }
-

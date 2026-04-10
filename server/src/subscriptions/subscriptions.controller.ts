@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { z } from 'zod';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -11,21 +19,21 @@ const ChannelsSchema = z
     inApp: z.boolean().optional(),
     webPush: z.boolean().optional(),
     email: z.boolean().optional(),
-    calendar: z.boolean().optional()
+    calendar: z.boolean().optional(),
   })
   .strict()
   .transform((c) => ({
     inApp: Boolean(c.inApp),
     webPush: Boolean(c.webPush),
     email: Boolean(c.email),
-    calendar: Boolean(c.calendar)
+    calendar: Boolean(c.calendar),
   }));
 
 const UpsertSchema = z.object({
   tmdbId: z.number().int().positive(),
   mediaType: z.literal('movie'),
   releaseDate: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),
-  channels: ChannelsSchema
+  channels: ChannelsSchema,
 });
 
 const RemoveSchema = z.object({ id: z.string().uuid() });
@@ -43,16 +51,18 @@ export class SubscriptionsController {
   @Post()
   async upsert(
     @CurrentUser() u: AuthedUser,
-    @Body(new ZodBodyPipe(UpsertSchema)) body: z.infer<typeof UpsertSchema>
+    @Body(new ZodBodyPipe(UpsertSchema)) body: z.infer<typeof UpsertSchema>,
   ) {
     const sub = await this.subs.upsert(u.id, body);
     return { ok: true, sub };
   }
 
   @Delete(':id')
-  async remove(@CurrentUser() u: AuthedUser, @Param(new ZodBodyPipe(RemoveSchema)) p: z.infer<typeof RemoveSchema>) {
+  async remove(
+    @CurrentUser() u: AuthedUser,
+    @Param(new ZodBodyPipe(RemoveSchema)) p: z.infer<typeof RemoveSchema>,
+  ) {
     await this.subs.remove(u.id, p.id);
     return { ok: true };
   }
 }
-

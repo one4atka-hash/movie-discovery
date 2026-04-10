@@ -17,14 +17,13 @@ import { MigrationsService } from './migrations.service';
           throw new Error('DATABASE_URL is required');
         }
         return new Pool({
-          connectionString: url
+          connectionString: url,
         });
-      }
+      },
     },
     DbService,
-    MigrationsService
+    MigrationsService,
   ],
-  exports: [Pool, DbService]
+  exports: [Pool, DbService],
 })
 export class DbModule {}
-

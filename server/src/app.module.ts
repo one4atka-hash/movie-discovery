@@ -20,7 +20,7 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      validate: (raw) => parseEnv(raw)
+      validate: (raw) => parseEnv(raw),
     }),
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
@@ -28,10 +28,10 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
         throttlers: [
           {
             ttl: Number(config.get<string>('THROTTLE_TTL_SECONDS')) * 1000,
-            limit: Number(config.get<string>('THROTTLE_LIMIT'))
-          }
-        ]
-      })
+            limit: Number(config.get<string>('THROTTLE_LIMIT')),
+          },
+        ],
+      }),
     }),
     DbModule,
     HealthModule,
@@ -39,15 +39,15 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
     FavoritesModule,
     FeedbackModule,
     SubscriptionsModule,
-    RecommendationsModule
+    RecommendationsModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard
-    }
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule implements NestModule {

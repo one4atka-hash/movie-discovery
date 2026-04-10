@@ -16,14 +16,13 @@ import { JwtStrategy } from './jwt.strategy';
         secret: config.get<string>('JWT_SECRET'),
         // Use seconds to satisfy strict `jsonwebtoken` typings.
         signOptions: {
-          expiresIn: Number(config.get<string>('JWT_EXPIRES_IN_SECONDS'))
-        }
-      })
-    })
+          expiresIn: Number(config.get<string>('JWT_EXPIRES_IN_SECONDS')),
+        },
+      }),
+    }),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
-  exports: [AuthService]
+  exports: [AuthService],
 })
 export class AuthModule {}
-

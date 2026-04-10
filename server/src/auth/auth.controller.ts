@@ -1,4 +1,10 @@
-import { Body, Controller, Get, Post, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 import { AuthService } from './auth.service';
 import { CurrentUser, type AuthedUser } from './current-user.decorator';
@@ -27,4 +33,3 @@ export class AuthController {
     return { id: u.id, email: u.email };
   }
 }
-

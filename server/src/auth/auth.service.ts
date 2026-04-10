@@ -1,5 +1,9 @@
 import * as bcrypt from 'bcrypt';
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { z } from 'zod';
 
@@ -7,7 +11,7 @@ import { DbService } from '../db/db.service';
 
 const CredentialsSchema = z.object({
   email: z.string().email().max(254),
-  password: z.string().min(6).max(200)
+  password: z.string().min(6).max(200),
 });
 
 type UserRow = { id: string; email: string; password_hash: string };
@@ -16,10 +20,12 @@ type UserRow = { id: string; email: string; password_hash: string };
 export class AuthService {
   constructor(
     private readonly db: DbService,
-    private readonly jwt: JwtService
+    private readonly jwt: JwtService,
   ) {}
 
-  async register(body: unknown): Promise<{ token: string; user: { id: string; email: string } }> {
+  async register(
+    body: unknown,
+  ): Promise<{ token: string; user: { id: string; email: string } }> {
     const creds = CredentialsSchema.safeParse(body);
     if (!creds.success) {
       throw new BadRequestException('Invalid payload');
@@ -34,7 +40,7 @@ export class AuthService {
         `insert into users(email, password_hash)
          values ($1, $2)
          returning id, email`,
-        [email, passwordHash]
+        [email, passwordHash],
       );
     } catch (e: unknown) {
       const code = (e as { code?: string } | null)?.code;
@@ -49,7 +55,9 @@ export class AuthService {
     return { token, user };
   }
 
-  async login(body: unknown): Promise<{ token: string; user: { id: string; email: string } } | null> {
+  async login(
+    body: unknown,
+  ): Promise<{ token: string; user: { id: string; email: string } } | null> {
     const creds = CredentialsSchema.safeParse(body);
     if (!creds.success) return null;
 
@@ -59,7 +67,7 @@ export class AuthService {
        from users
        where email = $1
        limit 1`,
-      [email]
+      [email],
     );
     const u = rows[0];
     if (!u) return null;
@@ -71,4 +79,3 @@ export class AuthService {
     return { token, user: { id: u.id, email: u.email } };
   }
 }
-

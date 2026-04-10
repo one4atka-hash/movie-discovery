@@ -32,7 +32,7 @@ export class SubscriptionsService {
        from release_subscriptions
        where user_id = $1
        order by release_date asc`,
-      [userId]
+      [userId],
     );
     return rows.map((r) => ({
       id: r.id,
@@ -41,13 +41,18 @@ export class SubscriptionsService {
       releaseDate: r.release_date,
       channels: r.channels,
       createdAt: r.created_at,
-      lastNotifiedAt: r.last_notified_at
+      lastNotifiedAt: r.last_notified_at,
     }));
   }
 
   async upsert(
     userId: string,
-    input: { tmdbId: number; mediaType: 'movie'; releaseDate: string; channels: Record<string, boolean> }
+    input: {
+      tmdbId: number;
+      mediaType: 'movie';
+      releaseDate: string;
+      channels: Record<string, boolean>;
+    },
   ): Promise<{ id: string }> {
     const rows = await this.db.query<{ id: string }>(
       `insert into release_subscriptions(user_id, tmdb_id, media_type, release_date, channels)
@@ -55,13 +60,21 @@ export class SubscriptionsService {
        on conflict (user_id, tmdb_id, media_type)
        do update set release_date = excluded.release_date, channels = excluded.channels
        returning id`,
-      [userId, input.tmdbId, input.mediaType, input.releaseDate, JSON.stringify(input.channels)]
+      [
+        userId,
+        input.tmdbId,
+        input.mediaType,
+        input.releaseDate,
+        JSON.stringify(input.channels),
+      ],
     );
     return { id: rows[0].id };
   }
 
   async remove(userId: string, id: string): Promise<void> {
-    await this.db.exec(`delete from release_subscriptions where id = $1 and user_id = $2`, [id, userId]);
+    await this.db.exec(
+      `delete from release_subscriptions where id = $1 and user_id = $2`,
+      [id, userId],
+    );
   }
 }
-
