@@ -3,28 +3,22 @@ import {
   Catch,
   ExceptionFilter,
   HttpException,
-  HttpStatus
+  HttpStatus,
 } from '@nestjs/common';
 import { ThrottlerException } from '@nestjs/throttler';
-
-type ErrorBody = {
-  ok: false;
-  error: string;
-  statusCode: number;
-  timestamp: string;
-  path?: string;
-  requestId?: string;
-};
+import type { Request, Response } from 'express';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
-    const req = ctx.getRequest<{ url?: string; headers?: Record<string, string | string[] | undefined> }>();
-    const res = ctx.getResponse<{ status: (s: number) => any; json: (b: ErrorBody) => any }>();
+    const req = ctx.getRequest<Request>();
+    const res = ctx.getResponse<Response>();
 
-    const requestIdHeader = req?.headers?.['x-request-id'];
-    const requestId = Array.isArray(requestIdHeader) ? requestIdHeader[0] : requestIdHeader;
+    const requestIdHeader = req.headers['x-request-id'];
+    const requestId = Array.isArray(requestIdHeader)
+      ? requestIdHeader[0]
+      : requestIdHeader;
     const path = req?.url;
     const timestamp = new Date().toISOString();
 
@@ -35,7 +29,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         statusCode: 429,
         timestamp,
         path,
-        requestId
+        requestId,
       });
       return;
     }
@@ -50,7 +44,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         statusCode: status,
         timestamp,
         path,
-        requestId
+        requestId,
       });
       return;
     }
@@ -61,8 +55,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode: 500,
       timestamp,
       path,
-      requestId
+      requestId,
     });
   }
 }
-

@@ -93,26 +93,26 @@ import {
                 <span class="genre" *ngFor="let label of genreLabels(m)">{{ label }}</span>
               </div>
 
-              <section class="facts" aria-label="Метаданные">
+              <section class="facts" [attr.aria-label]="i18n.t('details.facts.aria')">
                 <div class="facts__grid">
                   <div class="fact">
-                    <span class="fact__k">Статус</span>
+                    <span class="fact__k">{{ i18n.t('details.facts.status') }}</span>
                     <span class="fact__v">{{ m.status || '—' }}</span>
                   </div>
                   <div class="fact">
-                    <span class="fact__k">Длительность</span>
+                    <span class="fact__k">{{ i18n.t('details.facts.runtime') }}</span>
                     <span class="fact__v">{{ runtimeLabel(m) }}</span>
                   </div>
                   <div class="fact">
-                    <span class="fact__k">Язык</span>
+                    <span class="fact__k">{{ i18n.t('details.facts.lang') }}</span>
                     <span class="fact__v">{{ m.original_language || '—' | uppercase }}</span>
                   </div>
                   <div class="fact" *ngIf="m.original_title && m.original_title !== m.title">
-                    <span class="fact__k">Оригинальное название</span>
+                    <span class="fact__k">{{ i18n.t('details.facts.originalTitle') }}</span>
                     <span class="fact__v">{{ m.original_title }}</span>
                   </div>
                   <div class="fact" *ngIf="countriesLabel(m) as c">
-                    <span class="fact__k">Страны</span>
+                    <span class="fact__k">{{ i18n.t('details.facts.countries') }}</span>
                     <span class="fact__v">{{ c }}</span>
                   </div>
                 </div>
@@ -125,7 +125,7 @@ import {
                     target="_blank"
                     rel="noreferrer noopener"
                   >
-                    Официальный сайт
+                    {{ i18n.t('details.links.homepage') }}
                   </a>
                   <a
                     *ngIf="m.imdb_id"
@@ -140,7 +140,7 @@ import {
               </section>
 
               <p class="tagline" *ngIf="m.tagline">{{ m.tagline }}</p>
-              <p class="overview">{{ m.overview || 'Описание отсутствует.' }}</p>
+              <p class="overview">{{ m.overview || i18n.t('details.overview.empty') }}</p>
 
               <div class="actions">
                 <button class="btn btn--fav" type="button" (click)="toggleFavorite(m)">
@@ -334,7 +334,7 @@ import {
           @if (trailer(); as t) {
             <div class="player">
               <div class="player__head">
-                <strong>Трейлер</strong>
+                <strong>{{ i18n.t('details.trailer.title') }}</strong>
                 <span class="muted">{{ t.name || '—' }}</span>
               </div>
 
@@ -342,7 +342,7 @@ import {
                 <iframe
                   *ngIf="embedUrl(t) as url; else noTrailerTpl"
                   [src]="url"
-                  title="Trailer"
+                  [title]="i18n.t('details.trailer.title')"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   referrerpolicy="no-referrer"
                   allowfullscreen
@@ -350,7 +350,9 @@ import {
 
                 <ng-template #noTrailerTpl>
                   <div class="player__empty" role="status">
-                    <p class="player__empty-title">Трейлер недоступен для встраивания.</p>
+                    <p class="player__empty-title">
+                      {{ i18n.t('details.trailer.embedUnavailable') }}
+                    </p>
                     <a
                       *ngIf="externalTrailerUrl(t) as href"
                       class="btn btn--primary"
@@ -358,7 +360,7 @@ import {
                       target="_blank"
                       rel="noreferrer noopener"
                     >
-                      Открыть источник
+                      {{ i18n.t('details.trailer.openSource') }}
                     </a>
                   </div>
                 </ng-template>
@@ -369,7 +371,10 @@ import {
       </ng-container>
 
       <ng-template #errorTpl>
-        <app-empty-state title="Не удалось загрузить фильм" subtitle="Проверьте id и API-ключ." />
+        <app-empty-state
+          [title]="i18n.t('details.error.title')"
+          [subtitle]="i18n.t('details.error.subtitle')"
+        />
       </ng-template>
     </section>
   `,

@@ -13,8 +13,8 @@ async function bootstrap() {
   app.use(
     helmet({
       // Allow TMDB images and youtube embeds on the frontend; backend itself is API-only.
-      crossOriginResourcePolicy: { policy: 'cross-origin' }
-    })
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
   );
 
   // Basic payload validation (DTO-based endpoints can opt in later).
@@ -23,8 +23,9 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      exceptionFactory: () => new HttpException('Invalid payload', HttpStatus.BAD_REQUEST)
-    })
+      exceptionFactory: () =>
+        new HttpException('Invalid payload', HttpStatus.BAD_REQUEST),
+    }),
   );
 
   // Normalize common exceptions into a stable JSON shape.
@@ -33,19 +34,26 @@ async function bootstrap() {
   const config = app.get(ConfigService);
   const rawOrigins = (config.get<string>('CORS_ORIGINS') ?? '').trim();
   const allowOrigins = rawOrigins
-    ? rawOrigins.split(',').map((s) => s.trim()).filter(Boolean)
+    ? rawOrigins
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
     : [];
   const corsCredentials = truthy(config.get<string>('CORS_CREDENTIALS'));
 
   app.enableCors({
-    origin: (origin, cb) => {
+    origin: (
+      origin: string | undefined,
+      cb: (err: Error | null, allow?: boolean) => void,
+    ) => {
       if (!origin) return cb(null, true); // same-origin / curl
-      if (allowOrigins.length === 0) return cb(new Error('CORS blocked'), false);
+      if (allowOrigins.length === 0)
+        return cb(new Error('CORS blocked'), false);
       return cb(null, allowOrigins.includes(origin));
     },
-    credentials: corsCredentials
+    credentials: corsCredentials,
   });
 
   await app.listen(Number(config.get<string>('PORT') ?? 3001));
 }
-bootstrap();
+void bootstrap();

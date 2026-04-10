@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Movie } from '../../data-access/models/movie.model';
 import { FavoritesService } from '../../data-access/services/favorites.service';
 import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
+import { I18nService } from '@shared/i18n/i18n.service';
 
 @Component({
   selector: 'app-movie-card',
@@ -29,7 +30,7 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
           type="button"
           [attr.aria-pressed]="isFavorite()"
           (click)="onToggleFavorite($event)"
-          title="В избранное"
+          [title]="i18n.t('movieCard.fav.title')"
         >
           {{ isFavorite() ? '♥' : '♡' }}
         </button>
@@ -142,6 +143,7 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
   ],
 })
 export class MovieCardComponent {
+  readonly i18n = inject(I18nService);
   private readonly favorites = inject(FavoritesService);
   readonly movie = input.required<Movie>();
 

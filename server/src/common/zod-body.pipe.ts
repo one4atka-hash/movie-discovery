@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
-import { z, type ZodTypeAny } from 'zod';
+import { type ZodTypeAny } from 'zod';
 
 @Injectable()
 export class ZodBodyPipe implements PipeTransform {
@@ -20,4 +20,3 @@ export function zodSchema<T extends ZodTypeAny>(schema: T): T {
   // Small helper to keep imports consistent.
   return schema;
 }
-
