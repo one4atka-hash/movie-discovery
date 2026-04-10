@@ -1,0 +1,51 @@
+import { NestFactory } from '@nestjs/core';
+import helmet from 'helmet';
+import { ConfigService } from '@nestjs/config';
+import { AppModule } from './app.module';
+import { truthy } from './config/env.schema';
+import { HttpException, HttpStatus, ValidationPipe } from '@nestjs/common';
+import { GlobalExceptionFilter } from './common/global-exception.filter';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('api');
+
+  app.use(
+    helmet({
+      // Allow TMDB images and youtube embeds on the frontend; backend itself is API-only.
+      crossOriginResourcePolicy: { policy: 'cross-origin' }
+    })
+  );
+
+  // Basic payload validation (DTO-based endpoints can opt in later).
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      exceptionFactory: () => new HttpException('Invalid payload', HttpStatus.BAD_REQUEST)
+    })
+  );
+
+  // Normalize common exceptions into a stable JSON shape.
+  app.useGlobalFilters(new GlobalExceptionFilter());
+
+  const config = app.get(ConfigService);
+  const rawOrigins = (config.get<string>('CORS_ORIGINS') ?? '').trim();
+  const allowOrigins = rawOrigins
+    ? rawOrigins.split(',').map((s) => s.trim()).filter(Boolean)
+    : [];
+  const corsCredentials = truthy(config.get<string>('CORS_CREDENTIALS'));
+
+  app.enableCors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true); // same-origin / curl
+      if (allowOrigins.length === 0) return cb(new Error('CORS blocked'), false);
+      return cb(null, allowOrigins.includes(origin));
+    },
+    credentials: corsCredentials
+  });
+
+  await app.listen(Number(config.get<string>('PORT') ?? 3001));
+}
+bootstrap();

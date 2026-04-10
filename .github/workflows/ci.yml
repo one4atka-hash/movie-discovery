@@ -1,0 +1,57 @@
+name: ci
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+
+  movie-discovery:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: movie-discovery
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: movie-discovery/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:ci
+      - run: npm run build:prod
+
+  server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker build (api)
+        run: docker build -t cinema-api ./server
+

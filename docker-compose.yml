@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: cinema
+      POSTGRES_USER: cinema
+      POSTGRES_PASSWORD: cinema
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./server/docker/db-init:/docker-entrypoint-initdb.d:ro
+
+  api:
+    build:
+      context: ./server
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgres://cinema:cinema@db:5432/cinema
+      DB_RUN_MIGRATIONS: "true"
+      JWT_SECRET: dev-secret-change-me
+      JWT_EXPIRES_IN_SECONDS: "604800"
+      CORS_ORIGINS: http://localhost:4200
+      CORS_CREDENTIALS: "true"
+      THROTTLE_TTL_SECONDS: "60"
+      THROTTLE_LIMIT: "60"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+volumes:
+  db_data:
+

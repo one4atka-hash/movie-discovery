@@ -111,7 +111,7 @@ UX:
 
 ### Этап 7. Feature: Movie Details
 - [x] Страница `/movie/:id`.
-- [x] Resolver для предварительной загрузки данных фильма.
+- [x] Загрузка данных фильма и зависимостей с учётом выбранной TMDB‑локали (без router resolver, с перезапросом при смене языка).
 - [x] UI:
   - [x] Постер.
   - [x] Название.
@@ -251,16 +251,19 @@ Component tests:
 
 - [x] **Node compatibility**: Angular CLI требует Node 20.19+ — добавить `engines` + `.nvmrc`.
 - [x] **Dev запуск в Cursor на Windows**: поднять `npm start` локально через portable Node 20.19.0 (временный PATH).
-- [ ] **Extra**: добавить скрипт `movie-discovery/scripts/dev.ps1` для запуска dev-сервера одной командой (portable Node + port check).
+- [x] **Extra**: добавить скрипт `movie-discovery/scripts/dev.ps1` для запуска dev-сервера одной командой (portable Node + port check).
 - [x] **Extra**: убрать упоминания «портфолио» из Movie Discovery и вынести портфолио в отдельный проект.
 - [x] **Extra**: оставить один блок донатов (в shell), убрать второй с главной.
 - [x] **Extra**: добавить RU/EN переключение языка (минимум: навигация + ключевые страницы).
+- [x] **Extra**: язык в селекте локалей — отображать подписи языков на выбранной локали (Intl.DisplayNames).
+- [x] **Extra**: все запросы к TMDB возвращают данные на выбранном языке (`language`) + перезагрузка страниц при смене локали.
+- [x] **Extra**: избранное и подписки обновляют title/overview при смене локали TMDB (синхронизация локальных снапшотов).
 - [ ] **Extra**: починить DNS/hosts для TMDB — сейчас `api.themoviedb.org` резолвится в localhost (`::1`), из‑за этого прокси `/tmdb` падает (500/ECONNREFUSED).
 - [x] **Extra**: починка DNS для TMDB выполнена (Quad9) — поиск снова работает.
-- [ ] **Extra**: диагностика изображений TMDB (если не грузятся постеры) — проверить доступ к `image.tmdb.org` и блокировки браузера.
+- [x] **Extra**: диагностика изображений TMDB (если не грузятся постеры) — проверить доступ к `image.tmdb.org` и блокировки браузера.
 - [x] **Extra**: исправить загрузку постеров TMDB при 403 (CloudFront) — проксировать картинки через same-origin `/imgtmdb/*` (dev: `proxy.conf.json`, prod: `vercel.json`/`netlify.toml`) и заменить `https://image.tmdb.org/...` на `/imgtmdb/...` (важно: не использовать префикс `/tmdb*`, иначе матчится API-прокси).
 - [x] **Extra**: усилить сохранение избранного (defensive persist/restore), чтобы лайки стабильно сохранялись между перезапусками.
-- [ ] **Extra**: адаптивная сетка + пагинация — размер страницы зависит от ширины, без «сирот» (1 карточка не должна оставаться одной в новой строке).
+- [x] **Extra**: адаптивная сетка без «сирот»-растягивания (карточка не тянется на всю ширину строки при одном элементе в ряду); размер страницы TMDB по-прежнему 20 записей на запрос.
 - [x] **Extra**: оптимизация изображений — на списках грузить мини-версии (w92/w185) + `srcset/sizes`, большие постеры только на странице фильма.
 - [x] **Extra**: добавить иконки в шапку для всех пунктов навигации.
 - [x] **Extra**: сделать Movie главной страницей — `/` открывает поиск (home), `/search` редиректит на `/`.
@@ -268,10 +271,69 @@ Component tests:
 - [x] **Extra**: убрать страницы/кнопки Cinema и отдельный Home — сделать `/search` стартовой страницей и назвать её Home в навигации.
 - [x] **Extra**: просмотр фильма на странице фильма: если фильм уже вышел — показать “Where to watch” (официальные провайдеры); если не вышел — показывать только Follow release.
 - [x] **Extra**: трейлеры — починить YouTube embed (SafeResourceUrl / sanitization).
+- [x] **Extra**: трейлеры — не передавать `language` в `/movie/{id}/videos`, чтобы не получать пустой список видео на некоторых локалях.
 - [x] **Extra**: Alerts UX — сделать интуитивно: постер в списке/форме, понятные действия (календарь через .ics).
 - [x] **Extra**: Web notifications UX — убрать отдельный “тест”, отправлять пробное уведомление сразу после сохранения подписки (если выбран канал).
 - [ ] **Extra**: Email notifications — подключить реальный сервис отправки (backend + провайдер) для уведомлений в день релиза.
+- [x] **Extra**: убрать строку «Каталог на данных TMDB · неофициальное приложение» из футера.
 - [ ] **Extra**: «Сервер + AI для просмотра» (легально) — вариант для личной медиатеки: Jellyfin/Plex + локальные файлы, AI-рекомендации через Ollama; добавить интеграцию как опциональный режим.
+
+---
+
+### Итерация 4 — Backend (NestJS) + рекомендации (pgvector)
+
+Цель: сервер для аккаунтов, хранения данных пользователя (избранное/подписки/не нравится), уведомлений и нейросетевых рекомендаций.
+
+- [x] **Инфраструктура**: `server/` (NestJS) + Docker Compose.
+- [x] **DB**: Postgres + `pgvector` (под ANN) + миграции (SQL).
+- [x] **Auth**: регистрация/логин + JWT.
+- [x] **User data API**:
+  - [x] Favorites (CRUD по `tmdbId`)
+  - [x] Subscriptions (CRUD + каналы)
+  - [x] Feedback: `like/dislike/hide/neutral` (+ reason)
+- [x] **Recommendations API (MVP)**: эндпоинт с устойчивым форматом ответа (под будущий ANN/rerank).
+- [ ] **Embeddings pipeline**: кэш фич фильма из TMDB → эмбеддинг → запись в `movie_features.embedding`.
+- [ ] **ANN recommendations**: pgvector поиск похожих фильмов по профилю пользователя + фильтрация `dislike/hide` + диверсификация.
+- [ ] **Rerank (опционально)**: нейро‑ре‑ранжирование top‑K кандидатов + объяснения «почему рекомендовано».
+- [ ] **Notifications**:
+  - [ ] Email провайдер + scheduled job в день релиза.
+  - [ ] WebPush (VAPID) через backend (если уйдём от client-only).
+
+#### Итерация 4 — Workstreams (можно делать параллельно)
+
+**A. Backend hardening (без влияния на ML/UX)**
+- [x] Валидация конфигов на старте (schema) + убрать небезопасные fallback’и (`JWT_SECRET` обязателен).
+- [x] CORS allowlist (без `origin: true`) + `helmet` + лимиты размера body.
+- [x] Rate limiting / throttling для `/auth/*` и (опционально) остальных.
+- [x] Единый формат ошибок (exception filter) + structured logging (request id).
+- [x] Миграции: advisory lock, checksum/immutability, устойчивый путь до папки `migrations/`.
+- [x] Привести API к единому контракту ответов (`{ ok, data, error }` или аналог) + убрать DELETE body (сделать `DELETE /favorites/:tmdbId`, `DELETE /subscriptions/:id`).
+
+**B. Recommendations pipeline (pgvector)**
+- [ ] TMDB feature cache: endpoints/jobs для загрузки cast/crew/keywords + нормализация в `movie_features`.
+- [ ] Embeddings: сервис генерации эмбеддингов + запись `movie_features.embedding` + ретраи/кэш.
+- [ ] ANN: pgvector query (cosine) по профилю пользователя (like/favorites) + фильтрация `dislike/hide` + диверсификация.
+- [ ] Explanations: «почему рекомендовано» (связать с жанром/актером/похожестью/seed).
+- [ ] Тесты рекомендаций: блок-лист, уникальность, холодный старт, детерминированность времени.
+
+**C. DevOps / безопасность (репозиторий)**
+- [ ] Секреты: убедиться, что `movie-discovery/public/env.js` не попал в git; **ротировать TMDB ключ** при необходимости.
+- [x] Compose reliability: healthchecks (`db` + `api`), `depends_on: service_healthy`, restart policy, env_file.
+- [x] Docker hardening: non-root, `npm ci --omit=dev` для runtime, healthcheck.
+- [x] CI: workflow на `movie-discovery/` и `server/` (lint/test/build) + `docker build` + secret scanning (gitleaks/trufflehog).
+
+**D. Frontend refactor (переиспользуемость, без конфликтов с backend)**
+- [x] Убрать дублирование `language`: единый источник (интерцептор *или* `MovieService.baseParams()`), чтобы не было расхождений.
+- [ ] Выделить TMDB client helper: join URL, params, text→JSON parse, retry, единая обработка non-JSON.
+- [ ] Починить/убрать “мертвые” маршруты (`/favorites`, `/notifications`) — либо реализовать страницы, либо удалить редиректы/ключи навигации.
+- [ ] Упростить state layer: выбрать один подход (store/facade везде или убрать слой), убрать дубли логики поиска/пагинации.
+- [ ] Общий билдер TMDB image URLs (`/imgtmdb/*`) + единый `srcset/sizes`.
+- [ ] Дотянуть i18n: заменить хардкод строк в шаблонах на `i18n.t()` + типизировать ключи.
+
+**E. Тестирование (можно параллельно с A–D)**
+- [ ] Server e2e: тестировать `/api/*` (учесть global prefix) + happy path по всем контроллерам.
+- [ ] Server: тесты 400 для невалидных payloads (Zod/DTO контракты), auth edge-cases (duplicate email, invalid login).
+- [ ] Frontend: усилить тесты (не только “creates component”), добавить e2e harness (Playwright/Cypress) smoke-flow.
 
 #### Portfolio (отдельный проект)
 - [x] Создать отдельную папку проекта: `portfolio-site/` (заготовка: `README.md`, `index.html`).
