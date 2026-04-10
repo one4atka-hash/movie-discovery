@@ -21,7 +21,17 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./features/movies/feature-details/details.routes').then((r) => r.DETAILS_ROUTES),
   },
-  { path: 'notifications', pathMatch: 'full', redirectTo: '' },
-  { path: 'favorites', pathMatch: 'full', redirectTo: '' },
+  {
+    path: 'notifications',
+    loadComponent: () =>
+      import('./features/notifications/notifications-page.component').then(
+        (c) => c.NotificationsPageComponent,
+      ),
+  },
+  {
+    path: 'favorites',
+    loadComponent: () =>
+      import('./features/favorites/favorites-page.component').then((c) => c.FavoritesPageComponent),
+  },
   { path: '**', redirectTo: '' },
 ];
