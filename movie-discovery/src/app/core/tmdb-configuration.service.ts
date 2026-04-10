@@ -1,8 +1,9 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, map, of, shareReplay, tap } from 'rxjs';
 
 import { ConfigService } from './config.service';
+import { parseTmdbJsonText } from './tmdb-http.util';
 
 /** Подмножество ответа `/configuration/primary_translations`, если API недоступен. */
 const FALLBACK_PRIMARY_TRANSLATIONS: readonly string[] = [
@@ -75,7 +76,7 @@ export class TmdbConfigurationService {
     const params = new HttpParams().set('api_key', key);
 
     this.load$ = this.http.get(url, { params, responseType: 'text' }).pipe(
-      map((text) => parseJsonArray(text, url)),
+      map((text) => parsePrimaryTranslations(text, url)),
       tap((arr) => {
         this._primary.set(arr.length > 0 ? arr : [...FALLBACK_PRIMARY_TRANSLATIONS]);
       }),
@@ -91,22 +92,18 @@ export class TmdbConfigurationService {
 }
 
 function parseJsonArray(text: string, url: string): string[] {
-  const t = text.trim();
-  if (!t.length) {
-    throw new HttpErrorResponse({ status: 502, statusText: 'Empty body', url });
-  }
-  const head = t.slice(0, 12).toLowerCase();
-  if (t.startsWith('<!') || head.startsWith('<html')) {
-    throw new HttpErrorResponse({
-      status: 200,
-      statusText: 'OK',
-      url,
-      error: { tmdbNonJson: true },
-    });
-  }
-  const parsed = JSON.parse(t) as unknown;
+  const parsed = parseTmdbJsonText<unknown>(text, url);
   if (!Array.isArray(parsed)) return [];
   return parsed.filter(
     (x): x is string => typeof x === 'string' && /^[a-z]{2}(-[A-Z]{2})?$/.test(x),
   );
+}
+
+function parsePrimaryTranslations(text: string, url: string): string[] {
+  try {
+    return parseJsonArray(text, url);
+  } catch {
+    // Keep behavior: on parsing failure, fall back to empty list so caller can apply fallback.
+    return [];
+  }
 }

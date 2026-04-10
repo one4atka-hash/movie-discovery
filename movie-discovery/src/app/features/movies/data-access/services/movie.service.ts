@@ -1,9 +1,10 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, effect, inject, untracked } from '@angular/core';
 import { Observable, map, shareReplay } from 'rxjs';
 
 import { ConfigService } from '@core/config.service';
 import { I18nService } from '@shared/i18n/i18n.service';
+import { parseTmdbJsonText } from '@core/tmdb-http.util';
 import { Movie, MovieSearchResponse, MovieVideosResponse } from '../models/movie.model';
 import { TmdbWatchProvidersResponse } from '../models/watch-providers.model';
 
@@ -122,33 +123,7 @@ export class MovieService {
   private getJson<T>(url: string, params: HttpParams): Observable<T> {
     return this.http
       .get(url, { params, responseType: 'text' })
-      .pipe(map((text) => this.parseTmdbJson<T>(text, url)));
-  }
-
-  private parseTmdbJson<T>(text: string, url: string): T {
-    const t = text.trim();
-    if (t.length === 0) {
-      throw new HttpErrorResponse({ status: 502, statusText: 'Empty body', url });
-    }
-    const head = t.slice(0, 12).toLowerCase();
-    if (t.startsWith('<!') || head.startsWith('<html')) {
-      throw new HttpErrorResponse({
-        status: 200,
-        statusText: 'OK',
-        url,
-        error: { tmdbNonJson: true },
-      });
-    }
-    try {
-      return JSON.parse(t) as T;
-    } catch {
-      throw new HttpErrorResponse({
-        status: 200,
-        statusText: 'OK',
-        url,
-        error: { tmdbNonJson: true },
-      });
-    }
+      .pipe(map((text) => parseTmdbJsonText<T>(text, url)));
   }
 
   private getOrCreate<T>(key: string, factory: () => Observable<T>): Observable<T> {

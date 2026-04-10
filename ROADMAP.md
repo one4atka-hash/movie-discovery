@@ -324,7 +324,7 @@ Component tests:
 
 **D. Frontend refactor (переиспользуемость, без конфликтов с backend)**
 - [x] Убрать дублирование `language`: единый источник (интерцептор *или* `MovieService.baseParams()`), чтобы не было расхождений.
-- [ ] Выделить TMDB client helper: join URL, params, text→JSON parse, retry, единая обработка non-JSON.
+- [x] Выделить TMDB client helper: join URL, params, text→JSON parse, retry, единая обработка non-JSON.
 - [ ] Починить/убрать “мертвые” маршруты (`/favorites`, `/notifications`) — либо реализовать страницы, либо удалить редиректы/ключи навигации.
 - [ ] Упростить state layer: выбрать один подход (store/facade везде или убрать слой), убрать дубли логики поиска/пагинации.
 - [ ] Общий билдер TMDB image URLs (`/imgtmdb/*`) + единый `srcset/sizes`.
