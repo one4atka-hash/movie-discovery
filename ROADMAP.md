@@ -327,7 +327,7 @@ Component tests:
 - [x] Выделить TMDB client helper: join URL, params, text→JSON parse, retry, единая обработка non-JSON.
 - [x] Починить/убрать “мертвые” маршруты (`/favorites`, `/notifications`) — либо реализовать страницы, либо удалить редиректы/ключи навигации.
 - [ ] Упростить state layer: выбрать один подход (store/facade везде или убрать слой), убрать дубли логики поиска/пагинации.
-- [ ] Общий билдер TMDB image URLs (`/imgtmdb/*`) + единый `srcset/sizes`.
+- [x] Общий билдер TMDB image URLs (`/imgtmdb/*`) + единый `srcset/sizes`.
 - [ ] Дотянуть i18n: заменить хардкод строк в шаблонах на `i18n.t()` + типизировать ключи.
 
 **E. Тестирование (можно параллельно с A–D)**

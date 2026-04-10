@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 
 import { Movie } from '../../data-access/models/movie.model';
 import { FavoritesService } from '../../data-access/services/favorites.service';
+import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
 
 @Component({
   selector: 'app-movie-card',
@@ -155,14 +156,10 @@ export class MovieCardComponent {
   }
 
   posterUrl(path: string): string {
-    return `/imgtmdb/w185${path}`;
+    return tmdbImg(185, path);
   }
 
   posterSrcSet(path: string): string {
-    return [
-      `/imgtmdb/w92${path} 92w`,
-      `/imgtmdb/w185${path} 185w`,
-      `/imgtmdb/w342${path} 342w`,
-    ].join(', ');
+    return tmdbPosterSrcSet(path);
   }
 }

@@ -9,6 +9,7 @@ import { ReleaseSubscriptionsService } from '@features/notifications/release-sub
 import { MovieCardComponent } from '@features/movies/ui/movie-card/movie-card.component';
 import { FavoritesService } from '@features/movies/data-access/services/favorites.service';
 import { I18nService } from '@shared/i18n/i18n.service';
+import { tmdbImg } from '@core/tmdb-images';
 
 @Component({
   selector: 'app-account-page',
@@ -399,7 +400,7 @@ export class AccountPageComponent {
   readonly favorites = computed(() => this.fav.favorites());
 
   posterUrl(path: string): string {
-    return `/imgtmdb/w92${path}`;
+    return tmdbImg(92, path);
   }
 
   trackBySubId(_: number, s: { id: string }): string {

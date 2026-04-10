@@ -27,6 +27,7 @@ import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.componen
 import { MovieCardComponent } from '../ui/movie-card/movie-card.component';
 import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.directive';
 import { I18nService } from '@shared/i18n/i18n.service';
+import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
 
 @Component({
   selector: 'app-movie-search-page',
@@ -912,19 +913,15 @@ export class MovieSearchPageComponent {
   }
 
   posterUrl(path: string): string {
-    return `/imgtmdb/w185${path}`;
+    return tmdbImg(185, path);
   }
 
   posterUrlSmall(path: string): string {
-    return `/imgtmdb/w92${path}`;
+    return tmdbImg(92, path);
   }
 
   posterSrcSet(path: string): string {
-    return [
-      `/imgtmdb/w92${path} 92w`,
-      `/imgtmdb/w185${path} 185w`,
-      `/imgtmdb/w342${path} 342w`,
-    ].join(', ');
+    return tmdbPosterSrcSet(path);
   }
 
   private reloadAfterLocaleChange(): void {

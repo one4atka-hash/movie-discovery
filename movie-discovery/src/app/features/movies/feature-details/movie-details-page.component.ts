@@ -27,6 +27,7 @@ import { TmdbWatchProviderCountry } from '../data-access/models/watch-providers.
 import { TMDB_GENRE_LABELS } from '../data-access/tmdb-genres';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
 import { LoaderComponent } from '@shared/ui/loader/loader.component';
+import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
 import { FavoritesService } from '../data-access/services/favorites.service';
 import { MovieService } from '../data-access/services/movie.service';
 import { I18nService } from '@shared/i18n/i18n.service';
@@ -1114,19 +1115,15 @@ export class MovieDetailsPageComponent {
 
   posterUrl(path: string): string {
     // Use a reasonable default; allow browser to pick larger via srcset.
-    return `/imgtmdb/w342${path}`;
+    return tmdbImg(342, path);
   }
 
   posterSrcSet(path: string): string {
-    return [
-      `/imgtmdb/w185${path} 185w`,
-      `/imgtmdb/w342${path} 342w`,
-      `/imgtmdb/w500${path} 500w`,
-    ].join(', ');
+    return tmdbPosterSrcSet(path, [185, 342, 500]);
   }
 
   providerLogoUrl(path: string): string {
-    return `/imgtmdb/w45${path}`;
+    return tmdbImg(45, path);
   }
 
   private youtubeEmbedUrl(key: string): SafeResourceUrl {
