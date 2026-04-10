@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { MovieService } from './movie.service';
 import { ConfigService } from '@core/config.service';
+import { I18nService } from '@shared/i18n/i18n.service';
+import { tmdbLanguageInterceptor } from '@core/tmdb-language.interceptor';
 
 describe('MovieService', () => {
   let service: MovieService;
@@ -14,13 +16,17 @@ describe('MovieService', () => {
     TestBed.configureTestingModule({
       providers: [
         MovieService,
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([tmdbLanguageInterceptor])),
         provideHttpClientTesting(),
         {
           provide: ConfigService,
-          useValue: { api: { baseUrl: 'https://example.test', apiKey: 'key' } }
-        }
-      ]
+          useValue: { api: { baseUrl: 'https://example.test', apiKey: 'key' } },
+        },
+        {
+          provide: I18nService,
+          useValue: { tmdbLocale: () => 'en-US' },
+        },
+      ],
     });
 
     service = TestBed.inject(MovieService);
@@ -34,9 +40,10 @@ describe('MovieService', () => {
     });
 
     const req = http.expectOne(
-      (r) => r.url === 'https://example.test/search/movie' && r.params.get('query') === 'batman'
+      (r) => r.url === 'https://example.test/search/movie' && r.params.get('query') === 'batman',
     );
     expect(req.request.params.get('page')).toBe('2');
+    expect(req.request.params.get('language')).toBe('en-US');
     req.flush({ page: 2, results: [{ id: 1 }], total_pages: 3, total_results: 1 });
   });
 
@@ -46,10 +53,9 @@ describe('MovieService', () => {
     });
 
     const req = http.expectOne(
-      (r) => r.url === 'https://example.test/movie/popular' && r.params.get('page') === '3'
+      (r) => r.url === 'https://example.test/movie/popular' && r.params.get('page') === '3',
     );
     expect(req.request.params.get('api_key')).toBe('key');
     req.flush({ page: 3, results: [{ id: 2 }], total_pages: 10, total_results: 100 });
   });
 });
-

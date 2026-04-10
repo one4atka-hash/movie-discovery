@@ -2,27 +2,27 @@
 
 ## Кратко (RU)
 
-Каталог фильмов на Angular: поиск TMDB, карточка, избранное, тёмная/светлая тема, уведомления о релизах и free‑cinema (public domain).
+Каталог фильмов на Angular: поиск TMDB, карточка, избранное, тёмная/светлая тема, уведомления о релизах и ссылки на стриминги (JustWatch / популярные сервисы).
 
-| | |
-|---|---|
-| **Папка приложения** | `movie-discovery/` |
-| **Запуск** | `cd movie-discovery` → `npm install` → `npm start` → [http://localhost:4200](http://localhost:4200) |
-| **Ключ API** | Скопировать `.env.example` → `.env`, задать `TMDB_API_KEY` (и при деплое — в настройках хостинга) |
-| **Production-сборка** | `npm run build:prod` → артефакты в **`dist/movie-discovery/browser`** |
-| **Живой демо** | *после деплоя подставь URL:* `https://your-app.example` |
+|                       |                                                                                                                                                           |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Папка приложения**  | `movie-discovery/`                                                                                                                                        |
+| **Запуск**            | `cd movie-discovery` → `npm install` → `npm start` → [http://localhost:4200](http://localhost:4200)                                                       |
+| **Ключ API**          | `public/env.js` (после `npm install` копируется из `public/env.example.js`, если файла нет). Поле `TMDB_API_KEY`. На хостинге — переменная `TMDB_API_KEY` |
+| **Production-сборка** | `npm run build:prod` → артефакты в **`dist/movie-discovery/browser`**                                                                                     |
+| **Живой демо**        | _после деплоя подставь URL:_ `https://your-app.example`                                                                                                   |
 
 ---
 
 ## At a glance (EN)
 
-| | |
-|---|---|
-| **App folder** | `movie-discovery/` |
-| **Dev** | `cd movie-discovery` → `npm install` → `npm start` → [http://localhost:4200](http://localhost:4200) |
-| **API key** | Copy `.env.example` to `.env`, set `TMDB_API_KEY` (also in hosting env vars) |
-| **Production** | `npm run build:prod` → output **`dist/movie-discovery/browser`** |
-| **Live demo** | *add after deploy:* `https://your-app.example` |
+|                |                                                                                                                                         |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **App folder** | `movie-discovery/`                                                                                                                      |
+| **Dev**        | `cd movie-discovery` → `npm install` → `npm start` → [http://localhost:4200](http://localhost:4200)                                     |
+| **API key**    | `public/env.js` (created from `public/env.example.js` on `npm install` if missing). Set `TMDB_API_KEY`. Hosting: `TMDB_API_KEY` env var |
+| **Production** | `npm run build:prod` → output **`dist/movie-discovery/browser`**                                                                        |
+| **Live demo**  | _add after deploy:_ `https://your-app.example`                                                                                          |
 
 ---
 
@@ -47,7 +47,7 @@ Goal: provide a convenient movie discovery experience with room for future monet
 - Reusable UI primitives (button, loader, empty/error states).
 - Infinite scroll directive via `IntersectionObserver`.
 - ESLint + Prettier + Husky + lint-staged + commitlint.
-- Unit/component testing with Jasmine + Karma.
+- Unit/component tests with **Vitest** (via `ng test`).
 
 ## Key architecture decisions
 
@@ -70,7 +70,7 @@ Goal: provide a convenient movie discovery experience with room for future monet
 
 ### Prerequisites
 
-- Node.js **20.19+** (required by Angular CLI)
+- Node.js **20.19+** рекомендуется (требование Angular CLI). Скрипты `npm start` / `ng build` в этом проекте вызывают **Node 22.12** через `npx`, если в PATH старая версия — локальный запуск обычно работает и без обновления системного Node.
 - npm 10+
 
 ### Install
@@ -87,16 +87,15 @@ npm start
 
 App is available at `http://localhost:4200`.
 
-## Environment variables
+## API key (TMDB)
 
-Create `.env` locally from `.env.example` and set your TMDB API key:
+1. После `npm install` при необходимости появится **`public/env.js`** (копия `public/env.example.js`).
+2. Откройте `public/env.js` и задайте **`TMDB_API_KEY`** (v3 API Key, 32 hex-символа с [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)).
+3. Файл `public/env.js` **не коммитится** (см. `.gitignore`).
 
-```bash
-TMDB_API_KEY=your_tmdb_api_key_here
-```
+Базовые URL для dev/prod — в `src/environments`. На деплое задайте **`TMDB_API_KEY`** в настройках хостинга (Vercel/Netlify и т.д.).
 
-Current environment files are in `src/environments`.
-For deployment, configure the same key in your hosting provider environment settings.
+Файл **`.env.example`** в корне приложения — справочный комментарий; Angular его сам не подхватывает.
 
 ### Dev proxy (CORS-free)
 
@@ -107,11 +106,16 @@ In development the app is configured to call TMDB through a same-origin proxy pr
 
 This avoids browser CORS issues. Do **not** set `TMDB_BASE_URL=https://api.themoviedb.org/3` in `public/env.js` when running `npm start`.
 
+### Постеры не грузятся (403 / блокировки)
+
+Приложение ходит за картинками через тот же origin: префикс **`/imgtmdb`** (см. `proxy.conf.json` в dev и `vercel.json` / `netlify.toml` в проде). Если постеры пустые, проверьте, что запросы идут на **`/imgtmdb/...`**, а не напрямую на `image.tmdb.org`, и что DNS не подменяет TMDB на `localhost`.
+
 ## Scripts
 
 - `npm start` - dev server
-- `npm run build` - default production build
-- `npm run build:prod` - explicit production build configuration
+- `npm run dev:win` - Windows: проверка порта 4200 и запуск dev (см. `scripts/dev.ps1`)
+- `npm run build` - production build (конфигурация по умолчанию в `angular.json`)
+- `npm run build:prod` - явная production-сборка
 - `npm run lint` - lint TypeScript sources
 - `npm test` - run tests in watch mode
 - `npm run test:ci` - headless test run for CI
@@ -156,4 +160,3 @@ Add screenshots or GIFs to make review faster:
 - `docs/screenshots/details-page.png`
 - `docs/screenshots/favorites-page.png`
 - `docs/screenshots/theme-toggle.gif`
-

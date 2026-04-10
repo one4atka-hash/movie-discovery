@@ -20,32 +20,45 @@ import { ErrorNotifierService } from '@core/error-notifier.service';
   styles: [
     `
       .banner {
-        margin: 0.5rem 0;
-        padding: 0.65rem 0.8rem;
-        border: 1px solid rgba(255, 107, 107, 0.35);
-        border-radius: 12px;
-        background: rgba(120, 20, 20, 0.25);
+        margin: 0.65rem 0;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--surface-error-border);
+        border-radius: var(--radius-md);
+        background: var(--surface-error-bg);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 0.8rem;
+        gap: 0.85rem;
+        font-size: 0.9rem;
+        line-height: 1.45;
+        box-shadow: var(--shadow-xs);
       }
       .actions {
         display: flex;
-        gap: 0.4rem;
+        gap: 0.45rem;
+        flex-shrink: 0;
       }
       button {
         border: 1px solid var(--border-subtle);
-        border-radius: 9999px;
-        background: rgba(255, 255, 255, 0.06);
+        border-radius: var(--radius-full);
+        background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
         color: var(--text);
-        padding: 0.35rem 0.65rem;
+        padding: 0.4rem 0.75rem;
         cursor: pointer;
+        font-family: inherit;
+        font-size: 0.82rem;
+        font-weight: 500;
+        transition:
+          background var(--duration-fast) var(--ease-out),
+          border-color var(--duration-fast) var(--ease-out);
       }
-    `
-  ]
+      button:hover {
+        background: color-mix(in srgb, var(--bg-elevated) 80%, transparent);
+        border-color: var(--border-strong);
+      }
+    `,
+  ],
 })
 export class ErrorBannerComponent {
   readonly notifier = inject(ErrorNotifierService);
 }
-

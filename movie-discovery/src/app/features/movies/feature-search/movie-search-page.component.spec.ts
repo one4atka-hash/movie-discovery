@@ -15,9 +15,7 @@ describe('MovieSearchPageComponent', () => {
       } as unknown as typeof IntersectionObserver;
   });
 
-  it(
-    'creates component',
-    async () => {
+  it('creates component', async () => {
     await TestBed.configureTestingModule({
       imports: [MovieSearchPageComponent],
       providers: [
@@ -25,19 +23,17 @@ describe('MovieSearchPageComponent', () => {
         {
           provide: MovieService,
           useValue: {
-            searchMovies: () =>
+            searchMovies: () => of({ page: 1, results: [], total_pages: 1, total_results: 0 }),
+            getPopularMovies: () => of({ page: 1, results: [], total_pages: 1, total_results: 0 }),
+            getNowPlayingMovies: () =>
               of({ page: 1, results: [], total_pages: 1, total_results: 0 }),
-            getPopularMovies: () =>
-              of({ page: 1, results: [], total_pages: 1, total_results: 0 })
-          }
-        }
-      ]
+          },
+        },
+      ],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(MovieSearchPageComponent);
     fixture.detectChanges();
     expect(fixture.componentInstance).toBeTruthy();
-    },
-    30_000
-  );
+  }, 30_000);
 });

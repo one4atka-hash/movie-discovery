@@ -1,214 +1,370 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map, of, switchMap } from 'rxjs';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import {
+  catchError,
+  combineLatest,
+  concat,
+  distinctUntilChanged,
+  filter,
+  map,
+  of,
+  switchMap,
+} from 'rxjs';
 
 import { Movie, MovieVideo } from '../data-access/models/movie.model';
 import { TmdbWatchProviderCountry } from '../data-access/models/watch-providers.model';
 import { TMDB_GENRE_LABELS } from '../data-access/tmdb-genres';
-import { movieResolver } from './movie.resolver';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
+import { LoaderComponent } from '@shared/ui/loader/loader.component';
 import { FavoritesService } from '../data-access/services/favorites.service';
 import { MovieService } from '../data-access/services/movie.service';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { AuthService } from '@features/auth/auth.service';
+import {
+  type MergedWatchRow,
+  type StreamingContext,
+  type WatchKind,
+  listRegionsWithData,
+  mergeWatchProviderRows,
+  pickDefaultRegionCode,
+  staticStreamingHubs,
+  streamingUrlForProvider,
+} from '@core/streaming/streaming-links';
+import { buildReleaseIcs } from '@core/release-ics.util';
+import {
+  ReleaseSubscriptionsService,
+  type NotificationChannel,
+} from '@features/notifications/release-subscriptions.service';
 
 @Component({
   selector: 'app-movie-details-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, EmptyStateComponent],
+  imports: [CommonModule, RouterLink, EmptyStateComponent, LoaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
       <a class="back" routerLink="/">{{ i18n.t('details.back') }}</a>
 
-      <ng-container *ngIf="movie() as m; else errorTpl">
-        <div class="hero">
-          <div class="poster" [class.poster--empty]="!m.poster_path">
-            <img
-              *ngIf="m.poster_path as p"
-              class="poster__img"
-              [src]="posterUrl(p)"
-              [attr.srcset]="posterSrcSet(p)"
-              sizes="(max-width: 760px) 70vw, 220px"
-              [alt]="m.title"
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
+      <ng-container *ngIf="movie() === undefined">
+        <app-loader />
+      </ng-container>
 
-          <div class="meta">
-            <h1 class="title">{{ m.title }}</h1>
-            <div class="sub">
-              <span class="muted">
-                {{ releaseYear(m) }} <span class="dot" aria-hidden="true">•</span> {{ releaseDateLabel(m) }}
-              </span>
-              <span class="rating">
-                ★ {{ m.vote_average | number: '1.1-1' }}
-                <span class="muted" *ngIf="m.vote_count">({{ m.vote_count | number }})</span>
-              </span>
-            </div>
-            <div class="genres" *ngIf="genreLabels(m).length">
-              <span class="genre" *ngFor="let label of genreLabels(m)">{{ label }}</span>
+      <ng-container *ngIf="movie() !== undefined">
+        <ng-container *ngIf="movie() as m; else errorTpl">
+          <div class="hero">
+            <div class="poster" [class.poster--empty]="!m.poster_path">
+              <img
+                *ngIf="m.poster_path as p"
+                class="poster__img"
+                [src]="posterUrl(p)"
+                [attr.srcset]="posterSrcSet(p)"
+                sizes="(max-width: 760px) 70vw, 220px"
+                [alt]="m.title"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
 
-            <section class="facts" aria-label="Метаданные">
-              <div class="facts__grid">
-                <div class="fact">
-                  <span class="fact__k">Статус</span>
-                  <span class="fact__v">{{ m.status || '—' }}</span>
-                </div>
-                <div class="fact">
-                  <span class="fact__k">Длительность</span>
-                  <span class="fact__v">{{ runtimeLabel(m) }}</span>
-                </div>
-                <div class="fact">
-                  <span class="fact__k">Язык</span>
-                  <span class="fact__v">{{ (m.original_language || '—') | uppercase }}</span>
-                </div>
-                <div class="fact" *ngIf="m.original_title && m.original_title !== m.title">
-                  <span class="fact__k">Оригинальное название</span>
-                  <span class="fact__v">{{ m.original_title }}</span>
-                </div>
-                <div class="fact" *ngIf="countriesLabel(m) as c">
-                  <span class="fact__k">Страны</span>
-                  <span class="fact__v">{{ c }}</span>
-                </div>
+            <div class="meta">
+              <h1 class="title">{{ m.title }}</h1>
+              <div class="sub">
+                <span class="muted">
+                  {{ releaseYear(m) }} <span class="dot" aria-hidden="true">•</span>
+                  {{ releaseDateLabel(m) }}
+                </span>
+                <span class="rating">
+                  ★ {{ m.vote_average | number: '1.1-1' }}
+                  <span class="muted" *ngIf="m.vote_count">({{ m.vote_count | number }})</span>
+                </span>
+              </div>
+              <div class="genres" *ngIf="genreLabels(m).length">
+                <span class="genre" *ngFor="let label of genreLabels(m)">{{ label }}</span>
               </div>
 
-              <div class="facts__links" *ngIf="m.homepage || m.imdb_id">
-                <a
-                  *ngIf="m.homepage"
-                  class="facts__link"
-                  [href]="m.homepage"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  Официальный сайт
-                </a>
-                <a
-                  *ngIf="m.imdb_id"
-                  class="facts__link"
-                  [href]="'https://www.imdb.com/title/' + m.imdb_id"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  IMDb
-                </a>
-              </div>
-            </section>
+              <section class="facts" aria-label="Метаданные">
+                <div class="facts__grid">
+                  <div class="fact">
+                    <span class="fact__k">Статус</span>
+                    <span class="fact__v">{{ m.status || '—' }}</span>
+                  </div>
+                  <div class="fact">
+                    <span class="fact__k">Длительность</span>
+                    <span class="fact__v">{{ runtimeLabel(m) }}</span>
+                  </div>
+                  <div class="fact">
+                    <span class="fact__k">Язык</span>
+                    <span class="fact__v">{{ m.original_language || '—' | uppercase }}</span>
+                  </div>
+                  <div class="fact" *ngIf="m.original_title && m.original_title !== m.title">
+                    <span class="fact__k">Оригинальное название</span>
+                    <span class="fact__v">{{ m.original_title }}</span>
+                  </div>
+                  <div class="fact" *ngIf="countriesLabel(m) as c">
+                    <span class="fact__k">Страны</span>
+                    <span class="fact__v">{{ c }}</span>
+                  </div>
+                </div>
 
-            <p class="tagline" *ngIf="m.tagline">{{ m.tagline }}</p>
-            <p class="overview">{{ m.overview || 'Описание отсутствует.' }}</p>
-
-            <div class="actions">
-              <button class="btn btn--fav" type="button" (click)="toggleFavorite(m)">
-                {{ favorites.has(m.id) ? i18n.t('details.inFavorites') : i18n.t('details.addToFavorites') }}
-              </button>
-              @if (canFollowRelease(m)) {
-                @if (isAuthed()) {
-                  <a class="btn btn--primary" [routerLink]="['/notifications']" [queryParams]="{ tmdbId: m.id }">
-                    {{ i18n.t('details.followRelease') }}
-                  </a>
-                } @else {
+                <div class="facts__links" *ngIf="m.homepage || m.imdb_id">
                   <a
-                    class="btn btn--primary"
-                    [routerLink]="['/account']"
-                    [queryParams]="{ returnUrl: '/notifications', tmdbId: m.id }"
-                  >
-                    Войти, чтобы подписаться
-                  </a>
-                }
-              }
-            </div>
-          </div>
-        </div>
-
-        @if (isReleased(m.release_date) && (watchLink() || hasAnyProviders()); as _) {
-          <section class="watch">
-            <div class="watch__head">
-              <strong>Где смотреть (официально)</strong>
-              <span class="muted">Провайдеры по региону</span>
-            </div>
-
-            @if (watchLink(); as link) {
-              <a class="btn btn--primary" [href]="link" target="_blank" rel="noreferrer noopener">Открыть официальную страницу</a>
-            }
-
-            @if (activeProviders(); as p) {
-              <div class="providers" *ngIf="p.flatrate?.length || p.rent?.length || p.buy?.length">
-                <div class="providers__group" *ngIf="p.flatrate?.length">
-                  <div class="providers__title">Подписка</div>
-                  <div class="providers__list">
-                    <span class="prov" *ngFor="let it of p.flatrate">
-                      <img *ngIf="it.logo_path" class="prov__logo" [src]="providerLogoUrl(it.logo_path)" [alt]="it.provider_name" />
-                      <span class="prov__name">{{ it.provider_name }}</span>
-                    </span>
-                  </div>
-                </div>
-
-                <div class="providers__group" *ngIf="p.rent?.length">
-                  <div class="providers__title">Аренда</div>
-                  <div class="providers__list">
-                    <span class="prov" *ngFor="let it of p.rent">
-                      <img *ngIf="it.logo_path" class="prov__logo" [src]="providerLogoUrl(it.logo_path)" [alt]="it.provider_name" />
-                      <span class="prov__name">{{ it.provider_name }}</span>
-                    </span>
-                  </div>
-                </div>
-
-                <div class="providers__group" *ngIf="p.buy?.length">
-                  <div class="providers__title">Покупка</div>
-                  <div class="providers__list">
-                    <span class="prov" *ngFor="let it of p.buy">
-                      <img *ngIf="it.logo_path" class="prov__logo" [src]="providerLogoUrl(it.logo_path)" [alt]="it.provider_name" />
-                      <span class="prov__name">{{ it.provider_name }}</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            }
-
-            <p class="muted watch__note">Доступность зависит от страны и может меняться.</p>
-          </section>
-        }
-
-        @if (trailer(); as t) {
-          <div class="player">
-            <div class="player__head">
-              <strong>Трейлер</strong>
-              <span class="muted">{{ t.name || '—' }}</span>
-            </div>
-
-            <div class="player__frame">
-              <iframe
-                *ngIf="embedUrl(t) as url; else noTrailerTpl"
-                [src]="url"
-                title="Trailer"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerpolicy="no-referrer"
-                allowfullscreen
-              ></iframe>
-
-              <ng-template #noTrailerTpl>
-                <div class="player__empty" role="status">
-                  <p class="player__empty-title">Трейлер недоступен для встраивания.</p>
-                  <a
-                    *ngIf="externalTrailerUrl(t) as href"
-                    class="btn btn--primary"
-                    [href]="href"
+                    *ngIf="m.homepage"
+                    class="facts__link"
+                    [href]="m.homepage"
                     target="_blank"
                     rel="noreferrer noopener"
                   >
-                    Открыть источник
+                    Официальный сайт
+                  </a>
+                  <a
+                    *ngIf="m.imdb_id"
+                    class="facts__link"
+                    [href]="'https://www.imdb.com/title/' + m.imdb_id"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    IMDb
                   </a>
                 </div>
-              </ng-template>
+              </section>
+
+              <p class="tagline" *ngIf="m.tagline">{{ m.tagline }}</p>
+              <p class="overview">{{ m.overview || 'Описание отсутствует.' }}</p>
+
+              <div class="actions">
+                <button class="btn btn--fav" type="button" (click)="toggleFavorite(m)">
+                  {{
+                    favorites.has(m.id)
+                      ? i18n.t('details.inFavorites')
+                      : i18n.t('details.addToFavorites')
+                  }}
+                </button>
+                @if (canFollowRelease(m) && !isAuthed()) {
+                  <a
+                    class="btn btn--primary"
+                    [routerLink]="['/account']"
+                    [queryParams]="{ returnUrl: '/movie/' + m.id }"
+                  >
+                    {{ i18n.t('details.loginToSubscribe') }}
+                  </a>
+                }
+              </div>
+
+              @if (canFollowRelease(m) && isAuthed()) {
+                <div class="releasePanel">
+                  <h3 class="releasePanel__title">{{ i18n.t('details.releaseAlertsTitle') }}</h3>
+                  @if (!releaseDateForSubscribe(m)) {
+                    <p class="muted releasePanel__hint">
+                      {{ i18n.t('details.releaseNoDateHint') }}
+                    </p>
+                  } @else {
+                    <div class="releasePanel__channels">
+                      <label class="chk"
+                        ><input
+                          type="checkbox"
+                          [checked]="releaseChannel('inApp')"
+                          (change)="setReleaseChannel('inApp', $event)"
+                        />
+                        In-app</label
+                      >
+                      <label class="chk"
+                        ><input
+                          type="checkbox"
+                          [checked]="releaseChannel('webPush')"
+                          (change)="setReleaseChannel('webPush', $event)"
+                        />
+                        Web Push</label
+                      >
+                      <label class="chk"
+                        ><input
+                          type="checkbox"
+                          [checked]="releaseChannel('email')"
+                          (change)="setReleaseChannel('email', $event)"
+                        />
+                        Email</label
+                      >
+                      <label class="chk"
+                        ><input
+                          type="checkbox"
+                          [checked]="releaseChannel('calendar')"
+                          (change)="setReleaseChannel('calendar', $event)"
+                        />
+                        Calendar</label
+                      >
+                    </div>
+                    <div class="releasePanel__row">
+                      <button
+                        class="btn btn--primary"
+                        type="button"
+                        (click)="saveReleaseSubscription(m)"
+                      >
+                        {{ i18n.t('notifications.save') }}
+                      </button>
+                      <button
+                        class="btn"
+                        type="button"
+                        (click)="downloadReleaseIcs(m)"
+                        [disabled]="!releaseChannel('calendar')"
+                      >
+                        {{ i18n.t('notifications.downloadIcs') }}
+                      </button>
+                      @if (existingReleaseSubscription(); as ex) {
+                        <button
+                          class="btn"
+                          type="button"
+                          (click)="removeReleaseSubscription(ex.id)"
+                        >
+                          {{ i18n.t('notifications.remove') }}
+                        </button>
+                      }
+                    </div>
+                    <p class="hint" *ngIf="releaseChannel('email')">
+                      {{ i18n.t('notifications.emailHint') }}
+                    </p>
+                    <p class="releasePanel__err" *ngIf="releaseSubscribeError()">
+                      {{ releaseSubscribeError() }}
+                    </p>
+                  }
+                </div>
+              }
             </div>
           </div>
-        }
+
+          <section class="hubs" aria-labelledby="streaming-hubs-title">
+            <div class="hubs__head">
+              <h2 class="hubs__title" id="streaming-hubs-title">
+                {{ i18n.t('details.hubs.title') }}
+              </h2>
+              <p class="muted hubs__note">{{ i18n.t('details.hubs.note') }}</p>
+            </div>
+            <div class="hub-grid">
+              <a
+                class="hub-card"
+                *ngFor="let h of streamingHubs()"
+                [href]="h.url"
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                {{ i18n.t(h.translationKey) }}
+              </a>
+            </div>
+          </section>
+
+          @if (tmdbWatchBlockVisible()) {
+            <section class="watch" aria-labelledby="watch-tmdb-title">
+              <div class="watch__head">
+                <div class="watch__intro">
+                  <h2 class="watch__title" id="watch-tmdb-title">
+                    {{ i18n.t('details.watch.tmdbTitle') }}
+                  </h2>
+                  <span class="muted">{{ i18n.t('details.watch.tmdbSubtitle') }}</span>
+                </div>
+                <span class="watch__region muted">
+                  {{ i18n.t('details.watch.region') }}: <strong>{{ effectiveRegion() }}</strong>
+                </span>
+              </div>
+
+              <div
+                class="region-chips"
+                *ngIf="availableRegions().length > 1"
+                role="group"
+                [attr.aria-label]="i18n.t('details.watch.regionPickAria')"
+              >
+                <button
+                  type="button"
+                  class="region-chip"
+                  *ngFor="let cc of availableRegions()"
+                  [class.region-chip--active]="cc === effectiveRegion()"
+                  (click)="setWatchRegion(cc)"
+                >
+                  {{ cc }}
+                </button>
+              </div>
+
+              @if (watchLinkActive(); as link) {
+                <a
+                  class="btn btn--primary watch__jw"
+                  [href]="link"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  {{ i18n.t('details.watch.justwatchBtn') }}
+                </a>
+              }
+
+              <div class="providers providers--merged" *ngIf="mergedProviders().length">
+                <div class="providers__title">{{ i18n.t('details.watch.providersTitle') }}</div>
+                <div class="providers__list providers__list--cards">
+                  <a
+                    class="prov prov--link"
+                    *ngFor="let row of mergedProviders()"
+                    [href]="providerRowUrl(row)"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    <img
+                      *ngIf="row.provider.logo_path"
+                      class="prov__logo"
+                      [src]="providerLogoUrl(row.provider.logo_path)"
+                      [alt]="row.provider.provider_name"
+                    />
+                    <span class="prov__name">{{ row.provider.provider_name }}</span>
+                    <span class="prov__kinds">
+                      <span class="kind-badge" *ngFor="let k of row.kinds">{{ kindLabel(k) }}</span>
+                    </span>
+                  </a>
+                </div>
+              </div>
+
+              <p class="muted watch__note">{{ i18n.t('details.watch.disclaimer') }}</p>
+            </section>
+          }
+
+          @if (trailer(); as t) {
+            <div class="player">
+              <div class="player__head">
+                <strong>Трейлер</strong>
+                <span class="muted">{{ t.name || '—' }}</span>
+              </div>
+
+              <div class="player__frame">
+                <iframe
+                  *ngIf="embedUrl(t) as url; else noTrailerTpl"
+                  [src]="url"
+                  title="Trailer"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerpolicy="no-referrer"
+                  allowfullscreen
+                ></iframe>
+
+                <ng-template #noTrailerTpl>
+                  <div class="player__empty" role="status">
+                    <p class="player__empty-title">Трейлер недоступен для встраивания.</p>
+                    <a
+                      *ngIf="externalTrailerUrl(t) as href"
+                      class="btn btn--primary"
+                      [href]="href"
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
+                      Открыть источник
+                    </a>
+                  </div>
+                </ng-template>
+              </div>
+            </div>
+          }
+        </ng-container>
       </ng-container>
 
       <ng-template #errorTpl>
@@ -279,7 +435,8 @@ import { AuthService } from '@features/auth/auth.service';
         color: var(--text-muted);
       }
       .rating {
-        color: #ffc371;
+        color: var(--accent-secondary);
+        font-weight: 600;
       }
       .tagline {
         margin: 0.9rem 0 0.5rem;
@@ -325,7 +482,10 @@ import { AuthService } from '@features/auth/auth.service';
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+        transition:
+          transform 0.15s ease,
+          background 0.15s ease,
+          border-color 0.15s ease;
       }
       .btn:hover {
         transform: translateY(-1px);
@@ -333,12 +493,12 @@ import { AuthService } from '@features/auth/auth.service';
         border-color: rgba(255, 255, 255, 0.14);
       }
       .btn--primary {
-        border-color: rgba(255, 195, 113, 0.45);
-        background: rgba(255, 195, 113, 0.14);
+        border-color: color-mix(in srgb, var(--accent-secondary) 50%, var(--border-subtle));
+        background: color-mix(in srgb, var(--accent-secondary) 16%, transparent);
       }
       .btn--fav {
-        background: rgba(0, 0, 0, 0.35);
-        color: #ffc371;
+        background: color-mix(in srgb, #000 38%, transparent);
+        color: var(--accent-secondary);
       }
       .btn--fav:hover {
         background: rgba(0, 0, 0, 0.45);
@@ -346,6 +506,54 @@ import { AuthService } from '@features/auth/auth.service';
       .btn--disabled {
         opacity: 0.55;
         pointer-events: none;
+      }
+
+      .releasePanel {
+        margin-top: 1rem;
+        padding: 1rem 1.05rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-subtle);
+        background: color-mix(in srgb, var(--bg-elevated) 82%, transparent);
+        display: grid;
+        gap: 0.75rem;
+      }
+      .releasePanel__title {
+        margin: 0;
+        font-size: 1.02rem;
+        font-weight: 600;
+      }
+      .releasePanel__hint {
+        margin: 0;
+        line-height: 1.5;
+      }
+      .releasePanel__channels {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+      }
+      .chk {
+        display: inline-flex;
+        gap: 0.45rem;
+        align-items: center;
+        color: var(--text-muted);
+        font-size: 0.92rem;
+      }
+      .releasePanel__row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        align-items: center;
+      }
+      .hint {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+      .releasePanel__err {
+        margin: 0;
+        color: var(--accent);
+        font-size: 0.9rem;
       }
 
       .player {
@@ -390,60 +598,202 @@ import { AuthService } from '@features/auth/auth.service';
         margin: 0;
       }
 
-      .watch {
+      .hubs {
         margin-top: 1.25rem;
         border: 1px solid var(--border-subtle);
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.03);
-        padding: 0.9rem 1rem;
+        border-radius: var(--radius-lg);
+        background: color-mix(in srgb, var(--bg-elevated) 70%, transparent);
+        padding: 1rem 1.1rem 1.15rem;
         display: grid;
-        gap: 0.6rem;
+        gap: 0.75rem;
+      }
+      .hubs__head {
+        display: grid;
+        gap: 0.35rem;
+      }
+      .hubs__title {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      .hubs__note {
+        margin: 0;
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+      .hub-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+        gap: 0.5rem;
+      }
+      .hub-card {
+        text-align: center;
+        text-decoration: none;
+        font-size: 0.82rem;
+        font-weight: 500;
+        line-height: 1.25;
+        padding: 0.55rem 0.5rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-subtle);
+        background: color-mix(in srgb, var(--bg-muted) 40%, transparent);
+        color: var(--text);
+        transition:
+          border-color var(--duration-fast) var(--ease-out),
+          background var(--duration-fast) var(--ease-out),
+          transform var(--duration-fast) var(--ease-out);
+      }
+      .hub-card:hover {
+        border-color: var(--border-strong);
+        background: color-mix(in srgb, var(--bg-muted) 65%, transparent);
+        transform: translateY(-1px);
+      }
+
+      .watch {
+        margin-top: 1rem;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        background: color-mix(in srgb, var(--bg-elevated) 70%, transparent);
+        padding: 1rem 1.1rem 1.15rem;
+        display: grid;
+        gap: 0.75rem;
       }
       .watch__head {
         display: flex;
-        align-items: baseline;
+        align-items: flex-start;
         justify-content: space-between;
         gap: 0.75rem;
         flex-wrap: wrap;
       }
+      .watch__intro {
+        display: grid;
+        gap: 0.25rem;
+      }
+      .watch__title {
+        margin: 0;
+        font-size: 1.02rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      .watch__region {
+        font-size: 0.86rem;
+        white-space: nowrap;
+      }
+      .watch__jw {
+        justify-self: start;
+      }
       .watch__note {
         margin: 0;
-        font-size: 0.9rem;
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+
+      .region-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+      .region-chip {
+        border-radius: var(--radius-full);
+        border: 1px solid var(--border-subtle);
+        background: color-mix(in srgb, var(--bg-muted) 35%, transparent);
+        color: var(--text);
+        padding: 0.32rem 0.65rem;
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        transition:
+          background var(--duration-fast) var(--ease-out),
+          border-color var(--duration-fast) var(--ease-out);
+      }
+      .region-chip:hover {
+        border-color: var(--border-strong);
+        background: color-mix(in srgb, var(--bg-muted) 60%, transparent);
+      }
+      .region-chip--active {
+        border-color: color-mix(in srgb, var(--accent-secondary) 45%, var(--border-subtle));
+        background: color-mix(in srgb, var(--accent-secondary) 14%, transparent);
       }
 
       .providers {
         display: grid;
-        gap: 0.85rem;
-        margin-top: 0.4rem;
+        gap: 0.65rem;
+        margin-top: 0.25rem;
       }
       .providers__title {
-        font-size: 0.9rem;
+        font-size: 0.88rem;
         color: var(--text-muted);
-        margin-bottom: 0.35rem;
+        font-weight: 500;
       }
       .providers__list {
         display: flex;
         flex-wrap: wrap;
         gap: 0.5rem;
       }
+      .providers__list--cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.55rem;
+      }
       .prov {
         display: inline-flex;
         align-items: center;
         gap: 0.45rem;
         padding: 0.35rem 0.6rem;
-        border-radius: 9999px;
+        border-radius: var(--radius-full);
         border: 1px solid var(--border-subtle);
-        background: rgba(0, 0, 0, 0.18);
+        background: color-mix(in srgb, #000 22%, transparent);
+      }
+      .prov--link {
+        text-decoration: none;
+        color: inherit;
+        border-radius: var(--radius-md);
+        padding: 0.5rem 0.65rem;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        transition:
+          border-color var(--duration-fast) var(--ease-out),
+          background var(--duration-fast) var(--ease-out),
+          box-shadow var(--duration-fast) var(--ease-out);
+      }
+      .prov--link:hover {
+        border-color: var(--border-strong);
+        background: color-mix(in srgb, var(--bg-muted) 45%, transparent);
+        box-shadow: var(--shadow-xs);
       }
       .prov__logo {
-        width: 20px;
-        height: 20px;
+        width: 22px;
+        height: 22px;
         border-radius: 5px;
         object-fit: cover;
         display: block;
+        flex-shrink: 0;
       }
       .prov__name {
-        font-size: 0.9rem;
+        font-size: 0.88rem;
+        font-weight: 500;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .prov__kinds {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        width: 100%;
+        margin-top: 0.15rem;
+      }
+      .kind-badge {
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        padding: 0.15rem 0.4rem;
+        border-radius: var(--radius-full);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-muted);
+        background: color-mix(in srgb, var(--bg-elevated) 50%, transparent);
       }
 
       .facts {
@@ -497,68 +847,147 @@ import { AuthService } from '@features/auth/auth.service';
         border-color: rgba(255, 195, 113, 0.35);
         background: rgba(255, 195, 113, 0.08);
       }
-    `
-  ]
+    `,
+  ],
 })
 export class MovieDetailsPageComponent {
-  static readonly resolver = movieResolver;
-
   private readonly route = inject(ActivatedRoute);
   readonly favorites = inject(FavoritesService);
   private readonly movies = inject(MovieService);
   readonly i18n = inject(I18nService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly auth = inject(AuthService);
+  private readonly subsSvc = inject(ReleaseSubscriptionsService);
 
   readonly isAuthed = computed(() => this.auth.isAuthenticated());
 
-  // IMPORTANT: use route.data so we wait for resolver completion.
-  // Reading snapshot.data inside paramMap can produce partial/old values during navigation.
-  readonly movie = toSignal<Movie | null>(
-    (this.route.data ?? of({})).pipe(map((d) => (d['movie'] as Movie | undefined) ?? null)),
-    { initialValue: null }
+  private readonly _releaseChannels = signal<Record<NotificationChannel, boolean>>({
+    inApp: true,
+    webPush: false,
+    email: false,
+    calendar: true,
+  });
+  readonly releaseSubscribeError = signal<string | null>(null);
+
+  readonly existingReleaseSubscription = computed(() => {
+    const m = this.movie();
+    if (m === undefined || m === null) return null;
+    return this.subsSvc.mySubscriptions().find((s) => s.tmdbId === m.id) ?? null;
+  });
+
+  private readonly _syncReleaseUi = effect(() => {
+    const m = this.movie();
+    const list = this.subsSvc.mySubscriptions();
+    if (m === undefined || m === null) return;
+    const sub = list.find((s) => s.tmdbId === m.id);
+    untracked(() => {
+      if (sub) {
+        this._releaseChannels.set({ ...sub.channels });
+      } else {
+        this._releaseChannels.set({
+          inApp: true,
+          webPush: false,
+          email: false,
+          calendar: true,
+        });
+      }
+      this.releaseSubscribeError.set(null);
+    });
+  });
+
+  readonly regionChoice = signal<string | null>(null);
+
+  private readonly locale$ = toObservable(this.i18n.tmdbLocale);
+
+  private readonly id$ = this.route.paramMap.pipe(
+    map((pm) => Number(pm.get('id'))),
+    filter((id) => Number.isFinite(id) && id > 0),
+    distinctUntilChanged(),
   );
 
-  readonly hasMovie = computed(() => Boolean(this.movie()));
+  /** `undefined` — загрузка; `null` — ошибка; иначе фильм на текущей локали TMDB. */
+  readonly movie = toSignal(
+    combineLatest([this.id$, this.locale$]).pipe(
+      switchMap(([id]) =>
+        concat(
+          of<Movie | null | undefined>(undefined),
+          this.movies.getMovie(id).pipe(
+            map((m) => m as Movie | null),
+            catchError(() => of(null)),
+          ),
+        ),
+      ),
+    ),
+    { initialValue: undefined as Movie | null | undefined },
+  );
+
+  readonly hasMovie = computed(() => {
+    const m = this.movie();
+    return m !== undefined && m !== null;
+  });
 
   readonly videos = toSignal(
-    this.route.paramMap.pipe(
-      map((pm) => Number(pm.get('id'))),
-      filter((id) => Number.isFinite(id) && id > 0),
-      switchMap((id) => this.movies.getMovieVideos(id)),
-      map((res) => res.results ?? [])
+    combineLatest([this.id$, this.locale$]).pipe(
+      switchMap(([id]) =>
+        concat(
+          of([] as MovieVideo[]),
+          this.movies.getMovieVideos(id).pipe(map((res) => res.results ?? [])),
+        ),
+      ),
     ),
-    { initialValue: [] as MovieVideo[] }
+    { initialValue: [] as MovieVideo[] },
   );
 
   readonly providers = toSignal(
-    this.route.paramMap.pipe(
-      map((pm) => Number(pm.get('id'))),
-      filter((id) => Number.isFinite(id) && id > 0),
-      switchMap((id) => this.movies.getMovieWatchProviders(id)),
-      map((res) => res.results ?? {})
+    combineLatest([this.id$, this.locale$]).pipe(
+      switchMap(([id]) =>
+        concat(
+          of({} as Record<string, TmdbWatchProviderCountry | undefined>),
+          this.movies.getMovieWatchProviders(id).pipe(map((res) => res.results ?? {})),
+        ),
+      ),
     ),
-    { initialValue: {} as Record<string, TmdbWatchProviderCountry | undefined> }
+    { initialValue: {} as Record<string, TmdbWatchProviderCountry | undefined> },
   );
 
-  readonly watchLink = computed(() => {
-    const r = this.providers();
-    const lang = this.i18n.lang();
-    const country = lang === 'ru' ? 'RU' : 'US';
-    return r[country]?.link ?? r['US']?.link ?? r['RU']?.link ?? null;
+  private readonly clearWatchRegionOnMovieChange = effect(() => {
+    this.movie();
+    untracked(() => this.regionChoice.set(null));
   });
 
-  readonly activeProviders = computed(() => {
-    const r = this.providers();
-    const lang = this.i18n.lang();
-    const country = lang === 'ru' ? 'RU' : 'US';
-    return r[country] ?? r['US'] ?? r['RU'] ?? null;
+  readonly availableRegions = computed(() => listRegionsWithData(this.providers()));
+
+  readonly effectiveRegion = computed(() => {
+    const avail = this.availableRegions();
+    const picked = this.regionChoice();
+    if (picked && avail.includes(picked)) return picked;
+    return pickDefaultRegionCode(this.providers(), this.i18n.lang());
   });
 
-  readonly hasAnyProviders = computed(() => {
-    const p = this.activeProviders();
-    return Boolean(p?.flatrate?.length || p?.rent?.length || p?.buy?.length);
+  readonly countryPacket = computed(() => this.providers()[this.effectiveRegion()]);
+
+  readonly watchLinkActive = computed(() => this.countryPacket()?.link ?? null);
+
+  readonly mergedProviders = computed(() => mergeWatchProviderRows(this.countryPacket() ?? null));
+
+  readonly streamingCtx = computed((): StreamingContext | null => {
+    const m = this.movie();
+    if (m === undefined || m === null) return null;
+    const y = this.releaseYear(m);
+    return {
+      movieTitle: m.title,
+      year: y === '—' ? '' : y,
+      justWatchPageUrl: this.watchLinkActive(),
+      lang: this.i18n.lang(),
+    };
   });
+
+  readonly streamingHubs = computed(() => {
+    const ctx = this.streamingCtx();
+    return ctx ? staticStreamingHubs(ctx) : [];
+  });
+
+  readonly tmdbWatchBlockVisible = computed(() => this.availableRegions().length > 0);
 
   readonly trailer = computed(() => {
     const vids = this.videos();
@@ -568,24 +997,110 @@ export class MovieDetailsPageComponent {
       .map((v) => ({ ...v, site: (v.site ?? '').trim() }))
       .filter((v) => v.site.length > 0);
 
-    const youtube = normalized.filter((v) => v.site.toLowerCase() === 'youtube');
-    const nonYoutube = normalized.filter((v) => v.site.toLowerCase() !== 'youtube');
+    const isYoutubeSite = (site: string) => site.toLowerCase().includes('youtube');
+    const youtube = normalized.filter((v) => isYoutubeSite(v.site));
+    const nonYoutube = normalized.filter((v) => !isYoutubeSite(v.site));
 
     const by = (type: string, official?: boolean) =>
       normalized.find(
         (v) =>
           (v.type ?? '').toLowerCase() === type.toLowerCase() &&
-          (official === undefined ? true : (v.official ?? false) === official)
+          (official === undefined ? true : (v.official ?? false) === official),
       );
 
     // Prefer non-YouTube sources when possible (YouTube may be blocked).
     const pick = by('trailer', true) ?? by('trailer') ?? by('teaser', true) ?? by('teaser') ?? null;
-    if (pick && pick.site.toLowerCase() !== 'youtube') return pick;
+    if (pick && !isYoutubeSite(pick.site)) return pick;
     return pick ?? nonYoutube[0] ?? youtube[0] ?? null;
   });
 
+  setWatchRegion(code: string): void {
+    this.regionChoice.set(code);
+  }
+
+  providerRowUrl(row: MergedWatchRow): string {
+    const ctx = this.streamingCtx();
+    if (!ctx) return '#';
+    return streamingUrlForProvider(row.provider.provider_id, ctx);
+  }
+
+  kindLabel(kind: WatchKind): string {
+    return this.i18n.t(`details.watch.kind.${kind}`);
+  }
+
   toggleFavorite(m: Movie): void {
     this.favorites.toggle(m);
+  }
+
+  releaseDateForSubscribe(m: Movie): string | null {
+    const d = (m.release_date ?? '').trim();
+    return d.length ? d : null;
+  }
+
+  releaseChannel(c: NotificationChannel): boolean {
+    return Boolean(this._releaseChannels()[c]);
+  }
+
+  setReleaseChannel(c: NotificationChannel, ev: Event): void {
+    const checked = (ev.target as HTMLInputElement).checked;
+    this._releaseChannels.set({ ...this._releaseChannels(), [c]: checked });
+  }
+
+  saveReleaseSubscription(m: Movie): void {
+    this.releaseSubscribeError.set(null);
+    const rd = this.releaseDateForSubscribe(m);
+    if (!rd) {
+      this.releaseSubscribeError.set(this.i18n.t('details.releaseNoDateSave'));
+      return;
+    }
+    try {
+      this.subsSvc.upsert({
+        tmdbId: m.id,
+        mediaType: 'movie',
+        title: m.title,
+        releaseDate: rd,
+        posterPath: m.poster_path ?? null,
+        channels: this._releaseChannels(),
+      });
+      void this.maybeSendSamplePush(m.title);
+    } catch (e) {
+      this.releaseSubscribeError.set(e instanceof Error ? e.message : '—');
+    }
+  }
+
+  removeReleaseSubscription(id: string): void {
+    this.releaseSubscribeError.set(null);
+    try {
+      this.subsSvc.remove(id);
+    } catch (e) {
+      this.releaseSubscribeError.set(e instanceof Error ? e.message : '—');
+    }
+  }
+
+  downloadReleaseIcs(m: Movie): void {
+    const rd = this.releaseDateForSubscribe(m);
+    if (!rd) return;
+    const ics = buildReleaseIcs({
+      title: `Release: ${m.title}`,
+      date: rd,
+    });
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `release-${m.id}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private async maybeSendSamplePush(title: string): Promise<void> {
+    if (!this.releaseChannel('webPush')) return;
+    if (!('Notification' in window)) return;
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return;
+    new Notification('Movie Discovery', {
+      body: `Пример уведомления: релиз будет в день выхода — ${title}`,
+    });
   }
 
   genreLabels(m: Movie): readonly string[] {
@@ -606,7 +1121,7 @@ export class MovieDetailsPageComponent {
     return [
       `/imgtmdb/w185${path} 185w`,
       `/imgtmdb/w342${path} 342w`,
-      `/imgtmdb/w500${path} 500w`
+      `/imgtmdb/w500${path} 500w`,
     ].join(', ');
   }
 
@@ -629,19 +1144,20 @@ export class MovieDetailsPageComponent {
   }
 
   embedUrl(v: MovieVideo): SafeResourceUrl | null {
-    const site = (v.site ?? '').toLowerCase();
+    const site = (v.site ?? '').trim().toLowerCase();
     const key = (v.key ?? '').trim();
     if (!key) return null;
-    if (site === 'youtube') return this.youtubeEmbedUrl(key);
+    if (site.includes('youtube')) return this.youtubeEmbedUrl(key);
     if (site === 'vimeo') return this.vimeoEmbedUrl(key);
     return null;
   }
 
   externalTrailerUrl(v: MovieVideo): string | null {
-    const site = (v.site ?? '').toLowerCase();
+    const site = (v.site ?? '').trim().toLowerCase();
     const key = (v.key ?? '').trim();
     if (!key) return null;
-    if (site === 'youtube') return `https://www.youtube.com/watch?v=${encodeURIComponent(key)}`;
+    if (site.includes('youtube'))
+      return `https://www.youtube.com/watch?v=${encodeURIComponent(key)}`;
     if (site === 'vimeo') return `https://vimeo.com/${encodeURIComponent(key)}`;
     return null;
   }
@@ -666,7 +1182,11 @@ export class MovieDetailsPageComponent {
   countriesLabel(m: Movie): string | null {
     const list = m.production_countries ?? [];
     if (!list.length) return null;
-    return list.map((c) => c.name).filter(Boolean).slice(0, 4).join(', ');
+    return list
+      .map((c) => c.name)
+      .filter(Boolean)
+      .slice(0, 4)
+      .join(', ');
   }
 
   isReleased(releaseDate: string | null | undefined): boolean {
@@ -689,12 +1209,6 @@ export class MovieDetailsPageComponent {
     if (!s) return false;
     if (s === 'released' || s === 'canceled' || s === 'cancelled') return false;
 
-    return (
-      s === 'rumored' ||
-      s === 'planned' ||
-      s === 'in production' ||
-      s === 'post production'
-    );
+    return s === 'rumored' || s === 'planned' || s === 'in production' || s === 'post production';
   }
 }
-

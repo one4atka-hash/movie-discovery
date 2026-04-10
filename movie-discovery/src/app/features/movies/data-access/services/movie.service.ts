@@ -1,8 +1,9 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, effect, inject, untracked } from '@angular/core';
 import { Observable, map, shareReplay } from 'rxjs';
 
 import { ConfigService } from '@core/config.service';
+import { I18nService } from '@shared/i18n/i18n.service';
 import { Movie, MovieSearchResponse, MovieVideosResponse } from '../models/movie.model';
 import { TmdbWatchProvidersResponse } from '../models/watch-providers.model';
 
@@ -12,24 +13,41 @@ interface CacheEntry<T> {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MovieService {
   private readonly http = inject(HttpClient);
   private readonly config = inject(ConfigService);
+  private readonly i18n = inject(I18nService);
 
   private readonly cache = new Map<string, CacheEntry<unknown>>();
   private readonly cacheTtlMs = 1000 * 60 * 5;
 
+  private lastTmdbLocale = '';
+
+  constructor() {
+    effect(() => {
+      const loc = this.i18n.tmdbLocale();
+      untracked(() => {
+        if (this.lastTmdbLocale && this.lastTmdbLocale !== loc) {
+          this.cache.clear();
+        }
+        this.lastTmdbLocale = loc;
+      });
+    });
+  }
+
+  private baseParams(): HttpParams {
+    return new HttpParams().set('api_key', this.config.api.apiKey ?? '');
+  }
+
   searchMovies(query: string, page = 1): Observable<MovieSearchResponse> {
     const normalizedQuery = query.trim();
-    const cacheKey = `search:${normalizedQuery}:${page}`;
+    const lang = this.i18n.tmdbLocale();
+    const cacheKey = `search:${lang}:${normalizedQuery}:${page}`;
 
     return this.getOrCreate<MovieSearchResponse>(cacheKey, () => {
-      const params = new HttpParams()
-        .set('query', normalizedQuery)
-        .set('page', String(page))
-        .set('api_key', this.config.api.apiKey ?? '');
+      const params = this.baseParams().set('query', normalizedQuery).set('page', String(page));
 
       const url = `${this.config.api.baseUrl}/search/movie`;
       return this.getJson<MovieSearchResponse>(url, params);
@@ -38,23 +56,36 @@ export class MovieService {
 
   /** Популярные фильмы (для витрины на стартовом экране и т.п.). */
   getPopularMovies(page = 1): Observable<MovieSearchResponse> {
-    const cacheKey = `popular:${page}`;
+    const lang = this.i18n.tmdbLocale();
+    const cacheKey = `popular:${lang}:${page}`;
 
     return this.getOrCreate<MovieSearchResponse>(cacheKey, () => {
-      const params = new HttpParams()
-        .set('page', String(page))
-        .set('api_key', this.config.api.apiKey ?? '');
+      const params = this.baseParams().set('page', String(page));
 
       const url = `${this.config.api.baseUrl}/movie/popular`;
       return this.getJson<MovieSearchResponse>(url, params);
     });
   }
 
+  /** Сейчас в кино (для блока «новинки» на главной). */
+  getNowPlayingMovies(page = 1): Observable<MovieSearchResponse> {
+    const lang = this.i18n.tmdbLocale();
+    const cacheKey = `now_playing:${lang}:${page}`;
+
+    return this.getOrCreate<MovieSearchResponse>(cacheKey, () => {
+      const params = this.baseParams().set('page', String(page));
+
+      const url = `${this.config.api.baseUrl}/movie/now_playing`;
+      return this.getJson<MovieSearchResponse>(url, params);
+    });
+  }
+
   getMovie(id: number): Observable<Movie> {
-    const cacheKey = `movie:${id}`;
+    const lang = this.i18n.tmdbLocale();
+    const cacheKey = `movie:${lang}:${id}`;
 
     return this.getOrCreate<Movie>(cacheKey, () => {
-      const params = new HttpParams().set('api_key', this.config.api.apiKey ?? '');
+      const params = this.baseParams();
       const url = `${this.config.api.baseUrl}/movie/${id}`;
       return this.getJson<Movie>(url, params);
     });
@@ -71,9 +102,10 @@ export class MovieService {
   }
 
   getMovieWatchProviders(id: number): Observable<TmdbWatchProvidersResponse> {
-    const cacheKey = `movie:providers:${id}`;
+    const lang = this.i18n.tmdbLocale();
+    const cacheKey = `movie:providers:${lang}:${id}`;
     return this.getOrCreate<TmdbWatchProvidersResponse>(cacheKey, () => {
-      const params = new HttpParams().set('api_key', this.config.api.apiKey ?? '');
+      const params = this.baseParams();
       const url = `${this.config.api.baseUrl}/movie/${id}/watch/providers`;
       return this.getJson<TmdbWatchProvidersResponse>(url, params);
     });
@@ -88,9 +120,9 @@ export class MovieService {
    * or non-JSON. We read text and parse explicitly to surface a clear error via HttpErrorResponse.
    */
   private getJson<T>(url: string, params: HttpParams): Observable<T> {
-    return this.http.get(url, { params, responseType: 'text' }).pipe(
-      map((text) => this.parseTmdbJson<T>(text, url))
-    );
+    return this.http
+      .get(url, { params, responseType: 'text' })
+      .pipe(map((text) => this.parseTmdbJson<T>(text, url)));
   }
 
   private parseTmdbJson<T>(text: string, url: string): T {
@@ -104,7 +136,7 @@ export class MovieService {
         status: 200,
         statusText: 'OK',
         url,
-        error: { tmdbNonJson: true }
+        error: { tmdbNonJson: true },
       });
     }
     try {
@@ -114,7 +146,7 @@ export class MovieService {
         status: 200,
         statusText: 'OK',
         url,
-        error: { tmdbNonJson: true }
+        error: { tmdbNonJson: true },
       });
     }
   }
@@ -132,4 +164,3 @@ export class MovieService {
     return stream;
   }
 }
-

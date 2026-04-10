@@ -1,21 +1,92 @@
+/* Design tokens — единая база для светлой/тёмной темы */
 :root {
   color-scheme: dark;
-  --bg: #050510;
-  --bg-elevated: #101020;
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --text: #f8f8ff;
-  --text-muted: #9ca3c9;
-  --accent: #ff6b6b;
+
+  --font-sans:
+    'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
+
+  --bg: #06060f;
+  --bg-elevated: #0f0f1a;
+  --bg-muted: #141422;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  --text: #f4f4ff;
+  --text-muted: #9898b8;
+  --text-faint: #6b6b88;
+
+  --accent: #ff5a5f;
+  --accent-hover: #ff7075;
+  --accent-secondary: #e8b86d;
+  --accent-glow: rgba(255, 90, 95, 0.35);
+
+  --link: #f0c27a;
+  --link-hover: #ffd49a;
+  /** Текст на ярком градиенте (кнопки CTA) */
+  --on-accent: #0a0a12;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.38);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.32);
+
+  --header-bg: color-mix(in srgb, var(--bg) 78%, transparent);
+  --header-blur: 14px;
+
+  --surface-warning-bg: rgba(255, 195, 113, 0.1);
+  --surface-warning-border: rgba(255, 195, 113, 0.42);
+  --surface-error-bg: rgba(255, 90, 95, 0.12);
+  --surface-error-border: rgba(255, 90, 95, 0.38);
+
+  --focus-ring: 2px solid var(--accent-secondary);
+  --focus-offset: 2px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 0.15s;
+  --duration-normal: 0.22s;
 }
 
 :root.theme-light {
   color-scheme: light;
-  --bg: #f6f7ff;
+
+  --bg: #f4f5fc;
   --bg-elevated: #ffffff;
-  --border-subtle: rgba(10, 20, 40, 0.12);
+  --bg-muted: #ebeefe;
+  --border-subtle: rgba(15, 23, 42, 0.1);
+  --border-strong: rgba(15, 23, 42, 0.16);
+
   --text: #0f172a;
-  --text-muted: #546076;
-  --accent: #d74d4d;
+  --text-muted: #5c6578;
+  --text-faint: #7c8496;
+
+  --accent: #e0454a;
+  --accent-hover: #c73d42;
+  --accent-secondary: #c98a2e;
+  --accent-glow: rgba(224, 69, 74, 0.22);
+
+  --link: #b45309;
+  --link-hover: #92400e;
+  --on-accent: #0f172a;
+
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-sm: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 16px 40px rgba(15, 23, 42, 0.12);
+  --shadow-card: 0 10px 28px rgba(15, 23, 42, 0.1);
+
+  --header-bg: color-mix(in srgb, #ffffff 82%, transparent);
+  --accent-glow: rgba(224, 69, 74, 0.15);
+
+  --surface-warning-bg: rgba(251, 191, 36, 0.14);
+  --surface-warning-border: rgba(217, 119, 6, 0.35);
+  --surface-error-bg: rgba(254, 226, 226, 0.85);
+  --surface-error-border: rgba(220, 38, 38, 0.35);
 }
 
 *,
@@ -24,15 +95,66 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: radial-gradient(circle at top, #141432 0, #050510 52%);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  font-feature-settings:
+    'kern' 1,
+    'liga' 1;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 90, 95, 0.14), transparent 55%),
+    radial-gradient(ellipse 90% 50% at 100% 0%, rgba(232, 184, 109, 0.08), transparent 45%),
+    radial-gradient(ellipse 70% 50% at 0% 100%, rgba(120, 100, 255, 0.06), transparent 50%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
 :root.theme-light body {
-  background: radial-gradient(circle at top, #ffffff 0, #eef1ff 55%);
+  background:
+    radial-gradient(ellipse 100% 60% at 50% -10%, rgba(224, 69, 74, 0.08), transparent 50%),
+    radial-gradient(ellipse 80% 40% at 100% 20%, rgba(232, 184, 109, 0.1), transparent 45%),
+    var(--bg);
+  background-attachment: fixed;
 }
 
+::selection {
+  background: color-mix(in srgb, var(--accent-secondary) 35%, transparent);
+  color: var(--text);
+}
+
+/* Фокус: видимый контур без «обводки» при клике мышью */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Ссылки в пользовательском контенте (описания, подсказки) */
+a:not([class]) {
+  color: var(--link);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+a:not([class]):hover {
+  color: var(--link-hover);
+}

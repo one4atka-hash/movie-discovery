@@ -25,6 +25,9 @@ yarn-error.log
 
 .history/*
 
+# Локальные секреты (ключ TMDB)
+/public/env.js
+
 # Miscellaneous
 /.angular/cache
 .sass-cache/

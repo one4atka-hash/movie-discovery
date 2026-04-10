@@ -21,8 +21,8 @@ import { Component } from '@angular/core';
         width: 32px;
         height: 32px;
         border-radius: 9999px;
-        border: 3px solid rgba(255, 255, 255, 0.12);
-        border-top-color: #ff5f6d;
+        border: 3px solid color-mix(in srgb, var(--text) 10%, transparent);
+        border-top-color: var(--accent);
         animation: spin 0.7s linear infinite;
       }
 
@@ -31,8 +31,7 @@ import { Component } from '@angular/core';
           transform: rotate(360deg);
         }
       }
-    `
-  ]
+    `,
+  ],
 })
 export class LoaderComponent {}
-

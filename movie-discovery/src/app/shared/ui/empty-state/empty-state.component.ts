@@ -14,29 +14,34 @@ import { Component, input } from '@angular/core';
   styles: [
     `
       .empty {
-        padding: 3rem 1.5rem;
+        padding: 2.75rem 1.5rem;
         text-align: center;
-        opacity: 0.7;
+        border-radius: var(--radius-lg);
+        border: 1px dashed var(--border-subtle);
+        background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
+        color: var(--text-muted);
       }
 
       .empty__title {
-        font-size: 1.1rem;
+        font-size: 1.08rem;
         font-weight: 600;
-        margin-bottom: 0.25rem;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.35rem;
+        color: var(--text);
       }
 
       .empty__subtitle {
         font-size: 0.9rem;
         max-width: 44rem;
         margin: 0.5rem auto 0;
-        line-height: 1.45;
+        line-height: 1.5;
         text-align: left;
+        color: var(--text-muted);
       }
-    `
-  ]
+    `,
+  ],
 })
 export class EmptyStateComponent {
   readonly title = input<string>('Ничего не найдено');
   readonly subtitle = input<string | null>(null);
 }
-

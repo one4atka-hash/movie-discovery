@@ -1,19 +1,14 @@
 <div class="shell">
   <header class="shell__header">
-    <a class="brand" routerLink="/" aria-label="На главную">🏠 Home</a>
+    <a class="brand" routerLink="/" [attr.aria-label]="i18n.t('app.brand')">
+      <span class="brand__mark" aria-hidden="true">▶</span>
+      <span class="brand__text">{{ i18n.t('app.brand') }}</span>
+    </a>
 
     <nav class="nav" aria-label="Основная навигация">
       <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
         <span class="nav__icon" aria-hidden="true">🏠</span>
         <span class="nav__label">{{ i18n.t('nav.home') }}</span>
-      </a>
-      <a routerLink="/favorites" routerLinkActive="is-active">
-        <span class="nav__icon" aria-hidden="true">⭐</span>
-        <span class="nav__label">{{ i18n.t('nav.favorites') }}</span>
-      </a>
-      <a routerLink="/notifications" routerLinkActive="is-active">
-        <span class="nav__icon" aria-hidden="true">🔔</span>
-        <span class="nav__label">{{ i18n.t('nav.notifications') }}</span>
       </a>
       <a routerLink="/account" routerLinkActive="is-active">
         <span class="nav__icon" aria-hidden="true">👤</span>
@@ -21,13 +16,55 @@
       </a>
     </nav>
 
-    <div class="header-actions">
-      <button class="theme-btn" type="button" (click)="toggleTheme()" [attr.aria-pressed]="isDark()">
-        {{ isDark() ? i18n.t('theme.light') : i18n.t('theme.dark') }}
-      </button>
-      <button class="lang-btn" type="button" (click)="toggleLang()" [attr.aria-label]="'Language: ' + i18n.lang()">
-        {{ i18n.lang() === 'ru' ? i18n.t('lang.ru') : i18n.t('lang.en') }}
-      </button>
+    <div class="header-end">
+      <div class="header-support" role="group" [attr.aria-label]="i18n.t('promo.linksAria')">
+        <span class="header-support__tag">{{ i18n.t('promo.headerLabel') }}</span>
+        <span class="header-support__sep" aria-hidden="true">·</span>
+        <a
+          class="header-support__a"
+          href="https://boosty.to/"
+          target="_blank"
+          rel="noreferrer noopener"
+          >Boosty</a
+        >
+        <span class="header-support__sep" aria-hidden="true">·</span>
+        <a
+          class="header-support__a"
+          href="https://www.patreon.com/DanilRiabokon"
+          target="_blank"
+          rel="noreferrer noopener"
+          >Patreon</a
+        >
+        <span class="header-support__sep" aria-hidden="true">·</span>
+        <a
+          class="header-support__a header-support__a--accent"
+          href="https://paypal.me/DanilRiabokon"
+          target="_blank"
+          rel="noreferrer noopener"
+          >PayPal</a
+        >
+      </div>
+      <div class="header-actions">
+        <button
+          class="theme-btn"
+          type="button"
+          (click)="toggleTheme()"
+          [attr.aria-pressed]="isDark()"
+        >
+          {{ isDark() ? i18n.t('theme.light') : i18n.t('theme.dark') }}
+        </button>
+        <select
+          class="lang-select"
+          [value]="i18n.tmdbLocale()"
+          (change)="onLocaleChange($event)"
+          [attr.aria-label]="i18n.t('lang.selectAria')"
+          [attr.title]="i18n.t('lang.tmdbDataHint')"
+        >
+          <option *ngFor="let o of localeOptions()" [value]="o.code">
+            {{ o.flag }} {{ o.label }}
+          </option>
+        </select>
+      </div>
     </div>
   </header>
 
@@ -36,21 +73,4 @@
   <main class="shell__main">
     <router-outlet />
   </main>
-
-  <aside class="promo" aria-labelledby="promo-title">
-    <div class="promo__head">
-      <strong id="promo-title">Поддержать проект</strong>
-      <span class="promo__sub">Донат на развитие и новые фичи</span>
-    </div>
-
-    <div class="promo__actions" role="group" aria-label="Ссылки для доната">
-      <a class="promo__btn" href="https://boosty.to/" target="_blank" rel="noreferrer noopener">Boosty</a>
-      <a class="promo__btn" href="https://www.patreon.com/DanilRiabokon" target="_blank" rel="noreferrer noopener">Patreon</a>
-      <a class="promo__btn promo__btn--primary" href="https://paypal.me/" target="_blank" rel="noreferrer noopener">
-        PayPal
-      </a>
-    </div>
-  </aside>
-
-  <footer class="shell__footer"></footer>
 </div>

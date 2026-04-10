@@ -5,15 +5,17 @@
     "node": ">=20.19.0"
   },
   "scripts": {
-    "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "build:prod": "ng build --configuration production",
-    "watch": "ng build --watch --configuration development",
+    "ng": "npx -y node@22.12.0 node_modules/@angular/cli/bin/ng.js",
+    "start": "npm run ng -- serve",
+    "dev:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dev.ps1",
+    "build": "npm run ng -- build",
+    "build:prod": "npm run ng -- build --configuration production",
+    "watch": "npm run ng -- build --watch --configuration development",
     "lint": "eslint \"src/**/*.ts\"",
-    "test": "ng test",
-    "test:ci": "ng test --watch=false",
-    "prepare": "husky"
+    "test": "npm run ng -- test",
+    "test:ci": "npm run ng -- test --watch=false",
+    "postinstall": "node scripts/ensure-public-env.cjs",
+    "prepare": "cd .. && husky"
   },
   "private": true,
   "packageManager": "npm@11.6.2",

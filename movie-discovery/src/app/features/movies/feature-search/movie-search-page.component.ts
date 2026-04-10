@@ -1,26 +1,32 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import {
-  catchError,
-  debounceTime,
-  distinctUntilChanged,
-  filter,
-  of,
-  switchMap,
-  tap
-} from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, tap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { ConfigService } from '@core/config.service';
+import { pickRandomSlice, pickSubsPreview, shuffleInPlace } from '@core/release-list.util';
 import { friendlyHttpErrorMessage } from '@core/http-error.util';
+import { AuthService } from '@features/auth/auth.service';
+import { ReleaseSubscriptionsService } from '@features/notifications/release-subscriptions.service';
 import { Movie, MovieSearchResponse } from '../data-access/models/movie.model';
 import { MovieService } from '../data-access/services/movie.service';
+import { FavoritesService } from '../data-access/services/favorites.service';
 import { LoaderComponent } from '@shared/ui/loader/loader.component';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
 import { MovieCardComponent } from '../ui/movie-card/movie-card.component';
 import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.directive';
+import { I18nService } from '@shared/i18n/i18n.service';
 
 @Component({
   selector: 'app-movie-search-page',
@@ -32,20 +38,21 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
     LoaderComponent,
     EmptyStateComponent,
     MovieCardComponent,
-    InfiniteScrollDirective
+    InfiniteScrollDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
       <div class="api-warning" *ngIf="!hasTmdbApiKey" role="status">
         <strong>Ключ TMDB не задан.</strong>
-        Укажите его в файле <code>public/env.js</code> (поле <code>TMDB_API_KEY</code>) или в переменных окружения при сборке.
-        Ключ выдаётся бесплатно на
-        <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer noopener">themoviedb.org → Settings → API</a>.
+        Укажите его в <code>public/env.js</code> (скопируйте из <code>public/env.example.js</code>)
+        или в переменных окружения при сборке. Ключ выдаётся бесплатно на
+        <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer noopener"
+          >themoviedb.org → Settings → API</a
+        >.
       </div>
 
-      <div class="searchBar">
-        <span class="searchBar__hint" aria-hidden="true">🔎 Поиск — минимум 2 символа</span>
+      <div class="searchBar" id="home-search">
         <input
           class="searchBar__input"
           [formControl]="queryControl"
@@ -55,39 +62,163 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
         />
       </div>
 
-      <div class="welcome" *ngIf="showHero()">
-        <div class="welcome__inner">
-          <div class="spotlight">
-            <div class="spotlight__strip" *ngIf="spotlightLoading()">
-              <div class="spotlight__skel" *ngFor="let _ of spotlightSkeletonSlots; trackBy: trackByIndex"></div>
-            </div>
+      <div class="dashboard" *ngIf="showHero()">
+        <div class="dashboard__layout">
+          <aside class="dashboard__rail" [attr.aria-label]="i18n.t('home.railAria')">
+            <section class="railBlock" id="home-subs" aria-labelledby="home-subs-title">
+              <div class="railBlock__head">
+                <h2 class="railBlock__title" id="home-subs-title">
+                  {{ i18n.t('home.section.subscriptions') }}
+                </h2>
+                <a
+                  *ngIf="showSubsSeeAll()"
+                  class="railBlock__more"
+                  routerLink="/account"
+                  fragment="account-subs"
+                  >{{ i18n.t('home.subsSeeAll') }}</a
+                >
+              </div>
 
-            <div class="spotlight__strip" *ngIf="!spotlightLoading() && spotlight().length">
-              <a
-                class="spotlight__tile"
-                *ngFor="let m of spotlight(); trackBy: trackById"
-                [routerLink]="['/movie', m.id]"
+              <ng-container *ngIf="isAuthed(); else subsGuest">
+                <p class="railBlock__empty" *ngIf="!subsCount()">
+                  {{ i18n.t('notifications.empty') }}
+                </p>
+                <ul class="railList" *ngIf="subsCount()">
+                  <li class="railList__row" *ngFor="let s of subsPreview(); trackBy: trackBySubId">
+                    <a class="railSub" [routerLink]="['/movie', s.tmdbId]">
+                      <div class="railSub__thumb" [class.railSub__thumb--empty]="!s.posterPath">
+                        <img
+                          *ngIf="s.posterPath as sp"
+                          [src]="posterUrlSmall(sp)"
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                      <div class="railSub__text">
+                        <span class="railSub__title">{{ s.title }}</span>
+                        <span class="railSub__date">{{ s.releaseDate || '—' }}</span>
+                      </div>
+                    </a>
+                    <button
+                      type="button"
+                      class="railSub__remove"
+                      (click)="removeSub(s.id)"
+                      [attr.aria-label]="i18n.t('notifications.remove')"
+                    >
+                      ×
+                    </button>
+                  </li>
+                </ul>
+              </ng-container>
+              <ng-template #subsGuest>
+                <p class="railBlock__hint">{{ i18n.t('home.loginForSubs') }}</p>
+                <a class="btn btn--primary railBlock__btn" routerLink="/account">{{
+                  i18n.t('account.login')
+                }}</a>
+              </ng-template>
+            </section>
+
+            <section class="railBlock" id="home-favorites" aria-labelledby="home-fav-title">
+              <div class="railBlock__head">
+                <h2 class="railBlock__title" id="home-fav-title">
+                  {{ i18n.t('home.section.favorites') }}
+                </h2>
+                <a
+                  *ngIf="showFavSeeAll()"
+                  class="railBlock__more"
+                  routerLink="/account"
+                  fragment="account-favorites"
+                  >{{ i18n.t('home.favoritesSeeAll') }}</a
+                >
+              </div>
+              <p class="railBlock__empty" *ngIf="!favCount()">
+                {{ i18n.t('home.favoritesEmptySubtitle') }}
+              </p>
+              <ul class="railList railList--fav" *ngIf="favCount()">
+                <li class="railList__row" *ngFor="let m of favoritesPreview(); trackBy: trackById">
+                  <a class="railFav" [routerLink]="['/movie', m.id]">
+                    <div class="railFav__thumb" [class.railFav__thumb--empty]="!m.poster_path">
+                      <img
+                        *ngIf="m.poster_path as p"
+                        [src]="posterUrlSmall(p)"
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                    <span class="railFav__title">{{ m.title }}</span>
+                  </a>
+                </li>
+              </ul>
+            </section>
+          </aside>
+
+          <div class="dashboard__main">
+            <section class="dashSection" id="home-new" aria-labelledby="home-new-title">
+              <h2 class="dashSection__title" id="home-new-title">
+                {{ i18n.t('home.section.newReleases') }}
+              </h2>
+              <div class="spotlight__strip" *ngIf="nowPlayingLoading()">
+                <div
+                  class="spotlight__skel"
+                  *ngFor="let _ of rowSkeletonSlots; trackBy: trackByIndex"
+                ></div>
+              </div>
+              <div class="spotlight__strip" *ngIf="!nowPlayingLoading() && nowPlaying().length">
+                <a
+                  class="spotlight__tile"
+                  *ngFor="let m of nowPlaying(); trackBy: trackById"
+                  [routerLink]="['/movie', m.id]"
+                >
+                  <div class="spotlight__poster" [class.spotlight__poster--empty]="!m.poster_path">
+                    <img
+                      *ngIf="m.poster_path as p"
+                      class="spotlight__img"
+                      [src]="posterUrl(p)"
+                      [attr.srcset]="posterSrcSet(p)"
+                      sizes="(max-width: 520px) 30vw, 120px"
+                      [alt]="m.title"
+                      referrerpolicy="no-referrer"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <span class="spotlight__name">{{ m.title }}</span>
+                </a>
+              </div>
+              <p
+                class="spotlight__err"
+                *ngIf="!nowPlayingLoading() && nowPlayingError()"
+                role="status"
               >
-                <div class="spotlight__poster" [class.spotlight__poster--empty]="!m.poster_path">
-                  <img
-                    *ngIf="m.poster_path as p"
-                    class="spotlight__img"
-                    [src]="posterUrl(p)"
-                    [attr.srcset]="posterSrcSet(p)"
-                    sizes="(max-width: 520px) 30vw, 120px"
-                    [alt]="m.title"
-                    referrerpolicy="no-referrer"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-                <span class="spotlight__name">{{ m.title }}</span>
-              </a>
-            </div>
+                {{ nowPlayingError() }}
+              </p>
+            </section>
 
-            <p class="spotlight__err" *ngIf="!spotlightLoading() && spotlightError()" role="status">
-              {{ spotlightError() }}
-            </p>
+            <section class="dashSection" id="home-random" aria-labelledby="home-rand-title">
+              <h2 class="dashSection__title" id="home-rand-title">
+                {{ i18n.t('home.section.random') }}
+              </h2>
+              <div class="grid grid--random" *ngIf="randomLoading()">
+                <div
+                  class="skeleton-card"
+                  *ngFor="let _ of randomSkeletonSlots; trackBy: trackByIndex"
+                ></div>
+              </div>
+              <div class="grid grid--random" *ngIf="!randomLoading() && randomMovies().length">
+                <a
+                  class="grid__item"
+                  *ngFor="let m of randomMovies(); trackBy: trackById"
+                  [routerLink]="['/movie', m.id]"
+                >
+                  <app-movie-card [movie]="m" />
+                </a>
+              </div>
+              <p class="muted" *ngIf="!randomLoading() && randomError()" role="status">
+                {{ randomError() }}
+              </p>
+            </section>
           </div>
         </div>
       </div>
@@ -109,7 +240,11 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
       />
 
       <div class="grid" *ngIf="!showHero() && !loading() && !error() && movies().length">
-        <a class="grid__item" *ngFor="let m of movies(); trackBy: trackById" [routerLink]="['/movie', m.id]">
+        <a
+          class="grid__item"
+          *ngFor="let m of movies(); trackBy: trackById"
+          [routerLink]="['/movie', m.id]"
+        >
           <app-movie-card [movie]="m" />
         </a>
       </div>
@@ -134,66 +269,338 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
 
       .api-warning {
         margin: 0 0 1rem;
-        padding: 0.75rem 1rem;
-        border-radius: 14px;
-        border: 1px solid rgba(255, 195, 113, 0.38);
-        background: rgba(255, 195, 113, 0.09);
+        padding: 0.85rem 1.05rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--surface-warning-border);
+        background: var(--surface-warning-bg);
         color: var(--text);
         font-size: 0.9rem;
-        line-height: 1.45;
+        line-height: 1.5;
+        box-shadow: var(--shadow-xs);
       }
       .api-warning code {
         font-size: 0.86em;
-        padding: 0.1em 0.35em;
-        border-radius: 6px;
-        background: rgba(0, 0, 0, 0.25);
+        padding: 0.12em 0.4em;
+        border-radius: var(--radius-sm);
+        background: color-mix(in srgb, var(--bg-muted) 70%, transparent);
+        border: 1px solid var(--border-subtle);
       }
       .api-warning a {
-        color: #ffc371;
+        color: var(--link);
+        font-weight: 500;
+      }
+      .api-warning a:hover {
+        color: var(--link-hover);
       }
 
       .searchBar {
-        margin: 0 0 1rem;
-        display: grid;
-        gap: 0.5rem;
-      }
-      .searchBar__hint {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        line-height: 1.2;
+        margin: 0 0 1.25rem;
       }
       .searchBar__input {
         width: 100%;
-        padding: 0.95rem 1rem;
-        border-radius: 16px;
+        padding: 0.95rem 1.05rem;
+        border-radius: var(--radius-lg);
         border: 1px solid var(--border-subtle);
         background: var(--bg-elevated);
         color: var(--text);
         outline: none;
+        font-family: inherit;
         font-size: 1.02rem;
+        letter-spacing: -0.02em;
+        box-shadow: var(--shadow-xs);
+        transition:
+          border-color var(--duration-fast) var(--ease-out),
+          box-shadow var(--duration-fast) var(--ease-out);
       }
       .searchBar__input:focus {
-        border-color: rgba(255, 107, 107, 0.45);
-        box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.12);
+        border-color: color-mix(in srgb, var(--accent) 55%, var(--border-subtle));
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+      }
+      .searchBar__input:focus-visible {
+        outline: none;
       }
 
-      .welcome {
-        margin: 0 0 1rem;
-        border-radius: 18px;
+      .dashboard {
+        margin-top: 0.25rem;
+      }
+
+      .dashboard__layout {
+        display: flex;
+        align-items: flex-start;
+        gap: 1.15rem;
+      }
+
+      .dashboard__rail {
+        width: min(100%, 280px);
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .dashboard__main {
+        flex: 1;
+        min-width: 0;
+        display: grid;
+        gap: 1.35rem;
+      }
+
+      @media (max-width: 900px) {
+        .dashboard__layout {
+          flex-direction: column;
+        }
+        .dashboard__rail {
+          width: 100%;
+          order: 2;
+        }
+        .dashboard__main {
+          order: 1;
+        }
+      }
+
+      .railBlock {
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-subtle);
+        background: color-mix(in srgb, var(--bg-elevated) 90%, transparent);
+        padding: 0.75rem 0.8rem;
+        box-shadow: var(--shadow-xs);
+      }
+
+      .railBlock__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.55rem;
+      }
+
+      .railBlock__title {
+        margin: 0;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      .railBlock__more {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--link);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .railBlock__more:hover {
+        color: var(--link-hover);
+        text-decoration: underline;
+        text-underline-offset: 0.12em;
+      }
+
+      .railBlock__empty,
+      .railBlock__hint {
+        margin: 0;
+        font-size: 0.86rem;
+        line-height: 1.45;
+        color: var(--text-muted);
+      }
+
+      .railBlock__btn {
+        margin-top: 0.45rem;
+      }
+
+      .railList {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+      }
+
+      .railList__row {
+        display: flex;
+        align-items: stretch;
+        gap: 0.25rem;
+        min-height: 3.25rem;
+      }
+
+      .railSub {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.35rem;
+        border-radius: var(--radius-md);
+        text-decoration: none;
+        color: inherit;
+        transition: background var(--duration-fast) var(--ease-out);
+      }
+      .railSub:hover {
+        background: color-mix(in srgb, var(--bg-muted) 55%, transparent);
+      }
+
+      .railSub__thumb {
+        width: 36px;
+        height: 54px;
+        flex: 0 0 auto;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .railSub__thumb--empty {
+        background: linear-gradient(145deg, rgba(255, 107, 107, 0.18), rgba(255, 195, 113, 0.1));
+      }
+      .railSub__thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .railSub__text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.12rem;
+        min-width: 0;
+      }
+
+      .railSub__title {
+        font-size: 0.84rem;
+        font-weight: 600;
+        line-height: 1.25;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .railSub__date {
+        font-size: 0.75rem;
+        color: var(--accent-secondary);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .railSub__remove {
+        flex: 0 0 auto;
+        width: 1.65rem;
+        border: none;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 1.15rem;
+        line-height: 1;
+        cursor: pointer;
+        align-self: center;
+        transition:
+          color var(--duration-fast) var(--ease-out),
+          background var(--duration-fast) var(--ease-out);
+      }
+      .railSub__remove:hover {
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 12%, transparent);
+      }
+
+      .railFav {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.35rem;
+        border-radius: var(--radius-md);
+        text-decoration: none;
+        color: inherit;
+        transition: background var(--duration-fast) var(--ease-out);
+      }
+      .railFav:hover {
+        background: color-mix(in srgb, var(--bg-muted) 55%, transparent);
+      }
+
+      .railFav__thumb {
+        width: 32px;
+        height: 48px;
+        flex: 0 0 auto;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .railFav__thumb--empty {
+        background: linear-gradient(145deg, rgba(255, 107, 107, 0.18), rgba(255, 195, 113, 0.1));
+      }
+      .railFav__thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .railFav__title {
+        font-size: 0.82rem;
+        font-weight: 500;
+        line-height: 1.25;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .dashSection {
+        border-radius: var(--radius-lg);
         border: 1px solid var(--border-subtle);
         background:
-          radial-gradient(1200px 400px at 10% 0%, rgba(255, 107, 107, 0.18), transparent 55%),
-          radial-gradient(900px 360px at 90% 20%, rgba(255, 195, 113, 0.14), transparent 50%),
-          rgba(255, 255, 255, 0.03);
+          radial-gradient(
+            1200px 400px at 10% 0%,
+            color-mix(in srgb, var(--accent) 14%, transparent),
+            transparent 55%
+          ),
+          color-mix(in srgb, var(--bg-elevated) 88%, transparent);
         padding: 1.1rem 1.15rem;
+        box-shadow: var(--shadow-xs);
       }
-      .welcome__inner {
-        max-width: 52rem;
+      .dashSection__title {
+        margin: 0 0 0.85rem;
+        font-size: 1.08rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
       }
-      .spotlight {
-        margin: 0 0 1.1rem;
-        padding: 0;
+
+      .muted {
+        margin: 0 0 0.65rem;
+        color: var(--text-muted);
+        line-height: 1.5;
       }
+
+      .btn {
+        border-radius: 9999px;
+        border: 1px solid var(--border-subtle);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text);
+        padding: 0.55rem 0.9rem;
+        cursor: pointer;
+        font: inherit;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          transform 0.15s ease,
+          background 0.15s ease,
+          border-color 0.15s ease;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.14);
+      }
+      .btn--primary {
+        margin-top: 0.35rem;
+        border-color: rgba(255, 195, 113, 0.45);
+        background: rgba(255, 195, 113, 0.14);
+      }
+
       .spotlight__strip {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -210,29 +617,35 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
         gap: 0.4rem;
         text-decoration: none;
         color: inherit;
-        border-radius: 14px;
+        border-radius: var(--radius-md);
         padding: 0.2rem;
         margin: -0.2rem;
-        transition: transform 0.2s ease, filter 0.2s ease;
+        transition:
+          transform var(--duration-normal) var(--ease-out),
+          filter var(--duration-normal) var(--ease-out);
       }
       .spotlight__tile:hover {
         transform: translateY(-3px);
-        filter: brightness(1.06);
+        filter: brightness(1.05);
       }
       .spotlight__tile:focus-visible {
-        outline: 2px solid rgba(255, 195, 113, 0.55);
+        outline: var(--focus-ring);
         outline-offset: 3px;
       }
       .spotlight__poster {
         aspect-ratio: 2 / 3;
-        border-radius: 12px;
+        border-radius: var(--radius-sm);
         overflow: hidden;
         border: 1px solid var(--border-subtle);
-        background: rgba(255, 255, 255, 0.04);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+        background: color-mix(in srgb, var(--bg-muted) 50%, transparent);
+        box-shadow: var(--shadow-sm);
       }
       .spotlight__poster--empty {
-        background: linear-gradient(145deg, rgba(255, 107, 107, 0.2), rgba(255, 195, 113, 0.12));
+        background: linear-gradient(
+          145deg,
+          color-mix(in srgb, var(--accent) 22%, transparent),
+          color-mix(in srgb, var(--accent-secondary) 14%, transparent)
+        );
       }
       .spotlight__img {
         width: 100%;
@@ -272,9 +685,15 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
         gap: 0.9rem;
-        margin-top: 1rem;
+        margin-top: 0.25rem;
+        justify-items: start;
+      }
+      .grid--random {
+        margin-top: 0;
       }
       .grid__item {
+        width: 100%;
+        max-width: 220px;
         text-decoration: none;
         color: inherit;
       }
@@ -288,8 +707,11 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
         gap: 0.9rem;
+        justify-items: start;
       }
       .skeleton-card {
+        width: 100%;
+        max-width: 220px;
         height: 300px;
         border-radius: 14px;
         background: linear-gradient(
@@ -315,13 +737,17 @@ import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.dire
           background-position-x: -200%;
         }
       }
-    `
-  ]
+    `,
+  ],
 })
 export class MovieSearchPageComponent {
   private readonly api = inject(MovieService);
   private readonly config = inject(ConfigService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly auth = inject(AuthService);
+  private readonly subsSvc = inject(ReleaseSubscriptionsService);
+  private readonly fav = inject(FavoritesService);
+  readonly i18n = inject(I18nService);
 
   /** Есть ли ключ для запросов к TMDB (env / window.__env). */
   get hasTmdbApiKey(): boolean {
@@ -332,7 +758,8 @@ export class MovieSearchPageComponent {
 
   /** Слоты для skeleton — отдельный массив, чтобы strict шаблон не ругался на литералы в *ngFor */
   readonly skeletonSlots = [0, 1, 2, 3, 4, 5] as const;
-  readonly spotlightSkeletonSlots = [0, 1, 2, 3, 4, 5] as const;
+  readonly rowSkeletonSlots = [0, 1, 2, 3, 4, 5] as const;
+  readonly randomSkeletonSlots = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 
   private readonly _movies = signal<Movie[]>([]);
   private readonly _loading = signal(false);
@@ -344,17 +771,34 @@ export class MovieSearchPageComponent {
   private readonly _totalPages = signal(1);
   private readonly _draft = signal('');
 
-  private readonly _spotlight = signal<Movie[]>([]);
-  private readonly _spotlightLoading = signal(true);
-  private readonly _spotlightError = signal<string | null>(null);
+  private readonly _nowPlaying = signal<Movie[]>([]);
+  private readonly _nowPlayingLoading = signal(true);
+  private readonly _nowPlayingError = signal<string | null>(null);
+
+  private readonly _randomMovies = signal<Movie[]>([]);
+  private readonly _randomLoading = signal(true);
+  private readonly _randomError = signal<string | null>(null);
 
   readonly movies = computed(() => this._movies());
   readonly loading = computed(() => this._loading());
   readonly loadingMore = computed(() => this._loadingMore());
   readonly error = computed(() => this._error());
-  readonly spotlight = computed(() => this._spotlight());
-  readonly spotlightLoading = computed(() => this._spotlightLoading());
-  readonly spotlightError = computed(() => this._spotlightError());
+  readonly nowPlaying = computed(() => this._nowPlaying());
+  readonly nowPlayingLoading = computed(() => this._nowPlayingLoading());
+  readonly nowPlayingError = computed(() => this._nowPlayingError());
+  readonly randomMovies = computed(() => this._randomMovies());
+  readonly randomLoading = computed(() => this._randomLoading());
+  readonly randomError = computed(() => this._randomError());
+  private readonly _subsAll = computed(() => this.subsSvc.mySubscriptions());
+  private readonly _favAll = computed(() => this.fav.favorites());
+  readonly subsCount = computed(() => this._subsAll().length);
+  readonly favCount = computed(() => this._favAll().length);
+  readonly subsPreview = computed(() => pickSubsPreview(this._subsAll(), 5));
+  readonly favoritesPreview = computed(() => pickRandomSlice(this._favAll(), 5));
+  readonly showSubsSeeAll = computed(() => this.subsCount() > 5);
+  readonly showFavSeeAll = computed(() => this.favCount() > 5);
+  readonly isAuthed = computed(() => this.auth.isAuthenticated());
+
   readonly showHero = computed(() => this._draft().trim().length < 2);
   readonly showEmpty = computed(() => this._hasSearched() && this._movies().length === 0);
   readonly canLoadMore = computed(
@@ -364,12 +808,20 @@ export class MovieSearchPageComponent {
       !this._loadingMore() &&
       !this._error() &&
       this._movies().length > 0 &&
-      this._page() < this._totalPages()
+      this._page() < this._totalPages(),
   );
+
+  private localeHeroN = 0;
 
   constructor() {
     this._draft.set(this.queryControl.value);
-    this.loadSpotlight();
+    this.loadNowPlaying();
+    this.loadRandomStrip();
+    effect(() => {
+      this.i18n.tmdbLocale();
+      if (this.localeHeroN++ === 0) return;
+      untracked(() => this.reloadAfterLocaleChange());
+    });
     this.queryControl.valueChanges
       .pipe(
         tap((q) => this._draft.set(q)),
@@ -390,10 +842,10 @@ export class MovieSearchPageComponent {
               this._error.set(friendlyHttpErrorMessage(err, 'Поиск'));
               this._loading.set(false);
               return of(EMPTY_SEARCH_RESPONSE);
-            })
-          )
+            }),
+          ),
         ),
-        takeUntilDestroyed(this.destroyRef)
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: (res) => {
@@ -402,7 +854,7 @@ export class MovieSearchPageComponent {
           this._page.set(res.page ?? 1);
           this._totalPages.set(res.total_pages ?? 1);
           this._loading.set(false);
-        }
+        },
       });
   }
 
@@ -424,10 +876,10 @@ export class MovieSearchPageComponent {
             page: nextPage,
             results: [] as Movie[],
             total_pages: this._totalPages(),
-            total_results: 0
+            total_results: 0,
           } satisfies MovieSearchResponse);
         }),
-        takeUntilDestroyed(this.destroyRef)
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: (res) => {
@@ -435,12 +887,24 @@ export class MovieSearchPageComponent {
           this._page.set(res.page ?? nextPage);
           this._totalPages.set(res.total_pages ?? this._totalPages());
           this._loadingMore.set(false);
-        }
+        },
       });
+  }
+
+  removeSub(id: string): void {
+    try {
+      this.subsSvc.remove(id);
+    } catch {
+      /* ignore */
+    }
   }
 
   trackById(_: number, m: Movie): number {
     return m.id;
+  }
+
+  trackBySubId(_: number, s: { id: string }): string {
+    return s.id;
   }
 
   trackByIndex(i: number): number {
@@ -451,35 +915,88 @@ export class MovieSearchPageComponent {
     return `/imgtmdb/w185${path}`;
   }
 
+  posterUrlSmall(path: string): string {
+    return `/imgtmdb/w92${path}`;
+  }
+
   posterSrcSet(path: string): string {
     return [
       `/imgtmdb/w92${path} 92w`,
       `/imgtmdb/w185${path} 185w`,
-      `/imgtmdb/w342${path} 342w`
+      `/imgtmdb/w342${path} 342w`,
     ].join(', ');
   }
 
-  private loadSpotlight(): void {
-    this._spotlightLoading.set(true);
-    this._spotlightError.set(null);
-    const page = Math.floor(Math.random() * 10) + 1;
+  private reloadAfterLocaleChange(): void {
+    this.loadNowPlaying();
+    this.loadRandomStrip();
+    const q = this.queryControl.value.trim();
+    if (!this._hasSearched() || q.length < 2) return;
+    this._loading.set(true);
+    this._error.set(null);
     this.api
-      .getPopularMovies(page)
+      .searchMovies(q, 1)
       .pipe(
         catchError((err: unknown) => {
-          this._spotlightError.set(friendlyHttpErrorMessage(err, 'Витрина'));
-          this._spotlightLoading.set(false);
+          this._error.set(friendlyHttpErrorMessage(err, 'Поиск'));
+          this._loading.set(false);
           return of(EMPTY_SEARCH_RESPONSE);
         }),
-        takeUntilDestroyed(this.destroyRef)
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (res) => {
+          this._movies.set(res.results ?? []);
+          this._query.set(q);
+          this._page.set(res.page ?? 1);
+          this._totalPages.set(res.total_pages ?? 1);
+          this._loading.set(false);
+        },
+      });
+  }
+
+  private loadNowPlaying(): void {
+    this._nowPlayingLoading.set(true);
+    this._nowPlayingError.set(null);
+    this.api
+      .getNowPlayingMovies(1)
+      .pipe(
+        catchError((err: unknown) => {
+          this._nowPlayingError.set(friendlyHttpErrorMessage(err, 'Новинки'));
+          this._nowPlayingLoading.set(false);
+          return of(EMPTY_SEARCH_RESPONSE);
+        }),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((res) => {
         const list = [...(res.results ?? [])];
         shuffleInPlace(list);
         const withPoster = list.filter((m) => m.poster_path);
         const pool = withPoster.length >= 6 ? withPoster : list;
-        this._spotlight.set(pool.slice(0, 6));
-        this._spotlightLoading.set(false);
+        this._nowPlaying.set(pool.slice(0, 6));
+        this._nowPlayingLoading.set(false);
+      });
+  }
+
+  private loadRandomStrip(): void {
+    this._randomLoading.set(true);
+    this._randomError.set(null);
+    const page = Math.floor(Math.random() * 15) + 1;
+    this.api
+      .getPopularMovies(page)
+      .pipe(
+        catchError((err: unknown) => {
+          this._randomError.set(friendlyHttpErrorMessage(err, 'Подборка'));
+          this._randomLoading.set(false);
+          return of(EMPTY_SEARCH_RESPONSE);
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((res) => {
+        const list = [...(res.results ?? [])];
+        shuffleInPlace(list);
+        this._randomMovies.set(list.slice(0, 8));
+        this._randomLoading.set(false);
       });
   }
 }
@@ -488,16 +1005,5 @@ const EMPTY_SEARCH_RESPONSE: MovieSearchResponse = {
   page: 1,
   results: [],
   total_pages: 1,
-  total_results: 0
+  total_results: 0,
 };
-
-function shuffleInPlace<T>(items: T[]): void {
-  for (let i = items.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const a = items[i]!;
-    const b = items[j]!;
-    items[i] = b;
-    items[j] = a;
-  }
-}
-

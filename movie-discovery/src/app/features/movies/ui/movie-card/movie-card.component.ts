@@ -49,14 +49,18 @@ import { FavoritesService } from '../../data-access/services/favorites.service';
         grid-template-rows: auto 1fr;
         background: var(--bg-elevated);
         border: 1px solid var(--border-subtle);
-        border-radius: 16px;
+        border-radius: var(--radius-md);
         overflow: hidden;
-        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        transition:
+          transform var(--duration-normal) var(--ease-out),
+          box-shadow var(--duration-normal) var(--ease-out),
+          border-color var(--duration-normal) var(--ease-out);
       }
 
       .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.26);
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-card);
+        border-color: var(--border-strong);
       }
 
       .card__poster {
@@ -66,7 +70,11 @@ import { FavoritesService } from '../../data-access/services/favorites.service';
       }
 
       .card__poster--empty {
-        background: linear-gradient(135deg, rgba(255, 107, 107, 0.18), rgba(255, 195, 113, 0.12));
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--accent) 22%, transparent),
+          color-mix(in srgb, var(--accent-secondary) 16%, transparent)
+        );
       }
 
       .card__img {
@@ -82,10 +90,10 @@ import { FavoritesService } from '../../data-access/services/favorites.service';
         right: 10px;
         width: 38px;
         height: 38px;
-        border-radius: 9999px;
-        border: 1px solid var(--border-subtle);
-        background: rgba(0, 0, 0, 0.45);
-        color: #ffc371;
+        border-radius: var(--radius-full);
+        border: 1px solid color-mix(in srgb, var(--border-strong) 80%, transparent);
+        background: color-mix(in srgb, #000 52%, transparent);
+        color: var(--accent-secondary);
         cursor: pointer;
         font-size: 18px;
         line-height: 1;
@@ -95,7 +103,8 @@ import { FavoritesService } from '../../data-access/services/favorites.service';
       }
 
       .card__fav:hover {
-        background: rgba(0, 0, 0, 0.55);
+        background: color-mix(in srgb, #000 62%, transparent);
+        color: var(--link-hover);
       }
 
       .card__body {
@@ -103,8 +112,10 @@ import { FavoritesService } from '../../data-access/services/favorites.service';
       }
 
       .card__title {
-        font-weight: 650;
-        line-height: 1.2;
+        font-weight: 600;
+        font-size: 0.92rem;
+        line-height: 1.25;
+        letter-spacing: -0.02em;
         margin-bottom: 0.4rem;
       }
 
@@ -121,11 +132,13 @@ import { FavoritesService } from '../../data-access/services/favorites.service';
       }
 
       .card__rating {
-        color: #ffc371;
+        color: var(--accent-secondary);
         font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        font-size: 0.88rem;
       }
-    `
-  ]
+    `,
+  ],
 })
 export class MovieCardComponent {
   private readonly favorites = inject(FavoritesService);
@@ -149,8 +162,7 @@ export class MovieCardComponent {
     return [
       `/imgtmdb/w92${path} 92w`,
       `/imgtmdb/w185${path} 185w`,
-      `/imgtmdb/w342${path} 342w`
+      `/imgtmdb/w342${path} 342w`,
     ].join(', ');
   }
 }
-

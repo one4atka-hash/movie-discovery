@@ -3,13 +3,17 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { sortSubscriptionsByRelease } from '@core/release-list.util';
 import { AuthService } from './auth.service';
+import { ReleaseSubscriptionsService } from '@features/notifications/release-subscriptions.service';
+import { MovieCardComponent } from '@features/movies/ui/movie-card/movie-card.component';
+import { FavoritesService } from '@features/movies/data-access/services/favorites.service';
 import { I18nService } from '@shared/i18n/i18n.service';
 
 @Component({
   selector: 'app-account-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MovieCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -20,16 +24,59 @@ import { I18nService } from '@shared/i18n/i18n.service';
         <p class="sub">{{ i18n.t('account.subtitle') }}</p>
       </header>
 
-      <div class="who" *ngIf="user() as u; else authTpl">
-        <div class="card">
+      <ng-container *ngIf="user() as u; else authTpl">
+        <div class="card card--who">
           <p class="muted">{{ i18n.t('account.loggedInAs') }}</p>
           <strong>{{ u.email }}</strong>
           <div class="actions">
-            <a class="btn btn--primary" routerLink="/notifications">{{ i18n.t('account.myNotifications') }}</a>
-            <button class="btn" type="button" (click)="logout()">{{ i18n.t('account.logout') }}</button>
+            <button class="btn" type="button" (click)="logout()">
+              {{ i18n.t('account.logout') }}
+            </button>
           </div>
         </div>
-      </div>
+
+        <section class="account-block" id="account-subs" aria-labelledby="account-subs-title">
+          <h2 class="account-block__title" id="account-subs-title">
+            {{ i18n.t('account.section.subscriptions') }}
+          </h2>
+          <p class="muted" *ngIf="!subsSorted().length">{{ i18n.t('notifications.empty') }}</p>
+          <div class="subs-grid" *ngIf="subsSorted().length">
+            <article class="subCard" *ngFor="let s of subsSorted(); trackBy: trackBySubId">
+              <div class="subCard__head">
+                <div class="subCard__left">
+                  <div class="thumb" [class.thumb--empty]="!s.posterPath">
+                    <img
+                      *ngIf="s.posterPath as sp"
+                      [src]="posterUrl(sp)"
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <div class="subCard__t">
+                    <strong class="subCard__title">{{ s.title }}</strong>
+                    <span class="subCard__date">{{ s.releaseDate || '—' }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="subCard__meta">
+                <span class="pill" *ngIf="s.channels.inApp">In-app</span>
+                <span class="pill" *ngIf="s.channels.webPush">Web Push</span>
+                <span class="pill" *ngIf="s.channels.email">Email</span>
+                <span class="pill" *ngIf="s.channels.calendar">Calendar</span>
+              </div>
+              <div class="subCard__actions">
+                <a class="btn" [routerLink]="['/movie', s.tmdbId]">{{
+                  i18n.t('notifications.open')
+                }}</a>
+                <button class="btn" type="button" (click)="removeSub(s.id)">
+                  {{ i18n.t('notifications.remove') }}
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+      </ng-container>
 
       <ng-template #authTpl>
         <div class="grid">
@@ -37,11 +84,16 @@ import { I18nService } from '@shared/i18n/i18n.service';
             <h2 class="cardTitle">{{ i18n.t('account.login') }}</h2>
             <label class="field">
               <span>{{ i18n.t('account.email') }}</span>
-              <input class="input" [formControl]="loginEmail" autocomplete="email">
+              <input class="input" [formControl]="loginEmail" autocomplete="email" />
             </label>
             <label class="field">
               <span>{{ i18n.t('account.password') }}</span>
-              <input class="input" type="password" [formControl]="loginPassword" autocomplete="current-password">
+              <input
+                class="input"
+                type="password"
+                [formControl]="loginPassword"
+                autocomplete="current-password"
+              />
             </label>
             <p class="err" *ngIf="loginError()">{{ loginError() }}</p>
             <button class="btn btn--primary" type="button" (click)="doLogin()" [disabled]="busy()">
@@ -53,20 +105,46 @@ import { I18nService } from '@shared/i18n/i18n.service';
             <h2 class="cardTitle">{{ i18n.t('account.register') }}</h2>
             <label class="field">
               <span>{{ i18n.t('account.email') }}</span>
-              <input class="input" [formControl]="regEmail" autocomplete="email">
+              <input class="input" [formControl]="regEmail" autocomplete="email" />
             </label>
             <label class="field">
               <span>{{ i18n.t('account.password') }}</span>
-              <input class="input" type="password" [formControl]="regPassword" autocomplete="new-password">
+              <input
+                class="input"
+                type="password"
+                [formControl]="regPassword"
+                autocomplete="new-password"
+              />
             </label>
             <p class="hint">{{ i18n.t('account.passwordHint') }}</p>
             <p class="err" *ngIf="regError()">{{ regError() }}</p>
-            <button class="btn btn--primary" type="button" (click)="doRegister()" [disabled]="busy()">
+            <button
+              class="btn btn--primary"
+              type="button"
+              (click)="doRegister()"
+              [disabled]="busy()"
+            >
               {{ i18n.t('account.register') }}
             </button>
           </article>
         </div>
       </ng-template>
+
+      <section class="account-block" id="account-favorites" aria-labelledby="account-fav-title">
+        <h2 class="account-block__title" id="account-fav-title">
+          {{ i18n.t('account.section.favorites') }}
+        </h2>
+        <p class="muted" *ngIf="!favorites().length">{{ i18n.t('home.favoritesEmptySubtitle') }}</p>
+        <div class="fav-grid" *ngIf="favorites().length">
+          <a
+            class="fav-grid__item"
+            *ngFor="let m of favorites(); trackBy: trackByMovieId"
+            [routerLink]="['/movie', m.id]"
+          >
+            <app-movie-card [movie]="m" />
+          </a>
+        </div>
+      </section>
     </section>
   `,
   styles: [
@@ -100,12 +178,19 @@ import { I18nService } from '@shared/i18n/i18n.service';
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
         gap: 0.8rem;
+        justify-items: start;
+        margin-bottom: 1.25rem;
       }
       .card {
+        width: 100%;
+        max-width: 420px;
         border-radius: 16px;
         border: 1px solid var(--border-subtle);
         background: rgba(255, 255, 255, 0.03);
         padding: 0.9rem;
+      }
+      .card--who {
+        margin-bottom: 1rem;
       }
       .cardTitle {
         margin: 0 0 0.7rem;
@@ -140,7 +225,7 @@ import { I18nService } from '@shared/i18n/i18n.service';
       }
       .err {
         margin: 0 0 0.7rem;
-        color: #ffc371;
+        color: var(--accent);
         font-size: 0.92rem;
         line-height: 1.4;
       }
@@ -163,7 +248,10 @@ import { I18nService } from '@shared/i18n/i18n.service';
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+        transition:
+          transform 0.15s ease,
+          background 0.15s ease,
+          border-color 0.15s ease;
       }
       .btn:hover {
         transform: translateY(-1px);
@@ -175,16 +263,123 @@ import { I18nService } from '@shared/i18n/i18n.service';
         background: rgba(255, 195, 113, 0.14);
       }
       .muted {
-        margin: 0 0 0.2rem;
+        margin: 0 0 0.65rem;
         color: var(--text-muted);
+        line-height: 1.5;
       }
-    `
-  ]
+
+      .account-block {
+        margin: 0 0 1.5rem;
+      }
+      .account-block__title {
+        margin: 0 0 0.75rem;
+        font-size: 1.12rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+
+      .subs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 0.8rem;
+        justify-items: start;
+      }
+      .subCard {
+        width: 100%;
+        max-width: 420px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-subtle);
+        background: color-mix(in srgb, var(--bg-muted) 35%, transparent);
+        padding: 0.85rem;
+        display: grid;
+        gap: 0.65rem;
+      }
+      .subCard__head {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.8rem;
+        align-items: baseline;
+        flex-wrap: wrap;
+      }
+      .subCard__left {
+        display: flex;
+        gap: 0.65rem;
+        align-items: center;
+      }
+      .subCard__t {
+        display: grid;
+        gap: 0.15rem;
+      }
+      .subCard__title {
+        line-height: 1.25;
+      }
+      .subCard__date {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+      .subCard__meta {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+      .pill {
+        border: 1px solid var(--border-subtle);
+        border-radius: 9999px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .subCard__actions {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+      }
+
+      .thumb {
+        width: 42px;
+        height: 63px;
+        border-radius: 10px;
+        border: 1px solid var(--border-subtle);
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.04);
+        flex: 0 0 auto;
+      }
+      .thumb--empty {
+        background: linear-gradient(145deg, rgba(255, 107, 107, 0.2), rgba(255, 195, 113, 0.12));
+      }
+      .thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .fav-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.9rem;
+        justify-items: start;
+      }
+      .fav-grid__item {
+        width: 100%;
+        max-width: 220px;
+        text-decoration: none;
+        color: inherit;
+      }
+      .fav-grid__item:hover {
+        transform: translateY(-2px);
+        transition: transform 0.18s ease;
+      }
+    `,
+  ],
 })
 export class AccountPageComponent {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly subsSvc = inject(ReleaseSubscriptionsService);
+  private readonly fav = inject(FavoritesService);
   readonly i18n = inject(I18nService);
 
   readonly user = this.auth.user;
@@ -199,6 +394,29 @@ export class AccountPageComponent {
 
   readonly loginError = signal<string | null>(null);
   readonly regError = signal<string | null>(null);
+
+  readonly subsSorted = computed(() => sortSubscriptionsByRelease(this.subsSvc.mySubscriptions()));
+  readonly favorites = computed(() => this.fav.favorites());
+
+  posterUrl(path: string): string {
+    return `/imgtmdb/w92${path}`;
+  }
+
+  trackBySubId(_: number, s: { id: string }): string {
+    return s.id;
+  }
+
+  trackByMovieId(_: number, m: { id: number }): number {
+    return m.id;
+  }
+
+  removeSub(id: string): void {
+    try {
+      this.subsSvc.remove(id);
+    } catch {
+      /* ignore */
+    }
+  }
 
   async doLogin(): Promise<void> {
     this.loginError.set(null);
@@ -232,16 +450,8 @@ export class AccountPageComponent {
 
   private async navigateAfterAuth(): Promise<void> {
     const qp = this.route.snapshot.queryParamMap;
-    const returnUrl = (qp.get('returnUrl') ?? '/notifications').trim();
-    const tmdbId = qp.get('tmdbId');
-    const safeReturnUrl = returnUrl.startsWith('/') ? returnUrl : '/notifications';
-
-    if (safeReturnUrl === '/notifications' && tmdbId && Number.isFinite(Number(tmdbId))) {
-      await this.router.navigate(['/notifications'], { queryParams: { tmdbId: Number(tmdbId) } });
-      return;
-    }
-
+    const returnUrl = (qp.get('returnUrl') ?? '/').trim();
+    const safeReturnUrl = returnUrl.startsWith('/') ? returnUrl : '/';
     await this.router.navigateByUrl(safeReturnUrl);
   }
 }
-

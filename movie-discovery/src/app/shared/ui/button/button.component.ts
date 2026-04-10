@@ -12,30 +12,39 @@ import { Component, input } from '@angular/core';
     `
       .app-button {
         border: none;
-        border-radius: 9999px;
-        padding: 0.5rem 1.25rem;
+        border-radius: var(--radius-full);
+        padding: 0.52rem 1.2rem;
         cursor: pointer;
-        font: inherit;
-        background: linear-gradient(135deg, #ff5f6d, #ffc371);
-        color: #0b0b0f;
-        transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, filter 0.12s ease-out;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+        font-family: inherit;
+        font-weight: 600;
+        font-size: 0.95rem;
+        letter-spacing: -0.02em;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+        color: var(--on-accent);
+        transition:
+          transform var(--duration-fast) var(--ease-out),
+          box-shadow var(--duration-fast) var(--ease-out),
+          filter var(--duration-fast) var(--ease-out);
+        box-shadow:
+          var(--shadow-sm),
+          0 0 24px var(--accent-glow);
       }
 
       .app-button:hover {
         transform: translateY(-1px);
-        filter: brightness(1.05);
-        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+        filter: brightness(1.06) saturate(1.05);
+        box-shadow:
+          var(--shadow-md),
+          0 0 28px var(--accent-glow);
       }
 
       .app-button:active {
-        transform: translateY(1px) scale(0.98);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        transform: translateY(0) scale(0.98);
+        box-shadow: var(--shadow-xs);
       }
-    `
-  ]
+    `,
+  ],
 })
 export class ButtonComponent {
   readonly variant = input<'primary' | 'ghost'>('primary');
 }
-

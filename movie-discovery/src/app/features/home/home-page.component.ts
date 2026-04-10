@@ -1,5 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { ConfigService } from '@core/config.service';
@@ -21,7 +29,7 @@ import { I18nService } from '@shared/i18n/i18n.service';
 
         <div class="hero__actions">
           <a class="btn btn--primary" routerLink="/search">{{ i18n.t('home.cta.search') }}</a>
-          <a class="btn" routerLink="/favorites">{{ i18n.t('nav.favorites') }}</a>
+          <a class="btn" routerLink="/" fragment="home-favorites">{{ i18n.t('nav.favorites') }}</a>
         </div>
 
         <p class="hero__note" *ngIf="!hasTmdbApiKey()">
@@ -36,7 +44,11 @@ import { I18nService } from '@shared/i18n/i18n.service';
         </div>
 
         <div class="tiles" *ngIf="movies().length; else tilesSkeleton">
-          <a class="tile" *ngFor="let m of movies(); trackBy: trackById" [routerLink]="['/movie', m.id]">
+          <a
+            class="tile"
+            *ngFor="let m of movies(); trackBy: trackById"
+            [routerLink]="['/movie', m.id]"
+          >
             <div class="tile__poster" [class.tile__poster--empty]="!m.poster_path">
               <img
                 *ngIf="m.poster_path as p"
@@ -63,7 +75,6 @@ import { I18nService } from '@shared/i18n/i18n.service';
           </div>
         </ng-template>
       </section>
-
     </section>
   `,
   styles: [
@@ -75,13 +86,22 @@ import { I18nService } from '@shared/i18n/i18n.service';
       }
 
       .hero {
-        border-radius: 18px;
+        border-radius: var(--radius-lg);
         border: 1px solid var(--border-subtle);
         background:
-          radial-gradient(1000px 420px at 15% 0%, rgba(255, 107, 107, 0.18), transparent 55%),
-          radial-gradient(760px 360px at 90% 30%, rgba(255, 195, 113, 0.14), transparent 55%),
-          rgba(255, 255, 255, 0.03);
-        padding: 1.2rem 1.15rem;
+          radial-gradient(
+            1000px 420px at 15% 0%,
+            color-mix(in srgb, var(--accent) 20%, transparent),
+            transparent 55%
+          ),
+          radial-gradient(
+            760px 360px at 90% 30%,
+            color-mix(in srgb, var(--accent-secondary) 16%, transparent),
+            transparent 55%
+          ),
+          color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+        padding: 1.25rem 1.2rem;
+        box-shadow: var(--shadow-xs);
       }
       .hero__kicker {
         margin: 0 0 0.4rem;
@@ -92,8 +112,10 @@ import { I18nService } from '@shared/i18n/i18n.service';
       }
       .hero__title {
         margin: 0 0 0.55rem;
-        font-size: 1.5rem;
-        line-height: 1.18;
+        font-size: clamp(1.35rem, 2.8vw, 1.65rem);
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: -0.03em;
       }
       .hero__subtitle {
         margin: 0 0 1rem;
@@ -113,14 +135,17 @@ import { I18nService } from '@shared/i18n/i18n.service';
       }
       code {
         font-size: 0.88em;
-        padding: 0.1em 0.35em;
-        border-radius: 6px;
-        background: rgba(0, 0, 0, 0.25);
+        padding: 0.12em 0.4em;
+        border-radius: var(--radius-sm);
+        background: color-mix(in srgb, var(--bg-muted) 75%, transparent);
+        border: 1px solid var(--border-subtle);
       }
 
       .sectionTitle {
         margin: 0 0 0.75rem;
-        font-size: 1.15rem;
+        font-size: 1.12rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
       }
 
       .showcase__head {
@@ -131,30 +156,41 @@ import { I18nService } from '@shared/i18n/i18n.service';
         flex-wrap: wrap;
       }
       .link {
-        color: #ffc371;
+        color: var(--link);
         text-decoration: none;
+        font-weight: 500;
+        transition: color var(--duration-fast) var(--ease-out);
       }
       .link:hover {
+        color: var(--link-hover);
         text-decoration: underline;
+        text-underline-offset: 0.15em;
       }
 
       .tiles {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 0.85rem;
+        justify-items: start;
       }
       .tile {
+        width: 100%;
+        max-width: 220px;
         text-decoration: none;
         color: inherit;
-        border-radius: 16px;
+        border-radius: var(--radius-md);
         border: 1px solid var(--border-subtle);
-        background: rgba(255, 255, 255, 0.03);
+        background: var(--bg-elevated);
         overflow: hidden;
-        transition: transform 0.2s ease, filter 0.2s ease;
+        transition:
+          transform var(--duration-normal) var(--ease-out),
+          box-shadow var(--duration-normal) var(--ease-out),
+          border-color var(--duration-normal) var(--ease-out);
       }
       .tile:hover {
         transform: translateY(-3px);
-        filter: brightness(1.06);
+        box-shadow: var(--shadow-card);
+        border-color: var(--border-strong);
       }
       .tile:focus-visible {
         outline: 2px solid rgba(255, 195, 113, 0.55);
@@ -189,6 +225,8 @@ import { I18nService } from '@shared/i18n/i18n.service';
       }
 
       .tile--skel {
+        width: 100%;
+        max-width: 220px;
         min-height: 280px;
         background: linear-gradient(
           100deg,
@@ -205,21 +243,26 @@ import { I18nService } from '@shared/i18n/i18n.service';
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 9999px;
+        border-radius: var(--radius-full);
         border: 1px solid var(--border-subtle);
-        padding: 0.55rem 0.9rem;
+        padding: 0.55rem 1rem;
+        font-weight: 500;
+        font-size: 0.92rem;
         color: var(--text);
-        background: rgba(255, 255, 255, 0.05);
-        transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+        background: color-mix(in srgb, var(--bg-muted) 45%, transparent);
+        transition:
+          transform var(--duration-fast) var(--ease-out),
+          background var(--duration-fast) var(--ease-out),
+          border-color var(--duration-fast) var(--ease-out);
       }
       .btn:hover {
         transform: translateY(-1px);
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.14);
+        background: color-mix(in srgb, var(--bg-muted) 75%, transparent);
+        border-color: var(--border-strong);
       }
       .btn--primary {
-        border-color: rgba(255, 195, 113, 0.45);
-        background: rgba(255, 195, 113, 0.14);
+        border-color: color-mix(in srgb, var(--accent-secondary) 48%, var(--border-subtle));
+        background: color-mix(in srgb, var(--accent-secondary) 18%, transparent);
       }
 
       @keyframes shimmer {
@@ -227,8 +270,8 @@ import { I18nService } from '@shared/i18n/i18n.service';
           background-position-x: -200%;
         }
       }
-    `
-  ]
+    `,
+  ],
 })
 export class HomePageComponent {
   private readonly api = inject(MovieService);
@@ -240,10 +283,23 @@ export class HomePageComponent {
   private readonly _movies = signal<Movie[]>([]);
   readonly movies = computed(() => this._movies());
 
+  private localeReloadN = 0;
+
   constructor() {
     this.api.getPopularMovies(1).subscribe({
       next: (res) => this._movies.set(res.results?.slice(0, 6) ?? []),
-      error: () => this._movies.set([])
+      error: () => this._movies.set([]),
+    });
+
+    effect(() => {
+      this.i18n.tmdbLocale();
+      if (this.localeReloadN++ === 0) return;
+      untracked(() => {
+        this.api.getPopularMovies(1).subscribe({
+          next: (res) => this._movies.set(res.results?.slice(0, 6) ?? []),
+          error: () => this._movies.set([]),
+        });
+      });
     });
   }
 
@@ -267,8 +323,7 @@ export class HomePageComponent {
     return [
       `/imgtmdb/w92${path} 92w`,
       `/imgtmdb/w185${path} 185w`,
-      `/imgtmdb/w342${path} 342w`
+      `/imgtmdb/w342${path} 342w`,
     ].join(', ');
   }
 }
-

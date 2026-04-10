@@ -7,8 +7,14 @@ export interface ApiConfig {
   readonly apiKey?: string;
 }
 
+export interface ReleaseAlertConfig {
+  /** Если задан — в день релиза уходит POST сюда (реальная почта с вашего бэкенда). */
+  readonly webhookUrl?: string;
+  readonly webhookSecret?: string;
+}
+
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ConfigService {
   /**
@@ -21,7 +27,9 @@ export class ConfigService {
     const rawKey = (fromScript && fromScript.length ? fromScript : fromBuild) || '';
     const key = isValidTmdbV3ApiKey(rawKey) ? rawKey : '';
     if (rawKey && !key) {
-      console.warn('[Config] Invalid TMDB v3 API key format. Expected 32-hex string.', { rawKeyLength: rawKey.length });
+      console.warn('[Config] Invalid TMDB v3 API key format. Expected 32-hex string.', {
+        rawKeyLength: rawKey.length,
+      });
     }
     const rawBase = window.__env?.TMDB_BASE_URL?.trim();
     const fromEnvFile = environment.apiBaseUrl?.trim();
@@ -40,7 +48,7 @@ export class ConfigService {
         if (/^https?:\/\//i.test(candidate)) {
           console.warn(
             '[Config] Direct TMDB baseUrl in dev detected. Falling back to /tmdb to avoid CORS.',
-            { candidate }
+            { candidate },
           );
           return '/tmdb';
         }
@@ -49,7 +57,16 @@ export class ConfigService {
     })();
     return {
       baseUrl,
-      apiKey: key || undefined
+      apiKey: key || undefined,
+    };
+  })();
+
+  readonly releaseAlert: ReleaseAlertConfig = (() => {
+    const url = window.__env?.RELEASE_ALERT_WEBHOOK_URL?.trim();
+    const secret = window.__env?.RELEASE_ALERT_WEBHOOK_SECRET?.trim();
+    return {
+      webhookUrl: url && url.length ? url : undefined,
+      webhookSecret: secret && url ? secret : undefined,
     };
   })();
 }
@@ -57,4 +74,3 @@ export class ConfigService {
 function isValidTmdbV3ApiKey(v: string): boolean {
   return /^[a-f0-9]{32}$/i.test(v);
 }
-
