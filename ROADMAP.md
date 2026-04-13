@@ -438,7 +438,7 @@ Component tests:
 - [ ] **Collections (M1: CRUD)**:
   - [ ] API: `GET/POST/PUT/DELETE /api/collections`, items CRUD.
   - [ ] DB: `collections`, `collection_items`.
-  - [ ] FE: `/collections`, `/collections/:id`, editor, добавление фильма из details/search.
+  - [x] FE: `/collections` list + CRUD + items (frontend MVP, local storage).
 - [ ] **Auto-collections + taste (M2)**:
   - [ ] API: `GET /api/auto-collections` (computed из watch_state/diary/favorites).
   - [ ] API: `GET /api/taste/summary`, `GET /api/taste/similar-to?tmdbId=...`.
