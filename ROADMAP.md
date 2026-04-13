@@ -372,9 +372,9 @@ Component tests:
   - [ ] `alert_rules(... filters jsonb, channels jsonb, quiet_hours jsonb ...)`.
   - [ ] `notifications(... payload jsonb, read_at, rule_id ...)`.
 - [ ] **Frontend (M1)**:
-  - [ ] `/notifications` → табы “Inbox / Rules”.
+  - [x] `/inbox`: feed + Rules CRUD (frontend MVP, local storage).
+  - [x] “Why this?” панель у нотификации (frontend MVP, local).
   - [ ] Rule Builder (chip-based clauses) + preview (“примерно N совпадений/нед”).
-  - [ ] “Why this?” панель у нотификации (explain).
 - [ ] **Delivery (M2)**:
   - [ ] WebPush: `POST /api/push/subscribe`, хранение `push_subscriptions`.
   - [ ] Email + digest: outbox таблица + worker/cron, “quiet hours”, weekly digest.
