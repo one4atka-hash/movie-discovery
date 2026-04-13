@@ -195,7 +195,20 @@ const TOKEN_KEY = 'server.jwt.token.v1';
                       }
                     </span>
                   </div>
-                  <pre class="row__json">{{ pretty(c.incoming) }}</pre>
+                  <details class="details" open>
+                    <summary class="details__sum">Incoming</summary>
+                    <pre class="row__json">{{ pretty(c.incoming) }}</pre>
+                  </details>
+                  <details class="details">
+                    <summary class="details__sum">Server</summary>
+                    <pre class="row__json">{{ pretty(c.server) }}</pre>
+                  </details>
+                  @if (c.resolution) {
+                    <details class="details">
+                      <summary class="details__sum">Resolution</summary>
+                      <pre class="row__json">{{ pretty(c.resolution) }}</pre>
+                    </details>
+                  }
                   <div class="row__actions" style="justify-content: space-between; gap: 0.5rem">
                     <app-button
                       variant="ghost"
@@ -341,6 +354,19 @@ const TOKEN_KEY = 'server.jwt.token.v1';
         margin-top: 0.6rem;
         display: flex;
         justify-content: flex-end;
+      }
+      .details {
+        margin-top: 0.55rem;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        padding: 0.55rem 0.65rem;
+        background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
+      }
+      .details__sum {
+        cursor: pointer;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-bottom: 0.35rem;
       }
       .modal {
         position: fixed;
