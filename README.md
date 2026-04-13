@@ -1,0 +1,30 @@
+# Movie Discovery (monorepo)
+
+Angular SPA + NestJS API + Postgres/pgvector. Product checklist: [`ROADMAP.md`](ROADMAP.md).
+
+## Layout
+
+| Path | Description |
+|------|-------------|
+| [`movie-discovery/`](movie-discovery/) | Angular app (TMDB, inbox, account, …) |
+| [`server/`](server/) | NestJS API, migrations, Docker image |
+| [`portfolio-site/`](portfolio-site/) | Standalone portfolio page (static) |
+| [`docker-compose.yml`](docker-compose.yml) | Postgres + API for local full stack |
+| [`scripts/verify-all.ps1`](scripts/verify-all.ps1) / [`scripts/verify-all.sh`](scripts/verify-all.sh) | Regression: FE build/lint/test + server build/lint/test |
+
+## Quick start (full stack)
+
+From repo root:
+
+```bash
+docker compose up --build
+```
+
+API: `http://localhost:3001` (`GET /api/health`). Optional env (SMTP, VAPID, crons): see [`server/.env.example`](server/.env.example) and comments in `docker-compose.yml`.
+
+## Frontend + API in dev
+
+1. Start API: `cd server && npm install && npm run start:dev` (or use Compose for `db` + `api` only).
+2. Start Angular: `cd movie-discovery && npm install && npm start` → `http://localhost:4200` — dev proxy sends `/api` to `http://127.0.0.1:3001`.
+
+Details: [`movie-discovery/README.md`](movie-discovery/README.md) (Backend API section), [`server/README.md`](server/README.md) (Frontend section).

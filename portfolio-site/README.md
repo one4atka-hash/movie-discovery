@@ -6,6 +6,8 @@ This folder will host a standalone portfolio page describing architectural decis
 - `server/` (NestJS API + Postgres/pgvector)
 - future projects to be added later
 
+The repository root [`README.md`](../README.md) summarizes the monorepo layout, Docker Compose, and dev proxy (`/api`).
+
 Planned: lightweight static site (no backend), deployable to Netlify/Vercel/GitHub Pages.
 
 **Status:** `ROADMAP.md` in the repo is fully checked off; deferred work (ML v2, SMTP digest/outbox for alert rules, full alert matcher + digest email, etc.) is explicitly labeled there. Push: registration + outbound sends (dev self-test, release-reminder cron, dev `alerts/run` when a rule requests web push, all with VAPID). Email: outbound SMTP (`SMTP_*`) + dev `POST /api/email/dev/send-test` (JWT, `DEV_EMAIL_SEND_ENABLED`); Account page exposes a button to trigger that dev test with the pasted Server JWT; release-reminder cron sends email when `channels.email` is set; movie details Timeline lets users enable the email channel for server reminders. `movie-discovery/README.md` documents the `/api` dev proxy and JWT/SMTP flows.

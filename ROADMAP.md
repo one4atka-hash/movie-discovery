@@ -577,7 +577,7 @@ Component tests:
 
 ### Статус плана (сводка)
 
-**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: `docker-compose.yml` — комментарий к опциональным env; `server/README.md` — ссылка на `movie-discovery/README.md`; `movie-discovery/README.md` — прокси `/api`, JWT, SMTP; FE Account / movie details; SMTP + `POST /api/email/dev/send-test`; cron release reminders + `channels.webPush` / `alerts/run`).
+**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: корневой `README.md` — структура монорепо, quick start, ссылки на `movie-discovery/` / `server/`; `docker-compose.yml` — комментарий к опциональным env; перекрёстные README; SMTP + `POST /api/email/dev/send-test`; cron release reminders — email/Web Push).
 
 Все пункты выше **отмечены**; где работа **не выполнялась**, это явно указано текстом (**отложено**, **не в текущем milestone**, **v2**). Продуктовый объём итерации **5** и связанных MVP считается **закрытым**; дальнейшее развитие — из блоков с пометкой отложенного backlog.
 
