@@ -10,3 +10,5 @@ Planned: lightweight static site (no backend), deployable to Netlify/Vercel/GitH
 
 **Status:** `ROADMAP.md` in the repo is fully checked off; deferred work (ML v2, server email/push delivery, etc.) is explicitly labeled there, not as unfinished MVP scope.
 
+**Regression:** from repo root, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-all.ps1` runs build + lint + unit tests for `movie-discovery` and `server` (see `ROADMAP.md` summary).
+
