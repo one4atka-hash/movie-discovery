@@ -42,17 +42,18 @@ describe('Availability (e2e)', () => {
 
   it('track + ingest emits events', async () => {
     const token = await registerAndGetToken(app);
+    const tmdbId = 9_000_000 + Math.floor(Math.random() * 99_000);
 
     await request(app.getHttpServer())
       .post('/api/availability/track')
       .set('Authorization', `Bearer ${token}`)
-      .send({ tmdbId: 550, region: 'US' })
+      .send({ tmdbId, region: 'US' })
       .expect(201);
 
     const i1 = await request(app.getHttpServer())
       .post('/api/availability/ingest')
       .set('Authorization', `Bearer ${token}`)
-      .send({ tmdbId: 550, region: 'US', providers: ['netflix'] })
+      .send({ tmdbId, region: 'US', providers: ['netflix'] })
       .expect(201);
 
     const b1 = i1.body as { diffEmitted: boolean; eventsCreated: number };
@@ -62,7 +63,7 @@ describe('Availability (e2e)', () => {
     const i2 = await request(app.getHttpServer())
       .post('/api/availability/ingest')
       .set('Authorization', `Bearer ${token}`)
-      .send({ tmdbId: 550, region: 'US', providers: ['netflix', 'hulu'] })
+      .send({ tmdbId, region: 'US', providers: ['netflix', 'hulu'] })
       .expect(201);
 
     const b2 = i2.body as { diffEmitted: boolean; eventsCreated: number };
@@ -76,8 +77,9 @@ describe('Availability (e2e)', () => {
 
     const items = (list.body as { items: { tmdbId: number; type: string }[] })
       .items;
-    expect(items.length).toBeGreaterThanOrEqual(2);
-    expect(items.some((x) => x.type === 'added')).toBe(true);
+    const mine = items.filter((x) => x.tmdbId === tmdbId);
+    expect(mine.length).toBeGreaterThanOrEqual(2);
+    expect(mine.some((x) => x.type === 'added')).toBe(true);
   });
 
   afterEach(async () => {

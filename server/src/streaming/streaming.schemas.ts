@@ -29,3 +29,18 @@ export const TmdbWatchProvidersCatalogSchema = z.object({
 export type TmdbWatchProvidersCatalog = z.infer<
   typeof TmdbWatchProvidersCatalogSchema
 >;
+
+/** TMDB GET /movie/{id}/watch/providers — per-country blocks. */
+const TmdbNamedProviderSchema = z.object({
+  provider_name: z.string(),
+});
+
+const TmdbCountryProvidersSchema = z.object({
+  flatrate: z.array(TmdbNamedProviderSchema).optional(),
+  rent: z.array(TmdbNamedProviderSchema).optional(),
+  buy: z.array(TmdbNamedProviderSchema).optional(),
+});
+
+export const TmdbMovieWatchProvidersResponseSchema = z.object({
+  results: z.record(z.string(), TmdbCountryProvidersSchema).optional(),
+});

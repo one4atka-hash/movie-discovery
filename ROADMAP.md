@@ -356,10 +356,10 @@ Component tests:
 - [x] **Backend/API (M2: availability events)**:
   - [x] `GET /api/availability/events?since=...` + `POST /api/availability/track` (что отслеживать).
   - [x] `POST /api/availability/ingest` — запись snapshot + diff → события для трекеров (для worker/cron).
-- [ ] **DB + Jobs (M2)**:
+- [x] **DB + Jobs (M2)**:
   - [x] snapshots: `availability_snapshots(tmdb_id, region, providers jsonb, fetched_at)`.
   - [x] events: `availability_events(... type added/leaving/changed ...)`.
-  - [ ] cron: обновление watch-providers по списку отслеживания, diff → events.
+  - [x] cron: фоновый sync (интервал + `AVAILABILITY_CRON_ENABLED`) → TMDB watch providers → ingest/diff → events.
 - [x] **Тесты**:
   - [x] Server e2e: prefs GET/PUT auth + validation.
   - [x] Server e2e: availability track + ingest + events feed.

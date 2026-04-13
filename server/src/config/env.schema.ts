@@ -56,6 +56,22 @@ export const EnvSchema = z.object({
    */
   TMDB_API_KEY: z.string().optional().default(''),
   TMDB_BASE_URL: z.string().optional().default('https://api.themoviedb.org/3'),
+
+  /**
+   * Periodically sync tracked movies with TMDB watch providers → availability_snapshots/events.
+   */
+  AVAILABILITY_CRON_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').toLowerCase())
+    .pipe(z.enum(['', '0', '1', 'false', 'true', 'no', 'yes', 'off', 'on']))
+    .default(''),
+
+  AVAILABILITY_CRON_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(3_600_000),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
