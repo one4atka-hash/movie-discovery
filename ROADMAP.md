@@ -399,7 +399,7 @@ Component tests:
   - [ ] `POST /api/diary/import` (через общий import pipeline 5.7).
 - [ ] **Тесты**:
   - [x] Server e2e: CRUD + фильтры по датам.
-  - [ ] FE: add/edit/delete entry; stats/empty state.
+  - [x] FE: add/edit/delete entry; stats/empty state.
 
 #### 5.4 Watch Progress (прогресс и состояния, проще чем у Trakt)
 - [ ] **Backend/API (M1)**:

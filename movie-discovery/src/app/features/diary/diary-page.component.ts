@@ -45,10 +45,23 @@ import { DiaryService } from './diary.service';
           <app-button (click)="openCreate()">Log watch</app-button>
         </div>
 
+        <div class="stats" *ngIf="stats() as s">
+          <app-badge variant="muted">Всего: {{ s.total }}</app-badge>
+          @if (s.avgRating != null) {
+            <app-badge variant="accent">★ {{ s.avgRating }}</app-badge>
+          }
+          @if (s.topTags.length) {
+            <app-badge>Теги: {{ s.topTags.join(', ') }}</app-badge>
+          }
+          @if (s.topLocations.length) {
+            <app-badge variant="muted">Где: {{ s.topLocations.join(' · ') }}</app-badge>
+          }
+        </div>
+
         <app-empty-state
           *ngIf="!entries().length"
           title="Пока пусто"
-          subtitle="Добавьте первую запись — потом появятся фильтры, статистика и импорт."
+          subtitle="Добавьте первую запись — появятся статистика, фильтры и экспорт."
         >
           <app-button variant="secondary" (click)="openCreate()">Добавить запись</app-button>
           <app-button variant="ghost" routerLink="/">Открыть поиск</app-button>
@@ -174,6 +187,12 @@ import { DiaryService } from './diary.service';
         flex-wrap: wrap;
         margin-bottom: 0.65rem;
       }
+      .stats {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.75rem;
+      }
       .tags {
         display: flex;
         gap: 0.35rem;
@@ -224,6 +243,7 @@ export class DiaryPageComponent {
   readonly editing = signal<DiaryEntry | null>(null);
 
   readonly entries = computed(() => this.diary.sorted());
+  readonly stats = computed(() => computeStats(this.entries()));
 
   draftTitle = '';
   draftWatchedAt = new Date().toISOString().slice(0, 10);
@@ -300,4 +320,43 @@ export class DiaryPageComponent {
   trackByTag(_: number, t: string): string {
     return t;
   }
+}
+
+function computeStats(entries: readonly DiaryEntry[]): {
+  total: number;
+  avgRating: number | null;
+  topTags: string[];
+  topLocations: string[];
+} {
+  const total = entries.length;
+  if (!total) return { total: 0, avgRating: null, topTags: [], topLocations: [] };
+
+  const ratings = entries.map((e) => e.rating).filter((x): x is number => typeof x === 'number');
+  const avgRating =
+    ratings.length > 0
+      ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
+      : null;
+
+  const tagCounts = new Map<string, number>();
+  for (const e of entries) {
+    for (const t of e.tags ?? []) {
+      const k = String(t).trim().toLowerCase();
+      if (!k) continue;
+      tagCounts.set(k, (tagCounts.get(k) ?? 0) + 1);
+    }
+  }
+  const topTags = [...tagCounts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 5)
+    .map(([k]) => k);
+
+  const locCounts = new Map<DiaryLocation, number>();
+  for (const e of entries) {
+    locCounts.set(e.location, (locCounts.get(e.location) ?? 0) + 1);
+  }
+  const topLocations = [...locCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([k]) => (k === 'cinema' ? 'Cinema' : k === 'streaming' ? 'Streaming' : 'Home'));
+
+  return { total, avgRating, topTags, topLocations };
 }
