@@ -27,6 +27,7 @@ import { ExportsModule } from './exports/exports.module';
 import { TasteModule } from './taste/taste.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { MoviesModule } from './movies/movies.module';
+import { ReleaseRemindersModule } from './release-reminders/release-reminders.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { MoviesModule } from './movies/movies.module';
     TasteModule,
     AvailabilityModule,
     MoviesModule,
+    ReleaseRemindersModule,
   ],
   controllers: [AppController],
   providers: [

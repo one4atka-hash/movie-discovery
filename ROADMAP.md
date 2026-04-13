@@ -486,35 +486,37 @@ Component tests:
   - [x] e2e (server): upload → preview → apply → данные появились в watch-state.
 
 #### 5.8 Explainable Recommendations (объяснимые рекомендации — доверие)
-- [ ] **API (M1: explain + controls)**:
+- [x] **API (M1: explain + controls)**:
   - [x] Расширить `GET /api/recommendations`: `{ items: [{ tmdbId, score, explain[] }] }`.
   - [x] Action feedback: `POST /api/recommendations/feedback` (“more/less/hide”) (через `feedback` table + reason).
-- [ ] **DB**:
+- [x] **DB**:
   - [x] (минимум) переиспользовать `feedback`; (опц.) `recommendation_feedback` для “more/less”.
-- [ ] **Frontend (M1)**:
+- [x] **Frontend (M1)**:
   - [x] “Why this?” панель для рекомендаций (frontend MVP).
   - [x] “Less like this / Hide” (frontend MVP, local).
 - [x] **Метрики (M2)**:
   - [x] `GET /api/recommendations/metrics` (diversity/novelty/coverage) для отладки качества.
-- [ ] **Тесты**:
+- [x] **Тесты**:
   - [x] Unit: explain generator (ограниченный размер, i18n-ready).
   - [x] Server e2e: “Less/Hide” меняет выдачу на следующем запросе.
 
 #### 5.9 Edition-aware + Releases Timeline (точность релизов/версий)
 - [ ] **Release timeline (M1)**:
   - [x] API: `GET /api/movies/:tmdbId/releases?region=...` (snapshot/cached, Postgres `movie_release_snapshots` + TTL `MOVIE_RELEASES_CACHE_TTL_MS`).
-  - [ ] Reminders: `POST/GET/DELETE /api/release-reminders` (type + window + channels).
+  - [x] Reminders: `POST/GET/DELETE /api/release-reminders` (type + window + channels; Postgres `release_reminders`).
   - [ ] FE: секция “Timeline” в details + список upcoming reminders в Inbox/Notifications.
 - [ ] **DB + Jobs**:
   - [x] Postgres: `movie_release_snapshots` (кэш TMDB `release_dates`).
-  - [ ] `release_reminders` + cron: daily check → enqueue notifications (respect rules/quiet hours).
+  - [x] Postgres: `release_reminders` (правила: `reminder_type` + `window` + `channels`; `last_notified_at` для будущего cron).
+  - [ ] Cron: daily check → enqueue notifications (respect rules/quiet hours).
 - [ ] **Edition-aware (M2)**:
   - [ ] API: `GET /api/movies/:tmdbId/editions` (пока эвристика/ручные метки).
   - [ ] DB: `movie_editions` + связь diary/watch_state с `edition_key` (если нужно).
 - [ ] **Тесты**:
-  - [ ] Unit: avoid double notify + window logic.
+  - [x] Unit: window / avoid double notify (same calendar day) — `release-reminders-window.util`.
   - [x] e2e (server): `GET /movies/:id/releases` (auth + cache hit; 503 без TMDB key).
-  - [ ] e2e: создать reminder → появляется в inbox (через time-travel/mock clock).
+  - [x] e2e (server): `POST/GET/DELETE /release-reminders` (auth + validation).
+  - [ ] e2e: создать reminder → появляется в inbox (через time-travel/mock clock / cron).
 
 #### 5.10 Shareables (рост и «собирательность»)
 - [ ] **Public profile (M1)**:
