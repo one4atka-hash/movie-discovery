@@ -46,6 +46,8 @@ export const DevTickSchema = zodSchema(
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}$/)
         .optional(),
+      /** Dev/test: fixed “now” for quiet-hours checks (ISO 8601). */
+      nowIso: z.string().optional(),
     })
     .strict(),
 );

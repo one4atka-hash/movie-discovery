@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -48,7 +49,15 @@ export class ReleaseRemindersController {
     if (!truthy(this.config.get<string>('DEV_ALERTS_ENABLED'))) {
       return { ok: false as const, error: 'Disabled' };
     }
-    const r = await this.cron.tick(body.todayYmd);
+    let now: Date | undefined;
+    if (body.nowIso != null && body.nowIso !== '') {
+      const d = new Date(body.nowIso);
+      if (Number.isNaN(d.getTime())) {
+        throw new BadRequestException('Invalid nowIso');
+      }
+      now = d;
+    }
+    const r = await this.cron.tick(body.todayYmd, now);
     return { ok: true as const, ...r };
   }
 

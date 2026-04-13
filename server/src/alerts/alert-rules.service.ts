@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 
 import { DbService } from '../db/db.service';
 
+import type { QuietHours } from './alerts-matcher';
+import { QuietHoursSchema } from './alerts.schemas';
+
 export type AlertRuleRow = {
   id: string;
   name: string;
@@ -79,5 +82,35 @@ export class AlertRulesService {
       `delete from alert_rules where user_id = $1 and id = $2`,
       [userId, id],
     );
+  }
+
+  /**
+   * For each user, the quiet_hours of the most recently updated **enabled** rule
+   * that defines quiet_hours (MVP: first match per user in `order by updated_at desc`).
+   */
+  async getEffectiveQuietHoursForUsers(
+    userIds: readonly string[],
+  ): Promise<Map<string, QuietHours>> {
+    const out = new Map<string, QuietHours>();
+    if (!userIds.length) return out;
+
+    const rows = await this.db.query<{
+      user_id: string;
+      quiet_hours: unknown;
+    }>(
+      `select distinct on (user_id) user_id, quiet_hours
+       from alert_rules
+       where user_id = any($1::uuid[])
+         and enabled = true
+         and quiet_hours is not null
+       order by user_id, updated_at desc`,
+      [userIds],
+    );
+
+    for (const r of rows) {
+      const parsed = QuietHoursSchema.safeParse(r.quiet_hours);
+      if (parsed.success) out.set(r.user_id, parsed.data);
+    }
+    return out;
   }
 }

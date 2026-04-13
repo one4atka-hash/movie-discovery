@@ -505,11 +505,11 @@ Component tests:
   - [x] API: `GET /api/movies/:tmdbId/releases?region=...` (snapshot/cached, Postgres `movie_release_snapshots` + TTL `MOVIE_RELEASES_CACHE_TTL_MS`).
   - [x] Reminders: `POST/GET/DELETE /api/release-reminders` (type + window + channels; Postgres `release_reminders`).
   - [x] FE: секция “Timeline” на movie details + форма server reminders; в Inbox — блок «Release reminders (server)» при Load server feed (нужен Server JWT).
-- [ ] **DB + Jobs**:
+- [x] **DB + Jobs**:
   - [x] Postgres: `movie_release_snapshots` (кэш TMDB `release_dates`).
   - [x] Postgres: `release_reminders` (правила: `reminder_type` + `window` + `channels`; `last_notified_at` для будущего cron).
   - [x] Cron: периодическая проверка → `notifications` (тип `release`) из кэша `movie_release_snapshots` + `RELEASE_REMINDERS_REGION`; опц. `RELEASE_REMINDERS_CRON_ENABLED` / `RELEASE_REMINDERS_CRON_INTERVAL_MS`. Dev: `POST /api/release-reminders/dev/tick` (+ `todayYmd` при `DEV_ALERTS_ENABLED`).
-  - [ ] Quiet hours / согласование с `alert_rules` (M2).
+  - [x] Quiet hours / согласование с `alert_rules` (MVP): cron **не** ставит in-app release reminder, если `now` попадает в quiet window; effective quiet hours — у самого свежего enabled правила с non-null `quiet_hours` (`isInQuietHours`, UTC); без обновления `last_notified_at` (повтор вне окна). Dev/tick: опционально `nowIso`.
 - [ ] **Edition-aware (M2)**:
   - [ ] API: `GET /api/movies/:tmdbId/editions` (пока эвристика/ручные метки).
   - [ ] DB: `movie_editions` + связь diary/watch_state с `edition_key` (если нужно).

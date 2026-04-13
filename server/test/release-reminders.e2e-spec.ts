@@ -176,6 +176,108 @@ describe('Release reminders (e2e)', () => {
     fetchSpy.mockRestore();
   });
 
+  it('dev tick skips release notification during alert_rules quiet hours', async () => {
+    const token = await registerAndGetToken(app);
+    const tmdbId = 7_200_000 + Math.floor(Math.random() * 99_000);
+
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            id: tmdbId,
+            results: [
+              {
+                iso_3166_1: 'US',
+                release_dates: [{ type: 3, release_date: '2026-04-20' }],
+              },
+            ],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    );
+
+    await request(app.getHttpServer())
+      .get(`/api/movies/${tmdbId}/releases`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const ruleRes = await request(app.getHttpServer())
+      .post('/api/alert-rules')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'quiet',
+        enabled: true,
+        filters: {},
+        channels: {
+          inApp: true,
+          webPush: false,
+          email: false,
+          calendar: false,
+        },
+        quietHours: { start: '00:00', end: '00:00', tz: 'UTC' },
+      })
+      .expect(201);
+
+    const ruleId = (ruleRes.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post('/api/release-reminders')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        tmdbId,
+        mediaType: 'movie',
+        reminderType: 'theatrical',
+        window: { daysBefore: 7 },
+        channels: { inApp: true },
+      })
+      .expect(201);
+
+    const tickQuiet = await request(app.getHttpServer())
+      .post('/api/release-reminders/dev/tick')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        todayYmd: '2026-04-13',
+        nowIso: '2026-04-13T12:00:00.000Z',
+      })
+      .expect(200);
+
+    expect((tickQuiet.body as { enqueued: number }).enqueued).toBe(0);
+
+    await request(app.getHttpServer())
+      .post('/api/alert-rules')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        id: ruleId,
+        name: 'quiet',
+        enabled: true,
+        filters: {},
+        channels: {
+          inApp: true,
+          webPush: false,
+          email: false,
+          calendar: false,
+        },
+        quietHours: null,
+      })
+      .expect(201);
+
+    const tickOk = await request(app.getHttpServer())
+      .post('/api/release-reminders/dev/tick')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        todayYmd: '2026-04-13',
+        nowIso: '2026-04-13T12:00:00.000Z',
+      })
+      .expect(200);
+
+    expect(
+      (tickOk.body as { enqueued: number }).enqueued,
+    ).toBeGreaterThanOrEqual(1);
+
+    fetchSpy.mockRestore();
+  });
+
   afterEach(async () => {
     await app.close();
   });

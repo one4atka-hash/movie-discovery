@@ -131,6 +131,7 @@
             <li>Backend: Movie release dates API (GET /api/movies/:tmdbId/releases, TMDB cache in Postgres)</li>
             <li>Backend: Release reminders API (POST/GET/DELETE /api/release-reminders, type + window + channels)</li>
             <li>Backend: Release reminders cron → in-app notifications (optional; dev tick with fixed date for tests)</li>
+            <li>Backend: Release reminders cron respects alert_rules quiet hours (effective rule per user; dev/tick optional nowIso)</li>
             <li>Frontend: Movie details Timeline (server release_dates) + server release reminders; Inbox lists server reminders</li>
             <li>Backend: Public profiles (GET/PUT /api/me/public-profile, GET /api/u/:slug, privacy sections)</li>
             <li>Frontend: Public profile page /u/:slug + Account settings (Server JWT)</li>

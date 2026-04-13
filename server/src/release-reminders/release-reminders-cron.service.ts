@@ -7,6 +7,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
 
+import { AlertRulesService } from '../alerts/alert-rules.service';
+import { isInQuietHours } from '../alerts/alerts-matcher';
 import { NotificationsService } from '../alerts/notifications.service';
 import { truthy } from '../config/env.schema';
 import { DbService } from '../db/db.service';
@@ -43,6 +45,7 @@ export class ReleaseRemindersCronService
     private readonly config: ConfigService,
     private readonly db: DbService,
     private readonly notifications: NotificationsService,
+    private readonly alertRules: AlertRulesService,
   ) {}
 
   onModuleInit(): void {
@@ -66,7 +69,10 @@ export class ReleaseRemindersCronService
    * Evaluates all reminders against cached TMDB snapshots and enqueues in-app notifications.
    * @param todayYmdOverride for tests / dev tick (UTC YYYY-MM-DD).
    */
-  async tick(todayYmdOverride?: string): Promise<{
+  async tick(
+    todayYmdOverride?: string,
+    nowOverride?: Date,
+  ): Promise<{
     processed: number;
     enqueued: number;
   }> {
@@ -74,12 +80,17 @@ export class ReleaseRemindersCronService
       .trim()
       .toUpperCase();
     const todayYmd = todayYmdOverride ?? new Date().toISOString().slice(0, 10);
+    const now = nowOverride ?? new Date();
 
     const rows = await this.db.query<ReminderJoinRow>(
       `select r.id, r.user_id, r.tmdb_id, r.reminder_type, r.reminder_window, r.channels, r.last_notified_at, s.payload
        from release_reminders r
        left join movie_release_snapshots s on s.tmdb_id = r.tmdb_id`,
     );
+
+    const userIds = [...new Set(rows.map((r) => r.user_id))];
+    const quietByUser =
+      await this.alertRules.getEffectiveQuietHoursForUsers(userIds);
 
     let enqueued = 0;
     for (const row of rows) {
@@ -114,6 +125,11 @@ export class ReleaseRemindersCronService
           lastNotifiedOnYmd: lastYmd,
         })
       ) {
+        continue;
+      }
+
+      const qh = quietByUser.get(row.user_id);
+      if (qh && isInQuietHours(now, qh)) {
         continue;
       }
 

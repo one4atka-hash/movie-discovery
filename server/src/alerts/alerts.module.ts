@@ -13,6 +13,6 @@ import { AlertsDevController } from './alerts-dev.controller';
     AlertsDevController,
   ],
   providers: [AlertRulesService, NotificationsService],
-  exports: [NotificationsService],
+  exports: [AlertRulesService, NotificationsService],
 })
 export class AlertsModule {}
