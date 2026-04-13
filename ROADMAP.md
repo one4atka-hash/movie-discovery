@@ -320,7 +320,7 @@ Component tests:
 - [x] Compose reliability: healthchecks (`db` + `api`), `depends_on: service_healthy`, restart policy, env_file.
 - [x] Docker hardening: non-root, `npm ci --omit=dev` для runtime, healthcheck.
 - [x] CI: workflow на `movie-discovery/` и `server/` (lint/test/build) + `docker build` + secret scanning (gitleaks/trufflehog).
-- [x] Корневой `README.md`: опциональные проверки `server` e2e и Playwright; `scripts/verify-all.*` — только быстрый регресс (без e2e); описание **GitHub Actions** (`.github/workflows/ci.yml`, без e2e в CI).
+- [x] Корневой `README.md`: опциональные проверки `server` e2e и Playwright; `scripts/verify-all.*` — только быстрый регресс (без e2e); описание **GitHub Actions** (`.github/workflows/ci.yml`: gitleaks, FE lint/test/build, server `lint:ci`/build/test, `docker build`; без e2e в CI).
 
 **D. Frontend refactor (переиспользуемость, без конфликтов с backend)**
 - [x] Убрать дублирование `language`: единый источник (интерцептор *или* `MovieService.baseParams()`), чтобы не было расхождений.
@@ -579,7 +579,7 @@ Component tests:
 
 ### Статус плана (сводка)
 
-**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: корневой `README.md` — CI (gitleaks + FE + server + docker build), optional e2e; `verify-all.*` — быстрый регресс; структура монорепо; `docker-compose` + README; SMTP + release reminders email/Web Push).
+**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: CI — server `lint:ci` в GitHub Actions; корневой `README.md` — gitleaks + FE + server + docker build, optional e2e; `verify-all.*` — быстрый регресс; структура монорепо; `docker-compose` + README; SMTP + release reminders email/Web Push).
 
 Все пункты выше **отмечены**; где работа **не выполнялась**, это явно указано текстом (**отложено**, **не в текущем milestone**, **v2**). Продуктовый объём итерации **5** и связанных MVP считается **закрытым**; дальнейшее развитие — из блоков с пометкой отложенного backlog.
 

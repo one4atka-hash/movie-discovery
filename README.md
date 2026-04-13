@@ -46,7 +46,7 @@ Workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on push/PR:
 |-----|-----------|
 | `secret-scan` | gitleaks |
 | `movie-discovery` | `npm ci` → lint → `test:ci` → `build:prod` |
-| `server` | `npm ci` → `npm run build` → `npm test` (no `lint` step in CI) |
+| `server` | `npm ci` → `npm run lint:ci` → `npm run build` → `npm test` (`lint:ci` = ESLint без `--fix`, см. `server/package.json`) |
 | `docker-build` | `docker build ./server` |
 
 Server e2e and Playwright are **not** in CI (same scope as `verify-all`); run them locally when needed (see *Further checks* above).

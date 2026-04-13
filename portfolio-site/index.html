@@ -217,7 +217,7 @@
             <li>Pre-commit discipline: Angular + Nest — build, ESLint, unit tests (команды в сводке <code>ROADMAP.md</code>); из корня: <code>scripts/verify-all.ps1</code> (Windows) или <code>sh scripts/verify-all.sh</code> (Unix/CI)</li>
             <li>Docker Compose + README в <code>server/</code> и <code>movie-discovery/</code> — как поднять API и связать фронт (<code>/api</code> proxy)</li>
             <li>Регрессия: <code>scripts/verify-all.*</code> (build/lint/unit); полный e2e — отдельно (<code>server</code> Jest e2e + Playwright в <code>movie-discovery</code>)</li>
-            <li>CI: GitHub Actions — gitleaks; фронт: lint + unit + prod build; сервер: build + unit (lint сервера в CI нет); <code>docker build</code> API; без e2e</li>
+            <li>CI: GitHub Actions — gitleaks; фронт: lint + unit + prod build; сервер: <code>lint:ci</code> (ESLint без <code>--fix</code>) + build + unit; <code>docker build</code> API; без e2e</li>
           </ul>
         </article>
       </section>
