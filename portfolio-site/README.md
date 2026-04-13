@@ -16,3 +16,5 @@ Planned: lightweight static site (no backend), deployable to Netlify/Vercel/GitH
 
 **Ops:** `docker-compose.yml` at repo root runs Postgres + API; optional env (SMTP, VAPID, crons) are listed in comments and in `server/.env.example`. `server/README.md` links to `movie-discovery/README.md` for the Angular `/api` dev proxy.
 
+**Testing:** root `README.md` lists optional `server` Jest e2e and `movie-discovery` Playwright; `scripts/verify-all.*` stays fast (no e2e).
+

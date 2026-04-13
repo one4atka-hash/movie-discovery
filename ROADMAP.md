@@ -320,6 +320,7 @@ Component tests:
 - [x] Compose reliability: healthchecks (`db` + `api`), `depends_on: service_healthy`, restart policy, env_file.
 - [x] Docker hardening: non-root, `npm ci --omit=dev` для runtime, healthcheck.
 - [x] CI: workflow на `movie-discovery/` и `server/` (lint/test/build) + `docker build` + secret scanning (gitleaks/trufflehog).
+- [x] Корневой `README.md`: опциональные проверки `server` e2e и Playwright; `scripts/verify-all.*` — только быстрый регресс (без e2e).
 
 **D. Frontend refactor (переиспользуемость, без конфликтов с backend)**
 - [x] Убрать дублирование `language`: единый источник (интерцептор *или* `MovieService.baseParams()`), чтобы не было расхождений.
@@ -578,9 +579,9 @@ Component tests:
 
 ### Статус плана (сводка)
 
-**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: корневой `README.md` — структура монорепо, quick start, ссылки на `movie-discovery/` / `server/`; `docker-compose.yml` — комментарий к опциональным env; перекрёстные README; SMTP + `POST /api/email/dev/send-test`; cron release reminders — email/Web Push).
+**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: корневой `README.md` — optional server e2e / Playwright; `verify-all.*` — быстрый регресс без e2e; структура монорепо; `docker-compose` + перекрёстные README; SMTP + release reminders email/Web Push).
 
 Все пункты выше **отмечены**; где работа **не выполнялась**, это явно указано текстом (**отложено**, **не в текущем milestone**, **v2**). Продуктовый объём итерации **5** и связанных MVP считается **закрытым**; дальнейшее развитие — из блоков с пометкой отложенного backlog.
 
-**Регрессия перед коммитами:** для `movie-discovery` — `npm run build`, `npm run lint`, `npm run test:ci`; для `server` — `npm run build`, `npm run lint`, `npm test` (зелёный прогон зафиксирован при обновлении этого раздела). Одной командой из корня репозитория: Windows — `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-all.ps1`; Unix/macOS/CI — `sh scripts/verify-all.sh`.
+**Регрессия перед коммитами:** для `movie-discovery` — `npm run build`, `npm run lint`, `npm run test:ci`; для `server` — `npm run build`, `npm run lint`, `npm test` (зелёный прогон зафиксирован при обновлении этого раздела). Одной командой из корня: Windows — `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-all.ps1`; Unix/macOS/CI — `sh scripts/verify-all.sh` (**без** server e2e и Playwright — см. корневой `README.md`, раздел *Further checks*).
 

@@ -1,4 +1,5 @@
-# Full regression: movie-discovery (build, lint, test:ci) + server (build, lint, test).
+# Fast regression: movie-discovery (build, lint, test:ci) + server (build, lint, unit tests).
+# Does NOT run: server e2e (needs DB) or Playwright — see repo README.md "Further checks".
 # Run from repo root: pwsh -File scripts/verify-all.ps1
 # Unix/macOS/CI: sh scripts/verify-all.sh
 $ErrorActionPreference = 'Stop'

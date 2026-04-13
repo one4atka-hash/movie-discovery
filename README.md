@@ -28,3 +28,12 @@ API: `http://localhost:3001` (`GET /api/health`). Optional env (SMTP, VAPID, cro
 2. Start Angular: `cd movie-discovery && npm install && npm start` → `http://localhost:4200` — dev proxy sends `/api` to `http://127.0.0.1:3001`.
 
 Details: [`movie-discovery/README.md`](movie-discovery/README.md) (Backend API section), [`server/README.md`](server/README.md) (Frontend section).
+
+## Further checks (optional)
+
+| Check | Command | Notes |
+|-------|---------|--------|
+| Server e2e | `cd server && npm run test:e2e` | Needs Postgres (e.g. `docker compose up db` or full stack). |
+| Playwright (browser) | `cd movie-discovery && npm run e2e` | One-time: `npm run e2e:install` (Chromium). |
+
+The scripts [`scripts/verify-all.ps1`](scripts/verify-all.ps1) / [`scripts/verify-all.sh`](scripts/verify-all.sh) run **fast** regression only (build + lint + unit tests); they do **not** include the rows above.

@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
-# Full regression: movie-discovery (build, lint, test:ci) + server (build, lint, test).
+# Fast regression: movie-discovery (build, lint, test:ci) + server (build, lint, unit tests).
+# Does NOT run: server e2e (needs DB) or Playwright — see repo README.md "Further checks".
 # Run from repo root: sh scripts/verify-all.sh
 set -eu
 
