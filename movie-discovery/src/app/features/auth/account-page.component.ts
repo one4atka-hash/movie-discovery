@@ -15,6 +15,12 @@ import { BadgeComponent } from '@shared/ui/badge/badge.component';
 import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.component';
 import { ChipComponent } from '@shared/ui/chip/chip.component';
 import { StreamingCatalogService } from '@features/streaming/streaming-catalog.service';
+import { StorageService } from '@core/storage.service';
+import {
+  ExportsApiService,
+  type ExportFormat,
+  type ExportKind,
+} from '@features/exports/exports-api.service';
 
 @Component({
   selector: 'app-account-page',
@@ -48,6 +54,57 @@ import { StreamingCatalogService } from '@features/streaming/streaming-catalog.s
             </button>
           </div>
         </div>
+
+        <section class="account-block" id="account-data" aria-labelledby="account-data-title">
+          <h2 class="account-block__title" id="account-data-title">Данные (server)</h2>
+          <p class="muted">
+            MVP: вставь JWT от backend. Дальше можно скачать экспорт в CSV/JSON и открыть /import
+            wizard.
+          </p>
+          <div class="card">
+            <label class="field">
+              <span>Server JWT token</span>
+              <textarea
+                class="input"
+                rows="2"
+                [formControl]="serverJwt"
+                placeholder="eyJhbGciOi..."
+              ></textarea>
+            </label>
+
+            <div class="actions" style="margin-top: 0">
+              <button class="btn" type="button" [routerLink]="['/import']">Open Import</button>
+            </div>
+
+            <div class="actions" style="align-items: flex-end">
+              <label class="field" style="margin-bottom: 0; flex: 1 1 180px; max-width: 220px">
+                <span>Kind</span>
+                <select class="input" [formControl]="exportKind">
+                  <option value="diary">diary</option>
+                  <option value="watch_state">watch_state</option>
+                  <option value="favorites">favorites</option>
+                </select>
+              </label>
+              <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 200px">
+                <span>Format</span>
+                <select class="input" [formControl]="exportFormat">
+                  <option value="csv">csv</option>
+                  <option value="json">json</option>
+                </select>
+              </label>
+              <button
+                class="btn btn--primary"
+                type="button"
+                (click)="downloadExport()"
+                [disabled]="busy()"
+              >
+                Download export
+              </button>
+            </div>
+
+            <p class="err" *ngIf="exportError()">{{ exportError() }}</p>
+          </div>
+        </section>
 
         <section class="account-block" id="account-subs" aria-labelledby="account-subs-title">
           <h2 class="account-block__title" id="account-subs-title">
@@ -492,6 +549,8 @@ export class AccountPageComponent {
   private readonly router = inject(Router);
   private readonly subsSvc = inject(ReleaseSubscriptionsService);
   private readonly fav = inject(FavoritesService);
+  private readonly storage = inject(StorageService);
+  private readonly exportsApi = inject(ExportsApiService);
   readonly i18n = inject(I18nService);
 
   readonly user = this.auth.user;
@@ -501,6 +560,13 @@ export class AccountPageComponent {
   readonly regEmail = new FormControl('', { nonNullable: true });
   readonly regPassword = new FormControl('', { nonNullable: true });
 
+  readonly serverJwt = new FormControl(this.storage.get<string>('server.jwt.token.v1', '') ?? '', {
+    nonNullable: true,
+  });
+  readonly exportKind = new FormControl<ExportKind>('diary', { nonNullable: true });
+  readonly exportFormat = new FormControl<ExportFormat>('csv', { nonNullable: true });
+  readonly exportError = signal<string | null>(null);
+
   private readonly _busy = signal(false);
   readonly busy = computed(() => this._busy());
 
@@ -509,6 +575,37 @@ export class AccountPageComponent {
 
   readonly subsSorted = computed(() => sortSubscriptionsByRelease(this.subsSvc.mySubscriptions()));
   readonly favorites = computed(() => this.fav.favorites());
+
+  downloadExport(): void {
+    this.exportError.set(null);
+    const token = this.serverJwt.value.trim();
+    if (!token) {
+      this.exportError.set('JWT token обязателен.');
+      return;
+    }
+    this.storage.set('server.jwt.token.v1', token);
+
+    this._busy.set(true);
+    const kind = this.exportKind.value;
+    const format = this.exportFormat.value;
+    this.exportsApi.download(token, { kind, format }).subscribe({
+      next: (blob) => {
+        const ext = format === 'csv' ? 'csv' : 'json';
+        const filename = `export_${kind}.${ext}`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        this._busy.set(false);
+      },
+      error: (e) => {
+        this.exportError.set(e?.message ?? 'Export failed');
+        this._busy.set(false);
+      },
+    });
+  }
 
   posterUrl(path: string): string {
     return tmdbImg(92, path);

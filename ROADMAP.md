@@ -468,7 +468,7 @@ Component tests:
   - [x] FE: `/import` wizard (MVP): create → preview → rows/conflicts list (+pager) → resolve row → apply (JWT token input).
 - [ ] **Export (M2)**:
   - [x] API: `GET /api/exports?kind=diary|watch_state|favorites&format=csv|json` (MVP).
-  - [ ] FE: “Export my data” в профиле + shareable ссылки на файлы (если нужно).
+  - [x] FE: “Export my data” в профиле (MVP: JWT token input + download CSV/JSON).
 - [ ] **Тесты**:
   - [x] Unit: парсеры CSV (generic + 1 популярный формат).
   - [x] e2e (server): upload → apply → данные появились в diary.
