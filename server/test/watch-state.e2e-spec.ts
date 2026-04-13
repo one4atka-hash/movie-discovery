@@ -70,6 +70,28 @@ describe('Watch state (e2e)', () => {
       .expect(400);
   });
 
+  it('validates progress payload', async () => {
+    const token = await registerAndGetToken(app);
+
+    await request(app.getHttpServer())
+      .put('/api/watch-state/123')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'want', progress: { minutes: -1 } })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .put('/api/watch-state/123')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'want', progress: { pct: 101 } })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .put('/api/watch-state/123')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'want', progress: {} })
+      .expect(200);
+  });
+
   afterEach(async () => {
     await app.close();
   });
