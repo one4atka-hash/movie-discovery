@@ -8,3 +8,5 @@ This folder will host a standalone portfolio page describing architectural decis
 
 Planned: lightweight static site (no backend), deployable to Netlify/Vercel/GitHub Pages.
 
+**Status:** `ROADMAP.md` in the repo is fully checked off; deferred work (ML v2, server email/push delivery, etc.) is explicitly labeled there, not as unfinished MVP scope.
+
