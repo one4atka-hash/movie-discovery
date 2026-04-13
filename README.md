@@ -10,7 +10,7 @@ Angular SPA + NestJS API + Postgres/pgvector. Product checklist: [`ROADMAP.md`](
 | [`server/`](server/) | NestJS API, migrations, Docker image |
 | [`portfolio-site/`](portfolio-site/) | Standalone portfolio page (static) |
 | [`docker-compose.yml`](docker-compose.yml) | Postgres + API for local full stack |
-| [`scripts/verify-all.ps1`](scripts/verify-all.ps1) / [`scripts/verify-all.sh`](scripts/verify-all.sh) | Regression: FE build/lint/test + server build/lint/test |
+| [`scripts/verify-all.ps1`](scripts/verify-all.ps1) / [`scripts/verify-all.sh`](scripts/verify-all.sh) | Regression: FE build/lint/test + server build/`lint:ci`/test (server mirrors CI, no ESLint `--fix`) |
 
 ## Quick start (full stack)
 
@@ -36,7 +36,7 @@ Details: [`movie-discovery/README.md`](movie-discovery/README.md) (Backend API s
 | Server e2e | `cd server && npm run test:e2e` | Needs Postgres (e.g. `docker compose up db` or full stack). |
 | Playwright (browser) | `cd movie-discovery && npm run e2e` | One-time: `npm run e2e:install` (Chromium). |
 
-The scripts [`scripts/verify-all.ps1`](scripts/verify-all.ps1) / [`scripts/verify-all.sh`](scripts/verify-all.sh) run **fast** regression only (build + lint + unit tests); they do **not** include the rows above.
+The scripts [`scripts/verify-all.ps1`](scripts/verify-all.ps1) / [`scripts/verify-all.sh`](scripts/verify-all.sh) run **fast** regression only (build + lint + unit tests); for `server` they call `npm run lint:ci` (same as the CI workflow). Use `cd server && npm run lint` locally when you want ESLint `--fix`. They do **not** include the rows above.
 
 ## CI (GitHub Actions)
 

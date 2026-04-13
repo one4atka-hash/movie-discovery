@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Fast regression: movie-discovery (build, lint, test:ci) + server (build, lint, unit tests).
+# Fast regression: movie-discovery (build, lint, test:ci) + server (build, lint:ci, unit tests). Server uses lint:ci (no --fix) to match GitHub Actions.
 # Does NOT run: server e2e (needs DB) or Playwright — see repo README.md "Further checks".
 # Run from repo root: sh scripts/verify-all.sh
 set -eu
@@ -17,7 +17,7 @@ run_in movie-discovery npm run lint
 run_in movie-discovery npm run test:ci
 
 run_in server npm run build
-run_in server npm run lint
+run_in server npm run lint:ci
 run_in server npm test
 
 echo "OK: verify-all completed."

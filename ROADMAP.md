@@ -320,7 +320,7 @@ Component tests:
 - [x] Compose reliability: healthchecks (`db` + `api`), `depends_on: service_healthy`, restart policy, env_file.
 - [x] Docker hardening: non-root, `npm ci --omit=dev` для runtime, healthcheck.
 - [x] CI: workflow на `movie-discovery/` и `server/` (lint/test/build) + `docker build` + secret scanning (gitleaks/trufflehog).
-- [x] Корневой `README.md`: опциональные проверки `server` e2e и Playwright; `scripts/verify-all.*` — только быстрый регресс (без e2e); описание **GitHub Actions** (`.github/workflows/ci.yml`: gitleaks, FE lint/test/build, server `lint:ci`/build/test, `docker build`; без e2e в CI).
+- [x] Корневой `README.md`: опциональные проверки `server` e2e и Playwright; `scripts/verify-all.*` — быстрый регресс (без e2e), для `server` тот же `lint:ci`, что в CI; описание **GitHub Actions** (`.github/workflows/ci.yml`: gitleaks, FE lint/test/build, server `lint:ci`/build/test, `docker build`; без e2e в CI).
 
 **D. Frontend refactor (переиспользуемость, без конфликтов с backend)**
 - [x] Убрать дублирование `language`: единый источник (интерцептор *или* `MovieService.baseParams()`), чтобы не было расхождений.
@@ -579,9 +579,9 @@ Component tests:
 
 ### Статус плана (сводка)
 
-**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: CI — server `lint:ci` в GitHub Actions; корневой `README.md` — gitleaks + FE + server + docker build, optional e2e; `verify-all.*` — быстрый регресс; структура монорепо; `docker-compose` + README; SMTP + release reminders email/Web Push).
+**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: CI и `verify-all.*` — для `server` один и тот же `lint:ci`; корневой `README.md` — gitleaks + FE + server + docker build, optional e2e; структура монорепо; `docker-compose` + README; SMTP + release reminders email/Web Push).
 
 Все пункты выше **отмечены**; где работа **не выполнялась**, это явно указано текстом (**отложено**, **не в текущем milestone**, **v2**). Продуктовый объём итерации **5** и связанных MVP считается **закрытым**; дальнейшее развитие — из блоков с пометкой отложенного backlog.
 
-**Регрессия перед коммитами:** для `movie-discovery` — `npm run build`, `npm run lint`, `npm run test:ci`; для `server` — `npm run build`, `npm run lint`, `npm test` (зелёный прогон зафиксирован при обновлении этого раздела). Одной командой из корня: Windows — `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-all.ps1`; Unix/macOS/CI — `sh scripts/verify-all.sh` (**без** server e2e и Playwright — см. корневой `README.md`, раздел *Further checks*).
+**Регрессия перед коммитами:** для `movie-discovery` — `npm run build`, `npm run lint`, `npm run test:ci`; для `server` — `npm run build`, `npm run lint:ci`, `npm test` (`lint:ci` совпадает с CI и `verify-all`; для автофикса локально — `npm run lint`). Одной командой из корня: Windows — `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-all.ps1`; Unix/macOS — `sh scripts/verify-all.sh` (**без** server e2e и Playwright — см. корневой `README.md`, раздел *Further checks*).
 

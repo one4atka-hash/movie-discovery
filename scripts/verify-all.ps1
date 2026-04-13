@@ -1,4 +1,4 @@
-# Fast regression: movie-discovery (build, lint, test:ci) + server (build, lint, unit tests).
+# Fast regression: movie-discovery (build, lint, test:ci) + server (build, lint:ci, unit tests). Server uses lint:ci (no --fix) to match GitHub Actions.
 # Does NOT run: server e2e (needs DB) or Playwright — see repo README.md "Further checks".
 # Run from repo root: pwsh -File scripts/verify-all.ps1
 # Unix/macOS/CI: sh scripts/verify-all.sh
@@ -23,7 +23,7 @@ Invoke-Step 'movie-discovery' {
 
 Invoke-Step 'server' {
   npm run build
-  npm run lint
+  npm run lint:ci
   npm test
 }
 
