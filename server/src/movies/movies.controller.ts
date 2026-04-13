@@ -14,6 +14,14 @@ import { MoviesService } from './movies.service';
 export class MoviesController {
   constructor(private readonly svc: MoviesService) {}
 
+  @Get(':tmdbId/editions')
+  async editions(
+    @Param(new ZodBodyPipe(MoviesTmdbIdParamSchema))
+    p: z.infer<typeof MoviesTmdbIdParamSchema>,
+  ) {
+    return await this.svc.getEditions(p.tmdbId);
+  }
+
   @Get(':tmdbId/releases')
   async releases(
     @Param(new ZodBodyPipe(MoviesTmdbIdParamSchema))

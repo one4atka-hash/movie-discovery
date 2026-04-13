@@ -4,6 +4,12 @@ import { z } from 'zod';
 
 import { DbService } from '../db/db.service';
 
+import {
+  type MovieEditionItem,
+  heuristicEditionsFromPayload,
+  mergeHeuristicWithManual,
+} from './movie-editions-from-snapshot.util';
+
 const TmdbReleaseDatesResponseSchema = z.object({
   id: z.number().optional(),
   results: z.array(
@@ -127,5 +133,40 @@ export class MoviesService {
       throw new ServiceUnavailableException('Unexpected TMDB payload');
     }
     return json;
+  }
+
+  /**
+   * Edition list: TMDB release-type heuristics from cached release_dates snapshot,
+   * merged with optional `movie_editions` manual rows (same edition_key overrides label/sort).
+   */
+  async getEditions(tmdbId: number): Promise<{
+    tmdbId: number;
+    items: MovieEditionItem[];
+  }> {
+    await this.getReleaseDates(tmdbId, undefined);
+
+    const snap = await this.db.query<{ payload: unknown }>(
+      `select payload from movie_release_snapshots where tmdb_id = $1`,
+      [tmdbId],
+    );
+    const payload = snap[0]?.payload ?? null;
+
+    const manual = await this.db.query<{
+      edition_key: string;
+      label: string;
+      sort_order: number;
+      meta: unknown;
+    }>(
+      `select edition_key, label, sort_order, meta from movie_editions where tmdb_id = $1 order by sort_order, edition_key`,
+      [tmdbId],
+    );
+
+    const h = heuristicEditionsFromPayload(payload);
+    const items =
+      manual.length === 0 && h.length === 0
+        ? []
+        : mergeHeuristicWithManual(h, manual);
+
+    return { tmdbId, items };
   }
 }

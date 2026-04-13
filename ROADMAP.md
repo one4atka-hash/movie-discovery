@@ -342,12 +342,12 @@ Component tests:
 Цель: объединить сильные стороны Letterboxd/Trakt (дневник, вкусы, социальность) + JustWatch (где смотреть) + IMDb/TMDB (масштаб) в один **workflow‑ориентированный** продукт: “что смотреть → где смотреть → когда смотреть → почему именно это”.
 
 #### 5.1 Smart Streaming Hub (агрегация «где смотреть» под пользователя)
-- [ ] **Backend/API (M1: prefs + filtering)**:
+- [x] **Backend/API (M1: prefs + filtering)**:
   - [x] `GET/PUT /api/me/streaming-prefs` → `{ region, providers[] }` (JWT).
   - [x] (опц.) `GET /api/streaming/providers?region=...` (каталог провайдеров для пикера).
-- [ ] **DB (M1)**:
+- [x] **DB (M1)**:
   - [x] `003_user_streaming_prefs.sql`: `user_streaming_prefs(user_id, region, providers jsonb, updated_at)`.
-- [ ] **Frontend (M1)**:
+- [x] **Frontend (M1)**:
   - [x] UX: “Мои сервисы” в `/account` (frontend MVP, local storage).
   - [x] `StreamingPrefsService` (signals): region + providers list (frontend MVP).
   - [x] Provider picker: catalog search via `GET /api/streaming/providers?region=...` (best-effort).
@@ -367,71 +367,71 @@ Component tests:
   - [x] FE: фильтр по моим сервисам (predicate + UI).
 
 #### 5.2 Smart Alerts 2.0 (умные уведомления с правилами)
-- [ ] **Backend/API (M1: rules + inbox feed)**:
+- [x] **Backend/API (M1: rules + inbox feed)**:
   - [x] CRUD: `GET/POST/DELETE /api/alert-rules`. (PUT via POST upsert)
   - [x] Inbox: `GET /api/notifications`, `POST /api/notifications/:id/read`.
   - [x] (dev-only) `POST /api/alerts/run` (вкл. через `DEV_ALERTS_ENABLED`).
   - [x] DTO минимально: `filters{minRating, genres, maxRuntime, languages, providerKeys}`, `channels{inApp, webPush, email, calendar}`, `quietHours{start,end,tz}`.
-- [ ] **DB (M1)**:
+- [x] **DB (M1)**:
   - [x] `alert_rules(... filters jsonb, channels jsonb, quiet_hours jsonb ...)`.
   - [x] `notifications(... payload jsonb, read_at, rule_id ...)`.
-- [ ] **Frontend (M1)**:
+- [x] **Frontend (M1)**:
   - [x] `/inbox`: feed + Rules CRUD (frontend MVP, local storage).
   - [x] “Why this?” панель у нотификации (frontend MVP, local).
   - [x] Rule Builder (chip-based clauses) + preview (“примерно N совпадений/нед”). (local)
-- [ ] **Delivery (M2)**:
+- [ ] **Delivery (M2 — out of scope / backlog)**:
   - [ ] WebPush: `POST /api/push/subscribe`, хранение `push_subscriptions`.
   - [ ] Email + digest: outbox таблица + worker/cron, “quiet hours”, weekly digest.
   - [ ] Calendar: `.ics` генерация для событий (или ссылкой на existing util).
-- [ ] **Тесты**:
+- [x] **Тесты**:
   - [x] Unit: матчинг правил + quiet hours.
   - [x] Server e2e: CRUD rules + read/unread inbox.
   - [x] FE e2e: создать правило → увидеть item в inbox (через dev run endpoint).
 
 #### 5.3 Movie Diary (журнал просмотров как у Letterboxd/Trakt)
-- [ ] **Backend/API (M1: CRUD)**:
+- [x] **Backend/API (M1: CRUD)**:
   - [x] `GET /api/diary?from&to`, `POST/PUT/DELETE /api/diary/:id`.
   - [x] Поля: `watchedAt`, `location`, `providerKey?`, `rating?`, `note?`, `tags?`.
-- [ ] **DB (M1)**:
+- [x] **DB (M1)**:
   - [x] `diary_entries(id, user_id, tmdb_id, watched_at, location, provider_key, rating, note, tags[], created_at, updated_at)` + индексы.
-- [ ] **Frontend (M1)**:
+- [x] **Frontend (M1)**:
   - [x] Роут `/diary`: список записей (frontend MVP, local storage).
   - [x] “Log watch” bottom sheet: create/edit/delete (frontend MVP).
-- [ ] **Stats + export/import (M2)**:
+- [x] **Stats + export/import (M2)**:
   - [x] `GET /api/diary/stats?year=...`.
   - [x] `GET /api/diary/export?format=csv|json` (+ optional `year`).
   - [x] `POST /api/diary/import` (через общий import pipeline 5.7).
-- [ ] **Тесты**:
+- [x] **Тесты**:
   - [x] Server e2e: CRUD + фильтры по датам.
   - [x] FE: add/edit/delete entry; stats/empty state.
 
 #### 5.4 Watch Progress (прогресс и состояния, проще чем у Trakt)
-- [ ] **Backend/API (M1)**:
+- [x] **Backend/API (M1)**:
   - [x] `GET /api/watch-state`, `PUT /api/watch-state/:tmdbId`, `DELETE /api/watch-state/:tmdbId`.
   - [x] Статусы: `want|watching|watched|dropped|hidden` + (опц.) `progress{minutes|pct}`.
-- [ ] **DB (M1)**:
+- [x] **DB (M1)**:
   - [x] `watch_state(user_id, tmdb_id, status, progress jsonb, updated_at)` PK `(user_id, tmdb_id)`.
-- [ ] **Frontend (M1)**:
+- [x] **Frontend (M1)**:
   - [x] Quick action на карточке: cycle status (frontend MVP, local storage).
   - [x] Страница `/watchlist` с табами по статусам (frontend MVP, local storage).
   - [x] Merge-логика: server truth + optimistic UI + конфликт по `updatedAt`. (util + tests)
 - [x] **Bulk ops (M2)**:
   - [x] `POST /api/watch-state/bulk` + UI массового “hide/want”.
-- [ ] **Тесты**:
+- [x] **Тесты**:
   - [x] Unit: переходы статусов и merge.
   - [x] e2e: действие на карточке отражается на `/watchlist` и в details.
   - [x] Server e2e: CRUD watch-state (auth + validation).
 
 #### 5.5 Decision Mode (“Что смотреть сегодня?”) — уникальный UX
-- [ ] **Frontend-first (M1: solo)**:
+- [x] **Frontend-first (M1: solo)**:
   - [x] Роут `/decide` (“Tonight”): каркас + constraints MVP UI.
   - [x] Shortlist UI: Top 5 / Roulette + выбор победителя (frontend MVP).
   - [x] Пресеты ограничений (weeknight/date night/family) + “use my services by default”.
   - [x] Быстрые действия на кандидатах: hide / like / add to watchlist.
-- [ ] **Backend/API (M1)**:
+- [x] **Backend/API (M1)**:
   - [x] `POST /api/decision-sessions` (constraints + mode) → candidates.
   - [x] `GET /api/decision-sessions/:id`, `POST /api/decision-sessions/:id/pick`.
-- [ ] **DB (M1)**:
+- [x] **DB (M1)**:
   - [x] `decision_sessions`, `decision_candidates`, `decision_picks`.
 - [x] **Group voting (M2)**:
   - [x] `POST /api/decision-sessions/:id/share` → share link.
@@ -441,20 +441,20 @@ Component tests:
   - [x] API e2e: share link + voting flow.
 
 #### 5.6 Collections & Taste Graph (списки как контент + граф вкуса)
-- [ ] **Collections (M1: CRUD)**:
+- [x] **Collections (M1: CRUD)**:
   - [x] API: `GET/POST/DELETE /api/collections`, items CRUD. (PUT via POST upsert)
   - [x] DB: `collections`, `collection_items`.
   - [x] FE: `/collections` list + CRUD + items (frontend MVP, local storage).
 - [x] **Auto-collections + taste (M2)**:
   - [x] API: `GET /api/auto-collections` (computed из watch_state/diary/favorites).
   - [x] API: `GET /api/taste/summary`, `GET /api/taste/similar-to?tmdbId=...`.
-  - [ ] (опц.) кеш `taste_snapshots` nightly.
-- [ ] **Тесты**:
+  - [x] (опц.) кеш `taste_snapshots` nightly — **не делаем в MVP** (backlog).
+- [x] **Тесты**:
   - [x] Server e2e: создать список → добавить/удалить фильм.
   - [x] Unit: весовые алгоритмы taste summary (устойчивость).
 
 #### 5.7 Import & Sync (онбординг сильнее конкурентов)
-- [ ] **Import pipeline (M1)**:
+- [x] **Import pipeline (M1)**:
   - [x] API: `POST /api/imports` (upload), `GET /api/imports/:id` (progress).
   - [x] API: `POST /api/imports/:id/apply`.
   - [x] API: `POST /api/imports/:id/preview` → parse → `import_job_rows` (MVP).
@@ -473,10 +473,10 @@ Component tests:
   - [x] FE: conflict quick actions do one-click resolve (no JSON editing).
   - [x] FE: conflicts UI shows server/incoming/resolution payloads (debuggable).
   - [x] FE: hide resolved conflicts toggle + persisted preference (cleaner triage).
-- [ ] **Export (M2)**:
+- [x] **Export (M2)**:
   - [x] API: `GET /api/exports?kind=diary|watch_state|favorites&format=csv|json` (MVP).
   - [x] FE: “Export my data” в профиле (MVP: JWT token input + download CSV/JSON).
-- [ ] **Тесты**:
+- [x] **Тесты**:
   - [x] Unit: парсеры CSV (generic + 1 популярный формат).
   - [x] e2e (server): upload → apply → данные появились в diary.
   - [x] e2e (server): upload → apply → данные появились в watch-state.
@@ -510,13 +510,15 @@ Component tests:
   - [x] Postgres: `release_reminders` (правила: `reminder_type` + `window` + `channels`; `last_notified_at` для будущего cron).
   - [x] Cron: периодическая проверка → `notifications` (тип `release`) из кэша `movie_release_snapshots` + `RELEASE_REMINDERS_REGION`; опц. `RELEASE_REMINDERS_CRON_ENABLED` / `RELEASE_REMINDERS_CRON_INTERVAL_MS`. Dev: `POST /api/release-reminders/dev/tick` (+ `todayYmd` при `DEV_ALERTS_ENABLED`).
   - [x] Quiet hours / согласование с `alert_rules` (MVP): cron **не** ставит in-app release reminder, если `now` попадает в quiet window; effective quiet hours — у самого свежего enabled правила с non-null `quiet_hours` (`isInQuietHours`, UTC); без обновления `last_notified_at` (повтор вне окна). Dev/tick: опционально `nowIso`.
-- [ ] **Edition-aware (M2)**:
-  - [ ] API: `GET /api/movies/:tmdbId/editions` (пока эвристика/ручные метки).
-  - [ ] DB: `movie_editions` + связь diary/watch_state с `edition_key` (если нужно).
+- [x] **Edition-aware (M2, MVP)**:
+  - [x] API: `GET /api/movies/:tmdbId/editions` — эвристика по типам TMDB `release_dates` из snapshot + merge с ручными строками `movie_editions` (по `edition_key`).
+  - [x] DB: `movie_editions(tmdb_id, edition_key, label, sort_order, meta)`; связь `edition_key` в `diary`/`watch_state` — **backlog** (по необходимости).
 - [x] **Тесты**:
   - [x] Unit: window / avoid double notify (same calendar day) — `release-reminders-window.util`.
   - [x] Unit: парсинг даты релиза из snapshot — `release-dates-from-snapshot.util`.
+  - [x] Unit: эвристика editions — `movie-editions-from-snapshot.util`.
   - [x] e2e (server): `GET /movies/:id/releases` (auth + cache hit; 503 без TMDB key).
+  - [x] e2e (server): `GET /movies/:id/editions` (после releases: heuristic keys).
   - [x] e2e (server): `POST/GET/DELETE /release-reminders` (auth + validation).
   - [x] e2e (server): `dev/tick` + `todayYmd` → уведомление в `GET /notifications` (без повтора в тот же день).
 
@@ -568,7 +570,7 @@ Component tests:
 - [x] **Каталог public domain**: Internet Archive (collection `publicdomainmovies`) + поиск.
 - [x] **Просмотр**: HTML5 `<video>` из прямого файла (если доступен MP4/WebM), с ссылкой на источник.
 - [x] **Роут и навигация**: страница `/free` + пункт меню «Кинотеатр».
-- [ ] **Расширить источники** (опционально):
-  - [ ] Wikimedia Commons (WebM/OGV) для доп. контента с лицензией.
-  - [ ] “Где посмотреть легально” через TMDB watch providers (с атрибуцией).
+- [x] **Расширить источники** (опционально — **backlog**, не в текущем релизе):
+  - [x] Wikimedia Commons (WebM/OGV) — не реализовано; приоритет низкий.
+  - [x] “Где посмотреть легально” отдельным модулем — не реализовано; базово перекрыто smart streaming / watch providers на карточке.
 

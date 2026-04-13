@@ -104,6 +104,52 @@ describe('Movies releases (e2e)', () => {
       .expect(400);
   });
 
+  it('returns editions from release snapshot (heuristic)', async () => {
+    const token = await registerAndGetToken(app);
+    const tmdbId = 8_100_000 + Math.floor(Math.random() * 99_000);
+
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            id: tmdbId,
+            results: [
+              {
+                iso_3166_1: 'US',
+                release_dates: [
+                  { type: 3, release_date: '2024-01-01' },
+                  { type: 4, release_date: '2024-06-01' },
+                ],
+              },
+            ],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    );
+
+    await request(app.getHttpServer())
+      .get(`/api/movies/${tmdbId}/releases`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const ed = await request(app.getHttpServer())
+      .get(`/api/movies/${tmdbId}/editions`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const body = ed.body as {
+      tmdbId: number;
+      items: { editionKey: string; source: string }[];
+    };
+    expect(body.tmdbId).toBe(tmdbId);
+    const keys = body.items.map((i) => i.editionKey);
+    expect(keys).toContain('theatrical');
+    expect(keys).toContain('digital');
+
+    fetchSpy.mockRestore();
+  });
+
   it('returns 503 when TMDB key is not configured', async () => {
     const prev = process.env.TMDB_API_KEY;
     process.env.TMDB_API_KEY = '';
