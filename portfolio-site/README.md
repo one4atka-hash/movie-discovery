@@ -12,3 +12,5 @@ Planned: lightweight static site (no backend), deployable to Netlify/Vercel/GitH
 
 **Regression:** from repo root — Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-all.ps1`; Unix/macOS/CI: `sh scripts/verify-all.sh` — runs build + lint + unit tests for `movie-discovery` and `server` (see `ROADMAP.md` summary).
 
+**Ops:** `docker-compose.yml` at repo root runs Postgres + API; optional env (SMTP, VAPID, crons) are listed in comments and in `server/.env.example`. `server/README.md` links to `movie-discovery/README.md` for the Angular `/api` dev proxy.
+

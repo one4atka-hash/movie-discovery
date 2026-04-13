@@ -17,6 +17,9 @@ services:
       - db_data:/var/lib/postgresql/data
       - ./server/docker/db-init:/docker-entrypoint-initdb.d:ro
 
+  # Optional env for email, Web Push, dev toggles (merge via override or `environment`):
+  # see server/.env.example — e.g. SMTP_*, DEV_EMAIL_SEND_ENABLED, VAPID_*, DEV_PUSH_SEND_ENABLED,
+  # RELEASE_REMINDERS_CRON_ENABLED, DEV_ALERTS_ENABLED, TMDB_API_KEY, …
   api:
     build:
       context: ./server

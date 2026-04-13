@@ -51,6 +51,10 @@ Then:
   - Email (SMTP): set `SMTP_HOST` (and optional `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`); dev (JWT + `DEV_EMAIL_SEND_ENABLED`): `POST /api/email/dev/send-test` — plain-text smoke to the JWT user’s email; **release-reminders** cron also sends plain-text email when a reminder has `channels.email` (digest/outbox for alert rules — still backlog)
 - `GET /api/recommendations` (MVP stub payload)
 
+### Frontend (Angular) — same repo
+
+The `movie-discovery/` app proxies `/api` to this service in dev (`proxy.conf.json` → `http://127.0.0.1:3001`). See **`movie-discovery/README.md`** (section *Backend API (NestJS, optional)*) for JWT in Account, dev SMTP test, and server release reminders on movie details.
+
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
 ## Project setup
