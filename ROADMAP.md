@@ -465,6 +465,7 @@ Component tests:
 - [ ] **Тесты**:
   - [ ] Unit: парсеры CSV (generic + 1 популярный формат).
   - [x] e2e (server): upload → apply → данные появились в diary.
+  - [x] e2e (server): upload → apply → данные появились в watch-state.
   - [ ] e2e: upload → preview → apply → данные появились в diary/watchlist.
 
 #### 5.8 Explainable Recommendations (объяснимые рекомендации — доверие)

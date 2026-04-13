@@ -127,6 +127,46 @@ describe('Imports (e2e)', () => {
     ).toBe(true);
   });
 
+  it('watch_state json import applies items into /api/watch-state (MVP)', async () => {
+    const token = await registerAndGetToken(app);
+
+    const created = await request(app.getHttpServer())
+      .post('/api/imports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        kind: 'watch_state',
+        format: 'json',
+        payload: JSON.stringify({
+          items: [
+            {
+              tmdbId: 550,
+              status: 'watching',
+              progress: { minutes: 12, pct: 10 },
+            },
+          ],
+        }),
+      })
+      .expect(201);
+    const id = (created.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/apply`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
+
+    const list = await request(app.getHttpServer())
+      .get('/api/watch-state')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const items = (list.body as { items: unknown[] }).items as {
+      tmdbId?: number;
+      status?: string;
+    }[];
+    expect(items.some((x) => x.tmdbId === 550 && x.status === 'watching')).toBe(
+      true,
+    );
+  });
+
   afterEach(async () => {
     await app.close();
   });

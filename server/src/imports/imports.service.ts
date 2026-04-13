@@ -129,6 +129,51 @@ export class ImportsService {
       return { ok: true };
     }
 
+    if (r.kind === 'watch_state' && r.format === 'json') {
+      const parsed = ImportWatchStateJsonSchema.safeParse(
+        safeJsonParse(r.payload),
+      );
+      if (!parsed.success) {
+        await this.db.exec(
+          `update import_jobs set status = 'failed', error = 'Invalid watch_state JSON', updated_at = now()
+           where id = $1 and user_id = $2`,
+          [id, userId],
+        );
+        return { ok: true };
+      }
+
+      const items = parsed.data.items;
+      for (const it of items) {
+        await this.db.exec(
+          `insert into watch_state(user_id, tmdb_id, status, progress)
+           values ($1, $2, $3, $4::jsonb)
+           on conflict (user_id, tmdb_id)
+           do update set status = excluded.status, progress = excluded.progress, updated_at = now()`,
+          [
+            userId,
+            it.tmdbId,
+            it.status,
+            it.progress ? JSON.stringify(it.progress) : null,
+          ],
+        );
+      }
+
+      await this.db.exec(
+        `update import_jobs
+         set status = 'applied', error = null,
+             meta = jsonb_set(coalesce(meta, '{}'::jsonb), '{applied}', $3::jsonb, true),
+             updated_at = now()
+         where id = $1 and user_id = $2`,
+        [
+          id,
+          userId,
+          JSON.stringify({ kind: 'watch_state', items: items.length }),
+        ],
+      );
+
+      return { ok: true };
+    }
+
     await this.db.exec(
       `update import_jobs
        set status = 'applied', error = null, updated_at = now()
@@ -160,6 +205,27 @@ const ImportDiaryJsonSchema = z.object({
         .strict(),
     )
     .max(500),
+});
+
+const ImportWatchStateJsonSchema = z.object({
+  items: z
+    .array(
+      z
+        .object({
+          tmdbId: z.number().int().positive(),
+          status: z.enum(['want', 'watching', 'watched', 'dropped', 'hidden']),
+          progress: z
+            .object({
+              minutes: z.number().int().nonnegative().optional().nullable(),
+              pct: z.number().min(0).max(100).optional().nullable(),
+            })
+            .strict()
+            .optional()
+            .nullable(),
+        })
+        .strict(),
+    )
+    .max(2000),
 });
 
 function safeJsonParse(s: string): unknown {
