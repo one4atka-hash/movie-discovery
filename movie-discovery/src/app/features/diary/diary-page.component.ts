@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.component';
@@ -238,6 +238,7 @@ export class DiaryPageComponent {
   readonly i18n = inject(I18nService);
   readonly toast = inject(ToastService);
   private readonly diary = inject(DiaryService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly sheetOpen = signal(false);
   readonly editing = signal<DiaryEntry | null>(null);
@@ -251,6 +252,24 @@ export class DiaryPageComponent {
   draftRating: string = '';
   draftTags = '';
   draftNote = '';
+  /** Prefill from query `logTmdbId` when opening sheet from movie actions. */
+  draftTmdbId: number | null = null;
+
+  constructor() {
+    const title = this.route.snapshot.queryParamMap.get('logTitle')?.trim();
+    if (!title) return;
+    const idRaw = this.route.snapshot.queryParamMap.get('logTmdbId');
+    const id = idRaw ? Number(idRaw) : NaN;
+    this.draftTmdbId = Number.isFinite(id) && id > 0 ? id : null;
+    this.editing.set(null);
+    this.draftTitle = title;
+    this.draftWatchedAt = new Date().toISOString().slice(0, 10);
+    this.draftLocation.set('home');
+    this.draftRating = '';
+    this.draftTags = '';
+    this.draftNote = '';
+    this.sheetOpen.set(true);
+  }
 
   openCreate(): void {
     this.editing.set(null);
@@ -260,6 +279,7 @@ export class DiaryPageComponent {
     this.draftRating = '';
     this.draftTags = '';
     this.draftNote = '';
+    this.draftTmdbId = null;
     this.sheetOpen.set(true);
   }
 
@@ -271,6 +291,7 @@ export class DiaryPageComponent {
     this.draftRating = e.rating != null ? String(e.rating) : '';
     this.draftTags = (e.tags ?? []).join(', ');
     this.draftNote = e.note ?? '';
+    this.draftTmdbId = e.tmdbId ?? null;
     this.sheetOpen.set(true);
   }
 
@@ -286,8 +307,10 @@ export class DiaryPageComponent {
         .map((t) => t.trim())
         .filter(Boolean);
       const rating = this.draftRating.trim() ? Number(this.draftRating) : null;
+      const tmdbId = this.editing() ? (this.editing()!.tmdbId ?? null) : this.draftTmdbId;
       this.diary.upsert({
         id: this.editing()?.id,
+        tmdbId,
         title: this.draftTitle,
         watchedAt: this.draftWatchedAt,
         location: this.draftLocation(),

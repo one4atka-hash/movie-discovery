@@ -528,9 +528,9 @@ Component tests:
 - [x] **Share cards (M1)**:
   - [x] FE renderer (HTML/CSS) + “Export to image” (client-only first, html2canvas → PNG).
   - [x] Templates: top-10, month recap (diary), tonight shortlist (кандидаты из сессии после «Собрать shortlist» на Tonight).
-- [ ] **Synthesis hub (M2)**:
-  - [ ] FE: `/me` (единый хаб): watchlist + diary + alerts + recs + quick add.
-  - [ ] Общий “movie actions” bottom sheet для всех поверхностей.
+- [x] **Synthesis hub (M2)**:
+  - [x] FE: `/me` (единый хаб): watchlist + diary + Inbox (счётчик правил) + recs + quick add (`?q=` на главной).
+  - [x] Общий `MovieActionsSheet`: статус watchlist, избранное, дневник (`logTitle`/`logTmdbId`), детали; подключён на Discover (рекомендации + random) и `/me`.
 - [x] **Тесты**:
   - [x] e2e (server): публичный `GET /u/:slug` при unlisted + секции; `private` → 404; конфликт slug → 409.
   - [x] Unit (FE): детерминированный порядок строк share card (top10 / month recap / tonight) + стабильный `shareCardContentSnapshot`.
@@ -538,11 +538,11 @@ Component tests:
 #### 5.X Дизайн/UX (единая “Movie OS” стилистика для Итерации 5)
 - [ ] **IA/Навигация (mobile-first, 5 вкладок максимум)**:
   - [x] `Discover` (поиск/лента), `Tonight` (Decision Mode), `Diary`, `Lists`, `Inbox` — навигация/роуты добавлены.
-  - [ ] В профиле: My Services, Import/Export, Language/Region.
+  - [x] В профиле: My Services, Import/Export, Language/Region (MVP: сервисы `#account-streaming`, импорт в блоке «Данные», язык TMDB — селектор в шапке; вход в хаб `/me` из Account).
   - [x] В профиле: Privacy/Share — публичный профиль (server) + `/u/:slug` (MVP).
 - [ ] **Единые интеракции (везде одинаково)**:
   - [ ] Quick actions (один набор): Status cycle + Like/Dislike + Alert + Log.
-  - [ ] Bottom sheet / drawer для “More…” и “Why this?” (без разнобоя).
+  - [x] Bottom sheet для действий с фильмом (`MovieActionsSheet`, MVP на Discover + `/me`); «Why this?» — отдельная панель на рекомендациях.
 - [ ] **Rule Builder как главный паттерн**:
   - [ ] Chip-based clauses: trigger + constraints + channels + preview.
   - [ ] “Why” генерируется из тех же clause-объектов (переиспользование в inbox).

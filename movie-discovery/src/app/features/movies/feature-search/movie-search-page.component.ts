@@ -10,7 +10,7 @@ import {
   untracked,
 } from '@angular/core';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   catchError,
   debounceTime,
@@ -40,6 +40,7 @@ import { I18nService } from '@shared/i18n/i18n.service';
 import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
 import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.component';
 import { ButtonComponent } from '@shared/ui/button/button.component';
+import { MovieActionsSheetComponent } from '@shared/ui/movie-actions-sheet/movie-actions-sheet.component';
 import { MovieReactionsService } from '../data-access/services/movie-reactions.service';
 import { RecommendationsFeedbackService } from '../data-access/services/recommendations-feedback.service';
 import { StreamingPrefsService } from '@features/streaming/streaming-prefs.service';
@@ -61,6 +62,7 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
     BottomSheetComponent,
     ButtonComponent,
     ChipComponent,
+    MovieActionsSheetComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -252,9 +254,24 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                   <a class="grid__link" [routerLink]="['/movie', m.id]">
                     <app-movie-card [movie]="m" [providers]="myProvidersFor(m.id)" />
                   </a>
-                  <button class="whyBtn" type="button" (click)="openWhy(m)" aria-label="Why this?">
-                    Why?
-                  </button>
+                  <div class="cardHud" aria-hidden="false">
+                    <button
+                      class="whyBtn"
+                      type="button"
+                      (click)="openWhy(m)"
+                      aria-label="Why this?"
+                    >
+                      Why?
+                    </button>
+                    <button
+                      type="button"
+                      class="whyBtn"
+                      (click)="openMovieActions(m)"
+                      [attr.aria-label]="i18n.t('movieActions.moreAria')"
+                    >
+                      ⋯
+                    </button>
+                  </div>
                 </div>
               </div>
               <p
@@ -280,13 +297,19 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                 ></div>
               </div>
               <div class="grid grid--random" *ngIf="!randomLoading() && randomVisible().length">
-                <a
-                  class="grid__item"
-                  *ngFor="let m of randomVisible(); trackBy: trackById"
-                  [routerLink]="['/movie', m.id]"
-                >
-                  <app-movie-card [movie]="m" [providers]="myProvidersFor(m.id)" />
-                </a>
+                <div class="grid__item" *ngFor="let m of randomVisible(); trackBy: trackById">
+                  <a class="grid__link" [routerLink]="['/movie', m.id]">
+                    <app-movie-card [movie]="m" [providers]="myProvidersFor(m.id)" />
+                  </a>
+                  <button
+                    type="button"
+                    class="whyBtn"
+                    (click)="openMovieActions(m)"
+                    [attr.aria-label]="i18n.t('movieActions.moreAria')"
+                  >
+                    ⋯
+                  </button>
+                </div>
               </div>
               <p class="muted" *ngIf="!randomLoading() && randomError()" role="status">
                 {{ randomError() }}
@@ -332,6 +355,12 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
         [disabled]="!canLoadMore()"
         (reached)="loadNextPage()"
       ></div>
+
+      <app-movie-actions-sheet
+        [open]="actionsOpen()"
+        [movie]="actionsMovie()"
+        (closed)="closeMovieActions()"
+      />
 
       <app-bottom-sheet
         [open]="whyOpen()"
@@ -881,6 +910,16 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
         background: color-mix(in srgb, #000 62%, transparent);
       }
 
+      .cardHud {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-end;
+      }
+
       .whyActions {
         display: flex;
         flex-wrap: wrap;
@@ -930,6 +969,7 @@ export class MovieSearchPageComponent {
   private readonly api = inject(MovieService);
   private readonly config = inject(ConfigService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
   private readonly auth = inject(AuthService);
   private readonly subsSvc = inject(ReleaseSubscriptionsService);
   private readonly fav = inject(FavoritesService);
@@ -996,6 +1036,9 @@ export class MovieSearchPageComponent {
 
   readonly whyOpen = signal(false);
   readonly whyMovie = signal<Movie | null>(null);
+
+  readonly actionsOpen = signal(false);
+  readonly actionsMovie = signal<Movie | null>(null);
 
   readonly onlyMyServices = signal(false);
   readonly hasMyServices = computed(() => (this.prefs.providers() ?? []).length > 0);
@@ -1098,6 +1141,21 @@ export class MovieSearchPageComponent {
           this.ensureProvidersForIds((res.results ?? []).map((m) => m.id));
         },
       });
+
+    this.applySearchQueryParam(this.route.snapshot.queryParamMap.get('q'));
+    this.route.queryParamMap
+      .pipe(
+        map((pm) => pm.get('q')),
+        distinctUntilChanged(),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((q) => this.applySearchQueryParam(q));
+  }
+
+  private applySearchQueryParam(q: string | null | undefined): void {
+    const v = (q ?? '').trim();
+    if (v.length < 2) return;
+    this.queryControl.setValue(v, { emitEvent: true });
   }
 
   loadNextPage(): void {
@@ -1351,6 +1409,16 @@ export class MovieSearchPageComponent {
   closeWhy(): void {
     this.whyOpen.set(false);
     this.whyMovie.set(null);
+  }
+
+  openMovieActions(m: Movie): void {
+    this.actionsMovie.set(m);
+    this.actionsOpen.set(true);
+  }
+
+  closeMovieActions(): void {
+    this.actionsOpen.set(false);
+    this.actionsMovie.set(null);
   }
 
   hideRec(id: number): void {

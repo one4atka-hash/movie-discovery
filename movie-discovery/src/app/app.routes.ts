@@ -53,6 +53,11 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'me',
+    loadComponent: () =>
+      import('./features/me-hub/me-hub-page.component').then((c) => c.MeHubPageComponent),
+  },
+  {
     path: 'import',
     loadComponent: () =>
       import('./features/import/import-page.component').then((c) => c.ImportPageComponent),
