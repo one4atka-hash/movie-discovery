@@ -319,6 +319,14 @@ import type { WatchStatus } from '@features/watchlist/watch-state.model';
                   />
                   {{ i18n.t('details.timeline.inApp') }}
                 </label>
+                <label class="timeline__lbl chk">
+                  <input
+                    type="checkbox"
+                    [checked]="serverReminderWebPush()"
+                    (change)="serverReminderWebPush.set($any($event.target).checked)"
+                  />
+                  {{ i18n.t('details.timeline.webPush') }}
+                </label>
                 <button class="btn btn--primary" type="button" (click)="saveServerReminder(m)">
                   {{ i18n.t('details.timeline.save') }}
                 </button>
@@ -1198,6 +1206,7 @@ export class MovieDetailsPageComponent {
   readonly serverReminderType = signal<'theatrical' | 'digital' | 'physical' | 'any'>('any');
   readonly serverReminderDaysBefore = signal(7);
   readonly serverReminderInApp = signal(true);
+  readonly serverReminderWebPush = signal(false);
 
   readonly serverRemindersForMovie = computed(() => {
     const m = this.movie();
@@ -1379,7 +1388,7 @@ export class MovieDetailsPageComponent {
         window: { daysBefore: this.serverReminderDaysBefore() },
         channels: {
           inApp: this.serverReminderInApp(),
-          webPush: false,
+          webPush: this.serverReminderWebPush(),
           email: false,
           calendar: false,
         },

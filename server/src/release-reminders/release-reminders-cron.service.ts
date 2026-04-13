@@ -12,6 +12,7 @@ import { isInQuietHours } from '../alerts/alerts-matcher';
 import { NotificationsService } from '../alerts/notifications.service';
 import { truthy } from '../config/env.schema';
 import { DbService } from '../db/db.service';
+import { PushDeliveryService } from '../push/push-delivery.service';
 
 import { releaseDateYmdFromSnapshot } from './release-dates-from-snapshot.util';
 import {
@@ -46,6 +47,7 @@ export class ReleaseRemindersCronService
     private readonly db: DbService,
     private readonly notifications: NotificationsService,
     private readonly alertRules: AlertRulesService,
+    private readonly pushDelivery: PushDeliveryService,
   ) {}
 
   onModuleInit(): void {
@@ -98,7 +100,9 @@ export class ReleaseRemindersCronService
       if (!win.success) continue;
 
       const ch = row.channels ?? {};
-      if (!ch.inApp) continue;
+      const wantsInApp = Boolean(ch.inApp);
+      const wantsWebPush = Boolean(ch.webPush);
+      if (!wantsInApp && !wantsWebPush) continue;
 
       if (!row.payload) continue;
 
@@ -133,28 +137,53 @@ export class ReleaseRemindersCronService
         continue;
       }
 
+      if (!wantsInApp && wantsWebPush && !this.pushDelivery.vapidConfigured()) {
+        continue;
+      }
+
       const titleRow = await this.db.query<{ title: string | null }>(
         `select title from movie_features where tmdb_id = $1 limit 1`,
         [row.tmdb_id],
       );
       const movieTitle = titleRow[0]?.title?.trim() || `Movie ${row.tmdb_id}`;
 
-      await this.notifications.insertReleaseReminderNotification(row.user_id, {
-        tmdbId: row.tmdb_id,
-        title: `Release reminder · ${movieTitle}`,
-        body:
-          daysBefore === 0
-            ? `Release day (${region}) for your ${rt} track.`
-            : `${daysBefore} day(s) before release (${region}, ${rt}).`,
-        payload: {
-          kind: 'release_reminder',
-          reminderId: row.id,
-          reminderType: rt,
-          region,
-          releaseDateYmd: releaseYmd,
-          triggerYmd,
-        },
-      });
+      const title = `Release reminder · ${movieTitle}`;
+      const body =
+        daysBefore === 0
+          ? `Release day (${region}) for your ${rt} track.`
+          : `${daysBefore} day(s) before release (${region}, ${rt}).`;
+
+      if (wantsInApp) {
+        await this.notifications.insertReleaseReminderNotification(
+          row.user_id,
+          {
+            tmdbId: row.tmdb_id,
+            title,
+            body,
+            payload: {
+              kind: 'release_reminder',
+              reminderId: row.id,
+              reminderType: rt,
+              region,
+              releaseDateYmd: releaseYmd,
+              triggerYmd,
+            },
+          },
+        );
+      }
+
+      if (wantsWebPush && this.pushDelivery.vapidConfigured()) {
+        const out = await this.pushDelivery.sendToUser(
+          row.user_id,
+          title,
+          body,
+        );
+        if (out.errors.length) {
+          this.log.warn(
+            `Web Push for user ${row.user_id} reminder ${row.id}: ${out.errors.join('; ')}`,
+          );
+        }
+      }
 
       await this.db.exec(
         `update release_reminders set last_notified_at = now() where id = $1`,

@@ -47,7 +47,7 @@ Then:
   - `GET/POST/DELETE /api/favorites`
   - `GET/POST/DELETE /api/subscriptions`
   - `GET/POST /api/feedback`
-  - Push: `GET /api/push/vapid-public` (VAPID public key, optional); JWT: `POST /api/push/subscribe`, `GET /api/push/subscriptions`, `DELETE /api/push/subscriptions/:id`; dev (JWT + `DEV_PUSH_SEND_ENABLED`): `POST /api/push/dev/send-self` — outbound Web Push via `web-push` when `VAPID_*` is set
+  - Push: `GET /api/push/vapid-public` (VAPID public key, optional); JWT: `POST /api/push/subscribe`, `GET /api/push/subscriptions`, `DELETE /api/push/subscriptions/:id`; dev (JWT + `DEV_PUSH_SEND_ENABLED`): `POST /api/push/dev/send-self`; outbound Web Push via `web-push` when `VAPID_*` is set — also from **release-reminders** cron when `channels.webPush` on a reminder
 - `GET /api/recommendations` (MVP stub payload)
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.

@@ -8,7 +8,7 @@ This folder will host a standalone portfolio page describing architectural decis
 
 Planned: lightweight static site (no backend), deployable to Netlify/Vercel/GitHub Pages.
 
-**Status:** `ROADMAP.md` in the repo is fully checked off; deferred work (ML v2, SMTP, scheduled email/outbound push from production workers, etc.) is explicitly labeled there. Push: client registration + optional **outbound** test send (`POST /api/push/dev/send-self` with full VAPID + dev flag).
+**Status:** `ROADMAP.md` in the repo is fully checked off; deferred work (ML v2, SMTP, alert-matcher → push, digest email, etc.) is explicitly labeled there. Push: registration + outbound sends (dev self-test + **release-reminder cron** when `webPush` channel is on and VAPID is configured).
 
 **Regression:** from repo root — Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-all.ps1`; Unix/macOS/CI: `sh scripts/verify-all.sh` — runs build + lint + unit tests for `movie-discovery` and `server` (see `ROADMAP.md` summary).
 

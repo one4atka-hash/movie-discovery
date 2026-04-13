@@ -296,7 +296,7 @@ Component tests:
 - [x] **Rerank (опционально, v2 / отложено)**: нейро‑ре‑ранжирование top‑K + объяснения.
 - [x] **Notifications (v2 / частично)**:
   - [x] Email провайдер + scheduled job в день релиза — **не в текущем milestone**.
-  - [x] WebPush: хранение подписок на сервере (`POST /api/push/subscribe`, таблица `push_subscriptions`, `GET/DELETE`) + `GET /api/push/vapid-public`; **FE** синхронизирует Push-подписку с сервером при сохранении напоминания с каналом web push, если в API задан `VAPID_PUBLIC_KEY`; **отправка** с API: `web-push` + dev `POST /api/push/dev/send-self` (JWT, `DEV_PUSH_SEND_ENABLED`, полный `VAPID_SUBJECT` + ключи); фоновая интеграция с cron релизов / matcher алертов — **backlog**.
+  - [x] WebPush: хранение подписок на сервере (`POST /api/push/subscribe`, таблица `push_subscriptions`, `GET/DELETE`) + `GET /api/push/vapid-public`; **FE** синхронизирует Push-подписку с сервером при сохранении напоминания с каналом web push, если в API задан `VAPID_PUBLIC_KEY`; **отправка** с API: `web-push` + dev `POST /api/push/dev/send-self` (JWT, `DEV_PUSH_SEND_ENABLED`, полный `VAPID_SUBJECT` + ключи); **cron напоминаний о релизах** (`ReleaseRemindersCronService`) при `channels.webPush` и настроенном VAPID шлёт push тем же текстом, что и in-app; matcher алертов / digest email — **backlog**.
 
 #### Итерация 4 — Workstreams (можно делать параллельно)
 
@@ -379,7 +379,7 @@ Component tests:
   - [x] “Why this?” панель у нотификации (frontend MVP, local).
   - [x] Rule Builder (chip-based clauses) + preview (“примерно N совпадений/нед”). (local)
 - [x] **Delivery (M2 — частично)**:
-  - [x] WebPush: `POST /api/push/subscribe` + таблица `push_subscriptions` + `GET /api/push/subscriptions`, `DELETE /api/push/subscriptions/:id` + `GET /api/push/vapid-public` + **исходящая** отправка (`web-push`, dev `POST /api/push/dev/send-self` при `VAPID_*`); фоновая доставка по расписанию без dev-эндпоинта — **отложена** (M1 alert delivery — по-прежнему in-app для продуктовых сценариев).
+  - [x] WebPush: `POST /api/push/subscribe` + таблица `push_subscriptions` + `GET /api/push/subscriptions`, `DELETE /api/push/subscriptions/:id` + `GET /api/push/vapid-public` + **исходящая** отправка (`web-push`, dev `POST /api/push/dev/send-self` при `VAPID_*`); **фоновая** отправка при срабатывании **release reminders cron** если в правиле включён `channels.webPush` и VAPID задан; прочие сценарии (alert rules matcher → push, digest) — **backlog** (M1 alert delivery — по-прежнему in-app для правил в inbox).
   - [x] Email + digest: outbox + worker/cron — **не в текущем milestone**.
   - [x] Calendar: серверная `.ics` для правил — **не в текущем milestone** (клиентский .ics для подписок на релиз — по-прежнему в фронте где есть).
 - [x] **Тесты**:
@@ -503,7 +503,7 @@ Component tests:
 - [x] **Release timeline (M1)**:
   - [x] API: `GET /api/movies/:tmdbId/releases?region=...` (snapshot/cached, Postgres `movie_release_snapshots` + TTL `MOVIE_RELEASES_CACHE_TTL_MS`).
   - [x] Reminders: `POST/GET/DELETE /api/release-reminders` (type + window + channels; Postgres `release_reminders`).
-  - [x] FE: секция “Timeline” на movie details + форма server reminders; в Inbox — блок «Release reminders (server)» при Load server feed (нужен Server JWT).
+  - [x] FE: секция “Timeline” на movie details + форма server reminders (in-app + опционально Web Push); в Inbox — блок «Release reminders (server)» при Load server feed (нужен Server JWT).
 - [x] **DB + Jobs**:
   - [x] Postgres: `movie_release_snapshots` (кэш TMDB `release_dates`).
   - [x] Postgres: `release_reminders` (правила: `reminder_type` + `window` + `channels`; `last_notified_at` для будущего cron).
@@ -577,7 +577,7 @@ Component tests:
 
 ### Статус плана (сводка)
 
-**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: Web Push — исходящая отправка dev, `sw.js` показывает push payload).
+**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: Web Push из cron release reminders при `channels.webPush`).
 
 Все пункты выше **отмечены**; где работа **не выполнялась**, это явно указано текстом (**отложено**, **не в текущем milestone**, **v2**). Продуктовый объём итерации **5** и связанных MVP считается **закрытым**; дальнейшее развитие — из блоков с пометкой отложенного backlog.
 
