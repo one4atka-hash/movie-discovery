@@ -191,13 +191,28 @@ const TOKEN_KEY = 'server.jwt.token.v1';
                     <span class="muted">{{ c.createdAt }}</span>
                   </div>
                   <pre class="row__json">{{ pretty(c.incoming) }}</pre>
-                  @if (c.rowN) {
-                    <div class="row__actions">
-                      <app-button variant="ghost" (click)="openResolve(c.rowN, c.incoming)"
+                  <div class="row__actions" style="justify-content: space-between; gap: 0.5rem">
+                    <app-button
+                      variant="ghost"
+                      [disabled]="busy()"
+                      (click)="openResolve(c.rowN ?? null, c.server)"
+                      >Use server</app-button
+                    >
+                    <app-button
+                      variant="ghost"
+                      [disabled]="busy()"
+                      (click)="openResolve(c.rowN ?? null, c.incoming)"
+                      >Use incoming</app-button
+                    >
+                    @if (c.rowN) {
+                      <app-button
+                        variant="ghost"
+                        [disabled]="busy()"
+                        (click)="openResolve(c.rowN, c.incoming)"
                         >Resolve row</app-button
                       >
-                    </div>
-                  }
+                    }
+                  </div>
                 </div>
               }
             </div>
@@ -553,7 +568,7 @@ export class ImportPageComponent {
     });
   }
 
-  openResolve(rowN: number, mapped: unknown): void {
+  openResolve(rowN: number | null, mapped: unknown): void {
     this._err.set(null);
     this._resolveRowN.set(rowN);
     this.resolveStatus = 'ok';
@@ -571,7 +586,10 @@ export class ImportPageComponent {
     const token = this.token.trim();
     const id = this._jobId();
     const rowN = this._resolveRowN();
-    if (!token || !id || !rowN) return;
+    if (!token || !id || !rowN) {
+      this._err.set('Row number неизвестен (нет rowN). Открой resolve через "Resolve row".');
+      return;
+    }
 
     let mapped: unknown = null;
     try {
