@@ -878,6 +878,22 @@ export class ImportsService {
       params,
     );
 
+    if (
+      input.status === 'ok' &&
+      input.mapped &&
+      typeof input.mapped === 'object'
+    ) {
+      const tmdbId = (input.mapped as { tmdbId?: unknown }).tmdbId;
+      if (typeof tmdbId === 'number' && Number.isFinite(tmdbId) && tmdbId > 0) {
+        await this.db.exec(
+          `update import_conflicts
+           set resolution = $3::jsonb
+           where job_id = $1 and entity = 'watch_state' and key = $2 and resolution is null`,
+          [id, String(tmdbId), JSON.stringify(input.mapped)],
+        );
+      }
+    }
+
     return { ok: true };
   }
 }

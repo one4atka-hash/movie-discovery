@@ -249,6 +249,68 @@ describe('Imports (e2e)', () => {
     expect(items[0]?.rowN).toBe(1);
   });
 
+  it('resolve row writes conflict resolution (MVP)', async () => {
+    const token = await registerAndGetToken(app);
+
+    await request(app.getHttpServer())
+      .put('/api/watch-state/550')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'want', progress: { minutes: 10 } })
+      .expect(200);
+
+    const created = await request(app.getHttpServer())
+      .post('/api/imports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        kind: 'watch_state',
+        format: 'json',
+        payload: JSON.stringify({
+          items: [
+            {
+              tmdbId: 550,
+              status: 'watching',
+              progress: { minutes: 12, pct: 10 },
+            },
+          ],
+        }),
+      })
+      .expect(201);
+    const id = (created.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/preview`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/rows/1/resolve`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        status: 'ok',
+        mapped: {
+          tmdbId: 550,
+          status: 'watching',
+          progress: { minutes: 12, pct: 10 },
+        },
+      })
+      .expect(201)
+      .expect({ ok: true });
+
+    const conflicts = await request(app.getHttpServer())
+      .get(`/api/imports/${id}/conflicts?offset=0&limit=50`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const items = (conflicts.body as { conflicts: unknown[] }).conflicts as {
+      resolution?: unknown;
+    }[];
+    expect(items[0]?.resolution).toEqual({
+      tmdbId: 550,
+      status: 'watching',
+      progress: { minutes: 12, pct: 10 },
+    });
+  });
+
   it('diary json import applies items into /api/diary (MVP)', async () => {
     const token = await registerAndGetToken(app);
 
