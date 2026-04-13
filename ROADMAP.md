@@ -463,6 +463,7 @@ Component tests:
   - [x] DB: `import_jobs`.
   - [x] DB: `import_job_rows` + `import_conflicts`.
   - [x] Preview: conflict detection MVP (watch_state) → `import_conflicts` + row status=conflict.
+  - [x] Conflicts: возвращать `rowN` (когда возможно), чтобы FE мог открыть resolve сразу из conflicts.
   - [ ] Worker: parse → map → resolve TMDB ids (rate-limited) → preview.
   - [x] FE: `/import` wizard (MVP): create → preview → rows/conflicts list (+pager) → resolve row → apply (JWT token input).
 - [ ] **Export (M2)**:
