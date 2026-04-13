@@ -69,6 +69,25 @@ export class WatchStateService {
     return { updatedAt: rows[0]?.updated_at ?? new Date().toISOString() };
   }
 
+  async bulkPut(
+    userId: string,
+    items: Array<{
+      tmdbId: number;
+      status: WatchRow['status'];
+      progress: unknown;
+    }>,
+  ): Promise<{ items: { tmdbId: number; updatedAt: string }[] }> {
+    const out: { tmdbId: number; updatedAt: string }[] = [];
+    for (const it of items) {
+      const row = await this.put(userId, it.tmdbId, {
+        status: it.status,
+        progress: it.progress ?? null,
+      });
+      out.push({ tmdbId: it.tmdbId, updatedAt: row.updatedAt });
+    }
+    return { items: out };
+  }
+
   async remove(userId: string, tmdbId: number): Promise<void> {
     await this.db.exec(
       `delete from watch_state where user_id = $1 and tmdb_id = $2`,

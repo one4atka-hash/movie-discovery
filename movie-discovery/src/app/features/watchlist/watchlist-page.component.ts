@@ -39,13 +39,27 @@ type WatchTab = 'all' | WatchStatus;
       </header>
 
       <app-section title="Статус">
-        <div sectionActions>
+        <div sectionActions class="watch-toolbar">
           <app-segmented
             ariaLabel="Watchlist filter"
             [options]="tabOptions"
             [value]="tab()"
             (select)="tab.set($event)"
           />
+          <app-button
+            variant="ghost"
+            data-testid="watchlist-bulk-want"
+            [disabled]="!filtered().length"
+            (click)="bulkWant()"
+            >Want all</app-button
+          >
+          <app-button
+            variant="ghost"
+            data-testid="watchlist-bulk-hide"
+            [disabled]="!filtered().length"
+            (click)="bulkHide()"
+            >Hide all</app-button
+          >
         </div>
       </app-section>
 
@@ -215,5 +229,15 @@ export class WatchlistPageComponent {
 
   trackById(_: number, it: { tmdbId: number; updatedAt: number }): string {
     return `${it.tmdbId}:${it.updatedAt}`;
+  }
+
+  bulkWant(): void {
+    const f = this.filtered();
+    this.svc.bulkSetStatus(f.map((i) => ({ tmdbId: i.tmdbId, status: 'want' })));
+  }
+
+  bulkHide(): void {
+    const f = this.filtered();
+    this.svc.bulkSetStatus(f.map((i) => ({ tmdbId: i.tmdbId, status: 'hidden' })));
   }
 }

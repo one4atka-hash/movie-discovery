@@ -3,7 +3,9 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
+  Post,
   Put,
   UseGuards,
 } from '@nestjs/common';
@@ -13,7 +15,11 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, type AuthedUser } from '../auth/current-user.decorator';
 import { ZodBodyPipe } from '../common/zod-body.pipe';
 import { WatchStateService } from './watch-state.service';
-import { PutWatchStateSchema, TmdbIdParamSchema } from './watch-state.schemas';
+import {
+  BulkWatchStateSchema,
+  PutWatchStateSchema,
+  TmdbIdParamSchema,
+} from './watch-state.schemas';
 
 @UseGuards(JwtAuthGuard)
 @Controller('watch-state')
@@ -23,6 +29,17 @@ export class WatchStateController {
   @Get()
   async list(@CurrentUser() u: AuthedUser) {
     return { items: await this.svc.list(u.id) };
+  }
+
+  @Post('bulk')
+  @HttpCode(201)
+  async bulk(
+    @CurrentUser() u: AuthedUser,
+    @Body(new ZodBodyPipe(BulkWatchStateSchema))
+    body: z.infer<typeof BulkWatchStateSchema>,
+  ) {
+    const out = await this.svc.bulkPut(u.id, body.items);
+    return { ok: true, ...out };
   }
 
   @Put(':tmdbId')

@@ -30,3 +30,28 @@ export const PutWatchStateSchema = zodSchema(
     })
     .strict(),
 );
+
+export const BulkWatchStateSchema = zodSchema(
+  z
+    .object({
+      items: z
+        .array(
+          z
+            .object({
+              tmdbId: z.number().int().positive(),
+              status: z.enum([
+                'want',
+                'watching',
+                'watched',
+                'dropped',
+                'hidden',
+              ]),
+              progress: ProgressSchema.optional().nullable(),
+            })
+            .strict(),
+        )
+        .min(1)
+        .max(200),
+    })
+    .strict(),
+);

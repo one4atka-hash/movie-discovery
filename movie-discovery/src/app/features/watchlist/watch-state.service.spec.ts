@@ -74,6 +74,24 @@ describe('WatchStateService', () => {
     vi.useRealTimers();
   });
 
+  it('bulkSetStatus updates multiple entries in one persist', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-02T00:00:00.000Z'));
+
+    const svc = new WatchStateService(makeStorage());
+    svc.setStatus(movie(1, 'A'), 'watching');
+    svc.setStatus(movie(2, 'B'), 'want');
+
+    svc.bulkSetStatus([
+      { tmdbId: 1, status: 'hidden' },
+      { tmdbId: 2, status: 'hidden' },
+    ]);
+
+    expect(svc.getStatus(1)).toBe('hidden');
+    expect(svc.getStatus(2)).toBe('hidden');
+    vi.useRealTimers();
+  });
+
   it('sanitizes storage payload on load', () => {
     const svc = new WatchStateService(
       makeStorage([

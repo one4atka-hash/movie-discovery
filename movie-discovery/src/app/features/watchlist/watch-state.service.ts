@@ -88,6 +88,21 @@ export class WatchStateService {
     );
   }
 
+  /** Apply the same statuses to many titles in one storage write (bulk hide / want). */
+  bulkSetStatus(updates: { tmdbId: number; status: WatchStatus }[]): void {
+    if (!updates.length) return;
+    const byTmdb = new Map(updates.map((u) => [u.tmdbId, u.status]));
+    const now = Date.now();
+    let touched = false;
+    const next = this._items().map((item) => {
+      const st = byTmdb.get(item.tmdbId);
+      if (st === undefined) return item;
+      touched = true;
+      return { ...item, status: st, updatedAt: now };
+    });
+    if (touched) this.persist(next);
+  }
+
   private persist(next: WatchStateItem[]): void {
     this._items.set(next);
     this.storage.set(STORAGE_KEY, next);

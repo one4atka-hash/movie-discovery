@@ -30,6 +30,10 @@ describe('Watch state (e2e)', () => {
 
   it('requires auth', async () => {
     await request(app.getHttpServer()).get('/api/watch-state').expect(401);
+    await request(app.getHttpServer())
+      .post('/api/watch-state/bulk')
+      .send({ items: [{ tmdbId: 1, status: 'want' }] })
+      .expect(401);
     await request(app.getHttpServer()).put('/api/watch-state/1').expect(401);
     await request(app.getHttpServer()).delete('/api/watch-state/1').expect(401);
   });
@@ -59,6 +63,42 @@ describe('Watch state (e2e)', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(200)
       .expect({ ok: true });
+  });
+
+  it('POST bulk applies multiple rows', async () => {
+    const token = await registerAndGetToken(app);
+
+    const bulk = await request(app.getHttpServer())
+      .post('/api/watch-state/bulk')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        items: [
+          { tmdbId: 100, status: 'want' },
+          { tmdbId: 200, status: 'hidden' },
+        ],
+      })
+      .expect(201);
+
+    const b = bulk.body as {
+      ok: boolean;
+      items: { tmdbId: number; updatedAt: string }[];
+    };
+    expect(b.ok).toBe(true);
+    expect(b.items).toHaveLength(2);
+    expect(b.items.map((x) => x.tmdbId).sort((a, c) => a - c)).toEqual([
+      100, 200,
+    ]);
+
+    const list = await request(app.getHttpServer())
+      .get('/api/watch-state')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const items = (list.body as { items: { tmdbId: number; status: string }[] })
+      .items;
+    const byId = new Map(items.map((x) => [x.tmdbId, x.status]));
+    expect(byId.get(100)).toBe('want');
+    expect(byId.get(200)).toBe('hidden');
   });
 
   it('validates status', async () => {
