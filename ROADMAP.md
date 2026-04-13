@@ -382,7 +382,7 @@ Component tests:
   - [ ] Calendar: `.ics` генерация для событий (или ссылкой на existing util).
 - [ ] **Тесты**:
   - [ ] Unit: матчинг правил + quiet hours.
-  - [ ] Server e2e: CRUD rules + read/unread inbox.
+  - [x] Server e2e: CRUD rules + read/unread inbox.
   - [ ] FE e2e: создать правило → увидеть item в inbox (через dev run endpoint).
 
 #### 5.3 Movie Diary (журнал просмотров как у Letterboxd/Trakt)
