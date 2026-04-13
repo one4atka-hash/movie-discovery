@@ -60,6 +60,29 @@ describe('Imports (e2e)', () => {
     });
   });
 
+  it('apply marks job as applied (MVP)', async () => {
+    const token = await registerAndGetToken(app);
+
+    const created = await request(app.getHttpServer())
+      .post('/api/imports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ kind: 'diary', format: 'json', payload: '{"items":[]}' })
+      .expect(201);
+    const id = (created.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/apply`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201)
+      .expect({ ok: true });
+
+    const got = await request(app.getHttpServer())
+      .get(`/api/imports/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(got.body).toMatchObject({ id, status: 'applied' });
+  });
+
   afterEach(async () => {
     await app.close();
   });

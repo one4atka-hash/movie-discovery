@@ -34,4 +34,13 @@ export class ImportsController {
   ) {
     return await this.svc.get(u.id, p.id);
   }
+
+  @Post(':id/apply')
+  async apply(
+    @CurrentUser() u: AuthedUser,
+    @Param(new ZodBodyPipe(ImportIdParamSchema))
+    p: z.infer<typeof ImportIdParamSchema>,
+  ) {
+    return await this.svc.apply(u.id, p.id);
+  }
 }
