@@ -177,6 +177,12 @@ describe('Imports (e2e)', () => {
     const id = (created.body as { id: string }).id;
 
     await request(app.getHttpServer())
+      .post(`/api/imports/${id}/preview`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201)
+      .expect({ ok: true, totalRows: 1, okRows: 1, errorRows: 0 });
+
+    await request(app.getHttpServer())
       .post(`/api/imports/${id}/apply`)
       .set('Authorization', `Bearer ${token}`)
       .expect(201);
