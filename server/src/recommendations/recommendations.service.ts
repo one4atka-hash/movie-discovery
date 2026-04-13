@@ -14,18 +14,14 @@ type FavoriteRow = { tmdb_id: number; created_at: string };
 export class RecommendationsService {
   constructor(private readonly db: DbService) {}
 
-  /**
-   * MVP endpoint:
-   * - later: ANN over embeddings + rerank
-   * - now: return a stable payload with room for scores/explanations
-   */
-  async recommendForUser(userId: string): Promise<{
-    items: {
-      tmdbId: number;
-      score: number;
-      explain: { key: string; params?: Record<string, string> }[];
-    }[];
-    meta: { mode: 'mvp'; generatedAt: string };
+  private async loadSignals(userId: string): Promise<{
+    fav: FavoriteRow[];
+    fb: FeedbackRow[];
+    blocked: Set<number>;
+    liked: Set<number>;
+    favoriteIds: Set<number>;
+    rawSeeds: number[];
+    unique: number[];
   }> {
     const [fav, fb] = await Promise.all([
       this.db.query<FavoriteRow>(
@@ -51,13 +47,32 @@ export class RecommendationsService {
     const liked = new Set<number>(
       fb.filter((r) => r.value === 'like').map((r) => r.tmdb_id),
     );
+    const favoriteIds = new Set<number>(fav.map((r) => r.tmdb_id));
 
-    const seeds = [...liked, ...fav.map((r) => r.tmdb_id)].filter(
+    const rawSeeds = [...liked, ...fav.map((r) => r.tmdb_id)].filter(
       (id) => !blocked.has(id),
     );
 
     // Placeholder: in the next iteration we will expand seeds -> candidates via TMDB and/or ANN.
-    const unique = [...new Set(seeds)].slice(0, 20);
+    const unique = [...new Set(rawSeeds)].slice(0, 20);
+
+    return { fav, fb, blocked, liked, favoriteIds, rawSeeds, unique };
+  }
+
+  /**
+   * MVP endpoint:
+   * - later: ANN over embeddings + rerank
+   * - now: return a stable payload with room for scores/explanations
+   */
+  async recommendForUser(userId: string): Promise<{
+    items: {
+      tmdbId: number;
+      score: number;
+      explain: { key: string; params?: Record<string, string> }[];
+    }[];
+    meta: { mode: 'mvp'; generatedAt: string };
+  }> {
+    const { unique } = await this.loadSignals(userId);
 
     return {
       items: unique.map((tmdbId, i) => ({
@@ -68,6 +83,57 @@ export class RecommendationsService {
           { maxItems: 4 },
         ),
       })),
+      meta: { mode: 'mvp', generatedAt: new Date().toISOString() },
+    };
+  }
+
+  /**
+   * Debug-oriented quality signals for the current MVP ranker (deterministic, cheap).
+   */
+  async metricsForUser(userId: string): Promise<{
+    diversity: number;
+    novelty: number;
+    coverage: number;
+    counts: {
+      rawSeeds: number;
+      uniqueCandidates: number;
+      blocked: number;
+      favorites: number;
+      feedbackRows: number;
+    };
+    meta: { mode: 'mvp'; generatedAt: string };
+  }> {
+    const { fb, blocked, favoriteIds, rawSeeds, unique } =
+      await this.loadSignals(userId);
+
+    const rawSeedsLen = rawSeeds.length;
+    const uniqueLen = unique.length;
+
+    // Duplicate removal within the seed pool (1 = all unique before dedupe).
+    const diversity =
+      uniqueLen === 0 ? 1 : uniqueLen / Math.max(1, rawSeedsLen);
+
+    // Share of the slate not sourced from favorites alone (taste expansion vs library).
+    const notOnlyFromFavorites =
+      uniqueLen === 0
+        ? 1
+        : unique.filter((id) => !favoriteIds.has(id)).length / uniqueLen;
+    const novelty = notOnlyFromFavorites;
+
+    // How full the capped slate is (target cap = 20).
+    const coverage = Math.min(1, uniqueLen / 20);
+
+    return {
+      diversity,
+      novelty,
+      coverage,
+      counts: {
+        rawSeeds: rawSeedsLen,
+        uniqueCandidates: uniqueLen,
+        blocked: blocked.size,
+        favorites: favoriteIds.size,
+        feedbackRows: fb.length,
+      },
       meta: { mode: 'mvp', generatedAt: new Date().toISOString() },
     };
   }

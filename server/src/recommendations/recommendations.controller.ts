@@ -17,6 +17,11 @@ export class RecommendationsController {
     return await this.recs.recommendForUser(u.id);
   }
 
+  @Get('metrics')
+  async metrics(@CurrentUser() u: AuthedUser) {
+    return await this.recs.metricsForUser(u.id);
+  }
+
   @Post('feedback')
   async feedback(
     @CurrentUser() u: AuthedUser,

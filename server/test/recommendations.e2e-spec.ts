@@ -31,6 +31,9 @@ describe('Recommendations (e2e)', () => {
   it('requires auth', async () => {
     await request(app.getHttpServer()).get('/api/recommendations').expect(401);
     await request(app.getHttpServer())
+      .get('/api/recommendations/metrics')
+      .expect(401);
+    await request(app.getHttpServer())
       .post('/api/recommendations/feedback')
       .expect(401);
   });
@@ -45,6 +48,32 @@ describe('Recommendations (e2e)', () => {
 
     const body = recs.body as { items: unknown[] };
     expect(Array.isArray(body.items)).toBe(true);
+
+    const m = await request(app.getHttpServer())
+      .get('/api/recommendations/metrics')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const metrics = m.body as {
+      diversity: number;
+      novelty: number;
+      coverage: number;
+      counts: {
+        rawSeeds: number;
+        uniqueCandidates: number;
+        blocked: number;
+        favorites: number;
+        feedbackRows: number;
+      };
+      meta: { mode: string };
+    };
+    expect(metrics.diversity).toBeGreaterThanOrEqual(0);
+    expect(metrics.diversity).toBeLessThanOrEqual(1);
+    expect(metrics.novelty).toBeGreaterThanOrEqual(0);
+    expect(metrics.novelty).toBeLessThanOrEqual(1);
+    expect(metrics.coverage).toBeGreaterThanOrEqual(0);
+    expect(metrics.coverage).toBeLessThanOrEqual(1);
+    expect(metrics.counts.feedbackRows).toBeGreaterThanOrEqual(0);
+    expect(metrics.meta.mode).toBe('mvp');
 
     await request(app.getHttpServer())
       .post('/api/recommendations/feedback')

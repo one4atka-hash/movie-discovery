@@ -492,8 +492,8 @@ Component tests:
 - [ ] **Frontend (M1)**:
   - [x] “Why this?” панель для рекомендаций (frontend MVP).
   - [x] “Less like this / Hide” (frontend MVP, local).
-- [ ] **Метрики (M2)**:
-  - [ ] `GET /api/recommendations/metrics` (diversity/novelty/coverage) для отладки качества.
+- [x] **Метрики (M2)**:
+  - [x] `GET /api/recommendations/metrics` (diversity/novelty/coverage) для отладки качества.
 - [ ] **Тесты**:
   - [x] Unit: explain generator (ограниченный размер, i18n-ready).
   - [x] Server e2e: “Less/Hide” меняет выдачу на следующем запросе.
