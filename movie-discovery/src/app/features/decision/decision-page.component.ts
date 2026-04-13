@@ -81,7 +81,9 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
         <div class="actions" cardActions>
           <app-button variant="ghost" (click)="reset()">Сбросить</app-button>
           <app-button variant="secondary" (click)="openMore.set(true)">Ещё…</app-button>
-          <app-button [loading]="loading()" (click)="build()">Собрать shortlist</app-button>
+          <app-button data-testid="decision-build-shortlist" [loading]="loading()" (click)="build()"
+            >Собрать shortlist</app-button
+          >
         </div>
       </app-card>
 
@@ -118,7 +120,7 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
         </div>
       </app-bottom-sheet>
 
-      <app-section title="Shortlist" *ngIf="candidates().length">
+      <app-section title="Shortlist" *ngIf="candidates().length" data-testid="decision-shortlist">
         <div sectionActions>
           <app-segmented
             ariaLabel="Decision mode"
@@ -126,7 +128,9 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
             [value]="mode()"
             (select)="mode.set($event)"
           />
-          <app-button variant="secondary" (click)="pick()">Выбрать</app-button>
+          <app-button data-testid="decision-pick-winner" variant="secondary" (click)="pick()"
+            >Выбрать</app-button
+          >
         </div>
 
         <div class="grid">
@@ -140,14 +144,19 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
         </div>
       </app-section>
 
-      <app-card title="Победитель" *ngIf="winner() as w">
+      <app-card title="Победитель" *ngIf="winner() as w" data-testid="decision-winner-card">
         <div class="winner">
           <div class="winner__left">
             <strong class="winner__title">{{ w.title }}</strong>
             <p class="muted" *ngIf="w.overview">{{ w.overview }}</p>
           </div>
           <div class="winner__actions">
-            <app-button variant="secondary" [routerLink]="['/movie', w.id]">Открыть</app-button>
+            <app-button
+              data-testid="decision-winner-open"
+              variant="secondary"
+              [routerLink]="['/movie', w.id]"
+              >Открыть</app-button
+            >
             <app-button variant="ghost" (click)="pick()">Перевыбрать</app-button>
           </div>
         </div>

@@ -435,7 +435,7 @@ Component tests:
   - [ ] `POST /api/decision-sessions/:id/share` → share link.
   - [ ] Public view + anonymous votes (rate-limited) + “reveal winner”.
 - [ ] **Тесты**:
-  - [ ] FE e2e: constraints → winner → open movie.
+  - [x] FE e2e: constraints → winner → open movie.
   - [ ] API e2e: share link + voting flow.
 
 #### 5.6 Collections & Taste Graph (списки как контент + граф вкуса)
