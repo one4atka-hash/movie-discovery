@@ -343,10 +343,10 @@ Component tests:
 
 #### 5.1 Smart Streaming Hub (агрегация «где смотреть» под пользователя)
 - [ ] **Backend/API (M1: prefs + filtering)**:
-  - [ ] `GET/PUT /api/me/streaming-prefs` → `{ region, providers[] }` (JWT).
+  - [x] `GET/PUT /api/me/streaming-prefs` → `{ region, providers[] }` (JWT).
   - [ ] (опц.) `GET /api/streaming/providers?region=...` (каталог провайдеров для пикера).
 - [ ] **DB (M1)**:
-  - [ ] `002_user_streaming_prefs.sql`: `user_streaming_prefs(user_id, region, providers jsonb, updated_at)`.
+  - [x] `003_user_streaming_prefs.sql`: `user_streaming_prefs(user_id, region, providers jsonb, updated_at)`.
 - [ ] **Frontend (M1)**:
   - [x] UX: “Мои сервисы” в `/account` (frontend MVP, local storage).
   - [x] `StreamingPrefsService` (signals): region + providers list (frontend MVP).

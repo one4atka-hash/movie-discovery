@@ -16,6 +16,7 @@ import { FeedbackModule } from './feedback/feedback.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
 import { AlertsModule } from './alerts/alerts.module';
+import { MeModule } from './me/me.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { AlertsModule } from './alerts/alerts.module';
     SubscriptionsModule,
     RecommendationsModule,
     AlertsModule,
+    MeModule,
   ],
   controllers: [AppController],
   providers: [
