@@ -410,7 +410,7 @@ Component tests:
 - [ ] **Frontend (M1)**:
   - [x] Quick action на карточке: cycle status (frontend MVP, local storage).
   - [x] Страница `/watchlist` с табами по статусам (frontend MVP, local storage).
-  - [ ] Merge-логика: server truth + optimistic UI + конфликт по `updatedAt`.
+  - [x] Merge-логика: server truth + optimistic UI + конфликт по `updatedAt`. (util + tests)
 - [ ] **Bulk ops (M2)**:
   - [ ] `POST /api/watch-state/bulk` + UI массового “hide/want”.
 - [ ] **Тесты**:
