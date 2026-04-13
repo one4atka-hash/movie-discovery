@@ -10,6 +10,7 @@ import { MovieCardComponent } from '@features/movies/ui/movie-card/movie-card.co
 import { FavoritesService } from '@features/movies/data-access/services/favorites.service';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { tmdbImg } from '@core/tmdb-images';
+import { StreamingPrefsService } from '@features/streaming/streaming-prefs.service';
 
 @Component({
   selector: 'app-account-page',
@@ -130,6 +131,56 @@ import { tmdbImg } from '@core/tmdb-images';
           </article>
         </div>
       </ng-template>
+
+      <section
+        class="account-block"
+        id="account-streaming"
+        aria-labelledby="account-streaming-title"
+      >
+        <h2 class="account-block__title" id="account-streaming-title">Мои сервисы</h2>
+        <p class="muted">
+          Выберите регион и список стримингов — на странице фильма мы подсветим провайдеров “My”.
+        </p>
+
+        <div class="card">
+          <label class="field">
+            <span>Регион (ISO, напр. US, RU)</span>
+            <input
+              #regionInput
+              class="input"
+              [value]="myRegion()"
+              (change)="setMyRegion(regionInput.value)"
+            />
+          </label>
+
+          <div class="field">
+            <span>Провайдеры (как в списке TMDB)</span>
+            <div class="actions">
+              <input class="input" [formControl]="providerName" placeholder="Netflix" />
+              <button class="btn btn--primary" type="button" (click)="addProvider()">
+                Добавить
+              </button>
+            </div>
+          </div>
+
+          <div class="subCard__meta" *ngIf="myProviders().length">
+            <span class="pill" *ngFor="let p of myProviders()">
+              {{ p }}
+              <button
+                class="pill-x"
+                type="button"
+                (click)="removeProvider(p)"
+                aria-label="Remove provider"
+              >
+                ✕
+              </button>
+            </span>
+          </div>
+          <p class="muted" *ngIf="!myProviders().length">
+            Пока пусто — добавьте хотя бы один сервис.
+          </p>
+        </div>
+      </section>
 
       <section class="account-block" id="account-favorites" aria-labelledby="account-fav-title">
         <h2 class="account-block__title" id="account-fav-title">
@@ -331,6 +382,17 @@ import { tmdbImg } from '@core/tmdb-images';
         color: var(--text-muted);
         background: rgba(255, 255, 255, 0.03);
       }
+      .pill-x {
+        margin-left: 0.35rem;
+        border: 0;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        font: inherit;
+      }
+      .pill-x:hover {
+        color: var(--text);
+      }
       .subCard__actions {
         display: flex;
         gap: 0.6rem;
@@ -378,6 +440,7 @@ import { tmdbImg } from '@core/tmdb-images';
 export class AccountPageComponent {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly streamingPrefs = inject(StreamingPrefsService);
   private readonly router = inject(Router);
   private readonly subsSvc = inject(ReleaseSubscriptionsService);
   private readonly fav = inject(FavoritesService);
@@ -417,6 +480,25 @@ export class AccountPageComponent {
     } catch {
       /* ignore */
     }
+  }
+
+  readonly myRegion = computed(() => this.streamingPrefs.region());
+  readonly myProviders = computed(() => this.streamingPrefs.providers());
+  readonly providerName = new FormControl('', { nonNullable: true });
+
+  setMyRegion(v: string): void {
+    this.streamingPrefs.setRegion(v);
+  }
+
+  addProvider(): void {
+    const v = this.providerName.value.trim();
+    if (!v) return;
+    this.streamingPrefs.addProvider(v);
+    this.providerName.setValue('');
+  }
+
+  removeProvider(name: string): void {
+    this.streamingPrefs.removeProvider(name);
   }
 
   async doLogin(): Promise<void> {

@@ -32,6 +32,7 @@ import { FavoritesService } from '../data-access/services/favorites.service';
 import { MovieService } from '../data-access/services/movie.service';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { AuthService } from '@features/auth/auth.service';
+import { StreamingPrefsService } from '@features/streaming/streaming-prefs.service';
 import {
   type MergedWatchRow,
   type StreamingContext,
@@ -308,6 +309,7 @@ import {
                 <div class="providers__list providers__list--cards">
                   <a
                     class="prov prov--link"
+                    [class.prov--mine]="isMyProvider(row.provider.provider_name)"
                     *ngFor="let row of mergedProviders()"
                     [href]="providerRowUrl(row)"
                     target="_blank"
@@ -323,6 +325,9 @@ import {
                     <span class="prov__kinds">
                       <span class="kind-badge" *ngFor="let k of row.kinds">{{ kindLabel(k) }}</span>
                     </span>
+                    <span class="prov__mine" *ngIf="isMyProvider(row.provider.provider_name)"
+                      >My</span
+                    >
                   </a>
                 </div>
               </div>
@@ -769,6 +774,10 @@ import {
         background: color-mix(in srgb, var(--bg-muted) 45%, transparent);
         box-shadow: var(--shadow-xs);
       }
+      .prov--mine {
+        border-color: color-mix(in srgb, var(--accent-secondary) 45%, var(--border-subtle));
+        background: color-mix(in srgb, var(--accent-secondary) 10%, transparent);
+      }
       .prov__logo {
         width: 22px;
         height: 22px;
@@ -782,6 +791,15 @@ import {
         font-weight: 500;
         flex: 1 1 auto;
         min-width: 0;
+      }
+      .prov__mine {
+        margin-left: auto;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-full);
+        padding: 0.15rem 0.45rem;
+        background: rgba(255, 255, 255, 0.03);
       }
       .prov__kinds {
         display: flex;
@@ -863,6 +881,7 @@ export class MovieDetailsPageComponent {
   readonly i18n = inject(I18nService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly auth = inject(AuthService);
+  private readonly streamingPrefs = inject(StreamingPrefsService);
   private readonly subsSvc = inject(ReleaseSubscriptionsService);
 
   readonly isAuthed = computed(() => this.auth.isAuthenticated());
@@ -961,6 +980,16 @@ export class MovieDetailsPageComponent {
     untracked(() => this.regionChoice.set(null));
   });
 
+  private readonly applyPreferredRegion = effect(() => {
+    const avail = this.availableRegions();
+    const picked = this.regionChoice();
+    if (picked) return;
+    const pref = this.streamingPrefs.region();
+    if (pref && avail.includes(pref)) {
+      untracked(() => this.regionChoice.set(pref));
+    }
+  });
+
   readonly availableRegions = computed(() => listRegionsWithData(this.providers()));
 
   readonly effectiveRegion = computed(() => {
@@ -1022,6 +1051,10 @@ export class MovieDetailsPageComponent {
 
   setWatchRegion(code: string): void {
     this.regionChoice.set(code);
+  }
+
+  isMyProvider(providerName: string): boolean {
+    return this.streamingPrefs.isMyProvider(providerName);
   }
 
   providerRowUrl(row: MergedWatchRow): string {

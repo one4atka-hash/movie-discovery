@@ -348,8 +348,9 @@ Component tests:
 - [ ] **DB (M1)**:
   - [ ] `002_user_streaming_prefs.sql`: `user_streaming_prefs(user_id, region, providers jsonb, updated_at)`.
 - [ ] **Frontend (M1)**:
-  - [ ] UX: “Мои сервисы” в `/account` + (опц.) отдельная страница `/streaming`.
-  - [ ] `StreamingPrefsService` (signals) + `MyServicesPicker` (provider chips) + `RegionPicker`.
+  - [x] UX: “Мои сервисы” в `/account` (frontend MVP, local storage).
+  - [x] `StreamingPrefsService` (signals): region + providers list (frontend MVP).
+  - [x] Movie details: подсветка провайдеров “My” + предпочтительный регион по умолчанию.
   - [ ] Discover/Search: фильтр “Только на моих сервисах” + отображение provider chips на карточках.
 - [ ] **Backend/API (M2: availability events)**:
   - [ ] `GET /api/availability/events?since=...` + (опц.) `POST /api/availability/track` (что отслеживать).
