@@ -101,7 +101,13 @@ describe('Imports (e2e)', () => {
       .post(`/api/imports/${id}/preview`)
       .set('Authorization', `Bearer ${token}`)
       .expect(201)
-      .expect({ ok: true, totalRows: 1, okRows: 1, errorRows: 0 });
+      .expect({
+        ok: true,
+        totalRows: 1,
+        okRows: 1,
+        conflictRows: 0,
+        errorRows: 0,
+      });
 
     const got = await request(app.getHttpServer())
       .get(`/api/imports/${id}`)
@@ -187,6 +193,60 @@ describe('Imports (e2e)', () => {
     });
   });
 
+  it('preview creates conflicts for watch_state when server differs (MVP)', async () => {
+    const token = await registerAndGetToken(app);
+
+    await request(app.getHttpServer())
+      .put('/api/watch-state/550')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'want', progress: { minutes: 10 } })
+      .expect(200);
+
+    const created = await request(app.getHttpServer())
+      .post('/api/imports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        kind: 'watch_state',
+        format: 'json',
+        payload: JSON.stringify({
+          items: [
+            {
+              tmdbId: 550,
+              status: 'watching',
+              progress: { minutes: 12, pct: 10 },
+            },
+          ],
+        }),
+      })
+      .expect(201);
+    const id = (created.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/preview`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201)
+      .expect({
+        ok: true,
+        totalRows: 1,
+        okRows: 0,
+        conflictRows: 1,
+        errorRows: 0,
+      });
+
+    const conflicts = await request(app.getHttpServer())
+      .get(`/api/imports/${id}/conflicts?offset=0&limit=50`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(conflicts.body).toMatchObject({ ok: true, total: 1 });
+    const items = (conflicts.body as { conflicts: unknown[] }).conflicts as {
+      entity?: string;
+      key?: string;
+    }[];
+    expect(items[0]?.entity).toBe('watch_state');
+    expect(items[0]?.key).toBe('550');
+  });
+
   it('diary json import applies items into /api/diary (MVP)', async () => {
     const token = await registerAndGetToken(app);
 
@@ -262,7 +322,13 @@ describe('Imports (e2e)', () => {
       .post(`/api/imports/${id}/preview`)
       .set('Authorization', `Bearer ${token}`)
       .expect(201)
-      .expect({ ok: true, totalRows: 1, okRows: 1, errorRows: 0 });
+      .expect({
+        ok: true,
+        totalRows: 1,
+        okRows: 1,
+        conflictRows: 0,
+        errorRows: 0,
+      });
 
     await request(app.getHttpServer())
       .post(`/api/imports/${id}/apply`)

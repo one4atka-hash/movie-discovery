@@ -446,6 +446,7 @@ export class ImportsService {
     ok: true;
     totalRows: number;
     okRows: number;
+    conflictRows: number;
     errorRows: number;
   }> {
     const rows = await this.db.query<ImportJobRow>(
@@ -463,10 +464,17 @@ export class ImportsService {
          where id = $1 and user_id = $2`,
         [id, userId],
       );
-      return { ok: true, totalRows: 0, okRows: 0, errorRows: 0 };
+      return {
+        ok: true,
+        totalRows: 0,
+        okRows: 0,
+        conflictRows: 0,
+        errorRows: 0,
+      };
     }
 
     await this.db.exec(`delete from import_job_rows where job_id = $1`, [id]);
+    await this.db.exec(`delete from import_conflicts where job_id = $1`, [id]);
 
     const collected: {
       raw: unknown;
@@ -582,13 +590,70 @@ export class ImportsService {
       });
     }
 
+    const existingWatch = new Map<
+      number,
+      { status: string; progress: unknown }
+    >();
+    if (r.kind === 'watch_state') {
+      const existing = await this.db.query<{
+        tmdb_id: number;
+        status: string;
+        progress: unknown;
+      }>(
+        `select tmdb_id, status, progress
+         from watch_state
+         where user_id = $1`,
+        [userId],
+      );
+      for (const e of existing) {
+        existingWatch.set(Number(e.tmdb_id), {
+          status: e.status,
+          progress: e.progress ?? null,
+        });
+      }
+    }
+
     let okRows = 0;
+    let conflictRows = 0;
     let errorRows = 0;
     for (let i = 0; i < collected.length; i++) {
       const it = collected[i];
-      const rowStatus = it.status === 'ok' ? 'ok' : 'error';
-      if (it.status === 'ok') okRows++;
+      let rowStatus: 'ok' | 'error' | 'conflict' =
+        it.status === 'ok' ? 'ok' : 'error';
+
+      if (rowStatus === 'ok' && r.kind === 'watch_state') {
+        const tmdbId = (it.mapped as { tmdbId?: number } | null)?.tmdbId;
+        if (typeof tmdbId === 'number') {
+          const server = existingWatch.get(tmdbId);
+          if (server) {
+            const incoming = it.mapped ?? null;
+            const serverComparable = {
+              tmdbId,
+              status: server.status,
+              progress: server.progress ?? null,
+            };
+            if (JSON.stringify(serverComparable) !== JSON.stringify(incoming)) {
+              rowStatus = 'conflict';
+              await this.db.exec(
+                `insert into import_conflicts(job_id, entity, key, server, incoming, resolution)
+                 values ($1, $2, $3, $4::jsonb, $5::jsonb, null)`,
+                [
+                  id,
+                  'watch_state',
+                  String(tmdbId),
+                  JSON.stringify(serverComparable),
+                  JSON.stringify(incoming),
+                ],
+              );
+            }
+          }
+        }
+      }
+
+      if (rowStatus === 'ok') okRows++;
+      else if (rowStatus === 'conflict') conflictRows++;
       else errorRows++;
+
       await this.db.exec(
         `insert into import_job_rows(job_id, row_n, raw, mapped, status, error)
          values ($1, $2, $3::jsonb, $4::jsonb, $5, $6)`,
@@ -612,11 +677,22 @@ export class ImportsService {
       [
         id,
         userId,
-        JSON.stringify({ totalRows: collected.length, okRows, errorRows }),
+        JSON.stringify({
+          totalRows: collected.length,
+          okRows,
+          conflictRows,
+          errorRows,
+        }),
       ],
     );
 
-    return { ok: true, totalRows: collected.length, okRows, errorRows };
+    return {
+      ok: true,
+      totalRows: collected.length,
+      okRows,
+      conflictRows,
+      errorRows,
+    };
   }
 
   async rows(
