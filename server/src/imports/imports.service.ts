@@ -174,6 +174,45 @@ export class ImportsService {
       return { ok: true };
     }
 
+    if (r.kind === 'favorites' && r.format === 'json') {
+      const parsed = ImportFavoritesJsonSchema.safeParse(
+        safeJsonParse(r.payload),
+      );
+      if (!parsed.success) {
+        await this.db.exec(
+          `update import_jobs set status = 'failed', error = 'Invalid favorites JSON', updated_at = now()
+           where id = $1 and user_id = $2`,
+          [id, userId],
+        );
+        return { ok: true };
+      }
+
+      const items = parsed.data.items;
+      for (const tmdbId of items) {
+        await this.db.exec(
+          `insert into favorites(user_id, tmdb_id)
+           values ($1, $2)
+           on conflict (user_id, tmdb_id) do nothing`,
+          [userId, tmdbId],
+        );
+      }
+
+      await this.db.exec(
+        `update import_jobs
+         set status = 'applied', error = null,
+             meta = jsonb_set(coalesce(meta, '{}'::jsonb), '{applied}', $3::jsonb, true),
+             updated_at = now()
+         where id = $1 and user_id = $2`,
+        [
+          id,
+          userId,
+          JSON.stringify({ kind: 'favorites', items: items.length }),
+        ],
+      );
+
+      return { ok: true };
+    }
+
     await this.db.exec(
       `update import_jobs
        set status = 'applied', error = null, updated_at = now()
@@ -226,6 +265,10 @@ const ImportWatchStateJsonSchema = z.object({
         .strict(),
     )
     .max(2000),
+});
+
+const ImportFavoritesJsonSchema = z.object({
+  items: z.array(z.number().int().positive()).max(5000),
 });
 
 function safeJsonParse(s: string): unknown {
