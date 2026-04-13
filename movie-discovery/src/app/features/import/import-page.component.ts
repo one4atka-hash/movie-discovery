@@ -99,6 +99,17 @@ const TOKEN_KEY = 'server.jwt.token.v1';
             <span class="muted"
               >Total: <b>{{ rowsTotal() }}</b> · Showing: <b>{{ rows().length }}</b></span
             >
+            <div class="pager">
+              <app-button variant="ghost" [disabled]="busy() || !canRowsPrev()" (click)="rowsPrev()"
+                >Prev</app-button
+              >
+              <span class="muted"
+                >Offset: <b>{{ rowsOffset() }}</b> · Limit: <b>{{ rowsLimit() }}</b></span
+              >
+              <app-button variant="ghost" [disabled]="busy() || !canRowsNext()" (click)="rowsNext()"
+                >Next</app-button
+              >
+            </div>
           </div>
 
           <div class="rows">
@@ -122,6 +133,61 @@ const TOKEN_KEY = 'server.jwt.token.v1';
               </div>
             }
           </div>
+        </app-card>
+      }
+    </app-section>
+
+    <app-section title="Conflicts">
+      <div sectionActions>
+        <app-button variant="ghost" [disabled]="busy() || !jobId()" (click)="loadConflicts()"
+          >Refresh</app-button
+        >
+      </div>
+
+      @if (!jobId()) {
+        <p class="muted">Сначала создай job и сделай Preview.</p>
+      } @else {
+        <app-card>
+          <div class="rows-head">
+            <span class="muted"
+              >Total: <b>{{ conflictsTotal() }}</b> · Showing: <b>{{ conflicts().length }}</b></span
+            >
+            <div class="pager">
+              <app-button
+                variant="ghost"
+                [disabled]="busy() || !canConflictsPrev()"
+                (click)="conflictsPrev()"
+                >Prev</app-button
+              >
+              <span class="muted"
+                >Offset: <b>{{ conflictsOffset() }}</b> · Limit: <b>{{ conflictsLimit() }}</b></span
+              >
+              <app-button
+                variant="ghost"
+                [disabled]="busy() || !canConflictsNext()"
+                (click)="conflictsNext()"
+                >Next</app-button
+              >
+            </div>
+          </div>
+
+          @if (conflicts().length === 0) {
+            <p class="muted">Пока конфликтов нет (MVP).</p>
+          } @else {
+            <div class="rows">
+              @for (c of conflicts(); track c.id) {
+                <div class="row">
+                  <div class="row__meta">
+                    <span
+                      ><b>{{ c.entity }}</b> · <code>{{ c.key }}</code></span
+                    >
+                    <span class="muted">{{ c.createdAt }}</span>
+                  </div>
+                  <pre class="row__json">{{ pretty(c.incoming) }}</pre>
+                </div>
+              }
+            </div>
+          }
         </app-card>
       }
     </app-section>
@@ -190,6 +256,12 @@ const TOKEN_KEY = 'server.jwt.token.v1';
         align-items: baseline;
         gap: 0.75rem;
         margin-bottom: 0.6rem;
+        flex-wrap: wrap;
+      }
+      .pager {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
       }
       .rows {
         display: grid;
@@ -288,6 +360,30 @@ export class ImportPageComponent {
   private readonly _rowsTotal = signal(0);
   readonly rowsTotal = this._rowsTotal.asReadonly();
 
+  private readonly _rowsOffset = signal(0);
+  readonly rowsOffset = this._rowsOffset.asReadonly();
+  private readonly _rowsLimit = signal(50);
+  readonly rowsLimit = this._rowsLimit.asReadonly();
+
+  private readonly _conflicts = signal<
+    {
+      id: string;
+      entity: string;
+      key: string;
+      server: unknown;
+      incoming: unknown;
+      resolution: unknown;
+      createdAt: string;
+    }[]
+  >([]);
+  readonly conflicts = this._conflicts.asReadonly();
+  private readonly _conflictsTotal = signal(0);
+  readonly conflictsTotal = this._conflictsTotal.asReadonly();
+  private readonly _conflictsOffset = signal(0);
+  readonly conflictsOffset = this._conflictsOffset.asReadonly();
+  private readonly _conflictsLimit = signal(50);
+  readonly conflictsLimit = this._conflictsLimit.asReadonly();
+
   // resolve modal
   private readonly _resolveOpen = signal(false);
   readonly resolveOpen = this._resolveOpen.asReadonly();
@@ -297,6 +393,12 @@ export class ImportPageComponent {
   resolveMappedText = '';
 
   readonly canSend = computed(() => Boolean(this.token.trim()));
+  readonly canRowsPrev = computed(() => this._rowsOffset() > 0);
+  readonly canRowsNext = computed(() => this._rowsOffset() + this._rowsLimit() < this._rowsTotal());
+  readonly canConflictsPrev = computed(() => this._conflictsOffset() > 0);
+  readonly canConflictsNext = computed(
+    () => this._conflictsOffset() + this._conflictsLimit() < this._conflictsTotal(),
+  );
 
   createJob(): void {
     this._err.set(null);
@@ -315,6 +417,10 @@ export class ImportPageComponent {
           this._jobStatus.set('uploaded');
           this._rows.set([]);
           this._rowsTotal.set(0);
+          this._rowsOffset.set(0);
+          this._conflicts.set([]);
+          this._conflictsTotal.set(0);
+          this._conflictsOffset.set(0);
           this._busy.set(false);
         },
         error: (e) => this.handleHttpError(e),
@@ -333,6 +439,7 @@ export class ImportPageComponent {
         this._jobStatus.set('preview');
         this._busy.set(false);
         this.loadRows();
+        this.loadConflicts();
       },
       error: (e) => this.handleHttpError(e),
     });
@@ -345,7 +452,7 @@ export class ImportPageComponent {
     if (!token || !id) return;
     this.storage.set(TOKEN_KEY, token);
     this._busy.set(true);
-    this.api.rows(token, id, { offset: 0, limit: 50 }).subscribe({
+    this.api.rows(token, id, { offset: this._rowsOffset(), limit: this._rowsLimit() }).subscribe({
       next: (r) => {
         this._rows.set(r.rows as any);
         this._rowsTotal.set(r.total);
@@ -353,6 +460,51 @@ export class ImportPageComponent {
       },
       error: (e) => this.handleHttpError(e),
     });
+  }
+
+  rowsPrev(): void {
+    const next = Math.max(0, this._rowsOffset() - this._rowsLimit());
+    this._rowsOffset.set(next);
+    this.loadRows();
+  }
+
+  rowsNext(): void {
+    const next = this._rowsOffset() + this._rowsLimit();
+    if (next >= this._rowsTotal()) return;
+    this._rowsOffset.set(next);
+    this.loadRows();
+  }
+
+  loadConflicts(): void {
+    this._err.set(null);
+    const token = this.token.trim();
+    const id = this._jobId();
+    if (!token || !id) return;
+    this.storage.set(TOKEN_KEY, token);
+    this._busy.set(true);
+    this.api
+      .conflicts(token, id, { offset: this._conflictsOffset(), limit: this._conflictsLimit() })
+      .subscribe({
+        next: (r) => {
+          this._conflicts.set(r.conflicts as any);
+          this._conflictsTotal.set(r.total);
+          this._busy.set(false);
+        },
+        error: (e) => this.handleHttpError(e),
+      });
+  }
+
+  conflictsPrev(): void {
+    const next = Math.max(0, this._conflictsOffset() - this._conflictsLimit());
+    this._conflictsOffset.set(next);
+    this.loadConflicts();
+  }
+
+  conflictsNext(): void {
+    const next = this._conflictsOffset() + this._conflictsLimit();
+    if (next >= this._conflictsTotal()) return;
+    this._conflictsOffset.set(next);
+    this.loadConflicts();
   }
 
   apply(): void {

@@ -463,7 +463,7 @@ Component tests:
   - [x] DB: `import_jobs`.
   - [x] DB: `import_job_rows` + `import_conflicts`.
   - [ ] Worker: parse → map → resolve TMDB ids (rate-limited) → preview.
-  - [x] FE: `/import` wizard (MVP): create → preview → rows list → resolve row → apply (JWT token input).
+  - [x] FE: `/import` wizard (MVP): create → preview → rows/conflicts list (+pager) → resolve row → apply (JWT token input).
 - [ ] **Export (M2)**:
   - [x] API: `GET /api/exports?kind=diary|watch_state|favorites&format=csv|json` (MVP).
   - [ ] FE: “Export my data” в профиле + shareable ссылки на файлы (если нужно).
