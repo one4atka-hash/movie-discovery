@@ -22,6 +22,7 @@ import { DiaryModule } from './diary/diary.module';
 import { CollectionsModule } from './collections/collections.module';
 import { StreamingModule } from './streaming/streaming.module';
 import { DecisionModule } from './decision/decision.module';
+import { ImportsModule } from './imports/imports.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { DecisionModule } from './decision/decision.module';
     CollectionsModule,
     StreamingModule,
     DecisionModule,
+    ImportsModule,
   ],
   controllers: [AppController],
   providers: [

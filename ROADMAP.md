@@ -453,8 +453,10 @@ Component tests:
 
 #### 5.7 Import & Sync (онбординг сильнее конкурентов)
 - [ ] **Import pipeline (M1)**:
-  - [ ] API: `POST /api/imports` (upload), `GET /api/imports/:id` (progress), `POST /api/imports/:id/apply`.
-  - [ ] DB: `import_jobs` + (опц.) `import_job_rows` + `import_conflicts`.
+  - [x] API: `POST /api/imports` (upload), `GET /api/imports/:id` (progress).
+  - [ ] API: `POST /api/imports/:id/apply`.
+  - [x] DB: `import_jobs`.
+  - [ ] DB: `import_job_rows` + `import_conflicts`.
   - [ ] Worker: parse → map → resolve TMDB ids (rate-limited) → preview.
   - [ ] FE: `/import` wizard + preview table + conflict resolver.
 - [ ] **Export (M2)**:
