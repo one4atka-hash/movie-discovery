@@ -361,7 +361,7 @@ Component tests:
   - [ ] cron: обновление watch-providers по списку отслеживания, diff → events.
 - [ ] **Тесты**:
   - [x] Server e2e: prefs GET/PUT auth + validation.
-  - [ ] Unit: diff алгоритм snapshots→events (детерминизм).
+  - [x] Unit: diff алгоритм snapshots→events (детерминизм).
   - [x] FE: фильтр по моим сервисам (predicate + UI).
 
 #### 5.2 Smart Alerts 2.0 (умные уведомления с правилами)
