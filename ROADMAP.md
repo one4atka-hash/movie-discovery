@@ -415,7 +415,7 @@ Component tests:
 - [ ] **Bulk ops (M2)**:
   - [ ] `POST /api/watch-state/bulk` + UI массового “hide/want”.
 - [ ] **Тесты**:
-  - [ ] Unit: переходы статусов и merge.
+  - [x] Unit: переходы статусов и merge.
   - [ ] e2e: действие на карточке отражается на `/watchlist` и в details.
   - [x] Server e2e: CRUD watch-state (auth + validation).
 
