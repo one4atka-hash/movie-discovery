@@ -149,6 +149,9 @@ const TOKEN_KEY = 'server.jwt.token.v1';
         <app-button variant="ghost" [disabled]="busy() || !jobId()" (click)="loadConflicts()"
           >Refresh</app-button
         >
+        <app-button variant="ghost" [disabled]="busy()" (click)="toggleShowResolved()">
+          {{ showResolved() ? 'Show all' : 'Hide resolved' }}
+        </app-button>
       </div>
 
       @if (!jobId()) {
@@ -157,7 +160,8 @@ const TOKEN_KEY = 'server.jwt.token.v1';
         <app-card>
           <div class="rows-head">
             <span class="muted"
-              >Total: <b>{{ conflictsTotal() }}</b> · Showing: <b>{{ conflicts().length }}</b></span
+              >Total: <b>{{ conflictsTotal() }}</b> · Showing:
+              <b>{{ visibleConflicts().length }}</b></span
             >
             <div class="pager">
               <app-button
@@ -178,11 +182,11 @@ const TOKEN_KEY = 'server.jwt.token.v1';
             </div>
           </div>
 
-          @if (conflicts().length === 0) {
+          @if (visibleConflicts().length === 0) {
             <p class="muted">Пока конфликтов нет (MVP).</p>
           } @else {
             <div class="rows">
-              @for (c of conflicts(); track c.id) {
+              @for (c of visibleConflicts(); track c.id) {
                 <div class="row">
                   <div class="row__meta">
                     <span
@@ -446,6 +450,11 @@ export class ImportPageComponent {
     }[]
   >([]);
   readonly conflicts = this._conflicts.asReadonly();
+  private readonly _showResolved = signal(false);
+  readonly showResolved = this._showResolved.asReadonly();
+  readonly visibleConflicts = computed(() =>
+    this._showResolved() ? this._conflicts() : this._conflicts().filter((c) => !c.resolution),
+  );
   private readonly _conflictsTotal = signal(0);
   readonly conflictsTotal = this._conflictsTotal.asReadonly();
   private readonly _conflictsOffset = signal(0);
@@ -581,6 +590,10 @@ export class ImportPageComponent {
     if (next >= this._conflictsTotal()) return;
     this._conflictsOffset.set(next);
     this.loadConflicts();
+  }
+
+  toggleShowResolved(): void {
+    this._showResolved.set(!this._showResolved());
   }
 
   quickResolve(rowN: number | null, mapped: unknown): void {
