@@ -110,6 +110,50 @@ describe('Imports (e2e)', () => {
     expect(got.body).toMatchObject({ id, status: 'preview' });
   });
 
+  it('GET /imports/:id/rows returns preview rows (MVP)', async () => {
+    const token = await registerAndGetToken(app);
+
+    const created = await request(app.getHttpServer())
+      .post('/api/imports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        kind: 'favorites',
+        format: 'json',
+        payload: JSON.stringify({ items: [550, 500] }),
+      })
+      .expect(201);
+    const id = (created.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/preview`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .get(`/api/imports/${id}/rows?offset=0&limit=50`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(res.body).toMatchObject({
+      ok: true,
+      offset: 0,
+      limit: 50,
+      total: 2,
+    });
+    expect(Array.isArray((res.body as { rows: unknown }).rows)).toBe(true);
+    const rows = (res.body as { rows: unknown[] }).rows as {
+      rowN?: number;
+      status?: string;
+      mapped?: { tmdbId?: number };
+    }[];
+    expect(rows.length).toBe(2);
+    expect(rows[0]?.rowN).toBe(1);
+    expect(rows[0]?.status).toBe('ok');
+    expect([rows[0]?.mapped?.tmdbId, rows[1]?.mapped?.tmdbId]).toEqual([
+      550, 500,
+    ]);
+  });
+
   it('diary json import applies items into /api/diary (MVP)', async () => {
     const token = await registerAndGetToken(app);
 

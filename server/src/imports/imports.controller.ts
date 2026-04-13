@@ -1,10 +1,22 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { z } from 'zod';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, type AuthedUser } from '../auth/current-user.decorator';
 import { ZodBodyPipe } from '../common/zod-body.pipe';
-import { CreateImportSchema, ImportIdParamSchema } from './imports.schemas';
+import {
+  CreateImportSchema,
+  ImportIdParamSchema,
+  ImportRowsQuerySchema,
+} from './imports.schemas';
 import { ImportsService } from './imports.service';
 
 @UseGuards(JwtAuthGuard)
@@ -51,5 +63,19 @@ export class ImportsController {
     p: z.infer<typeof ImportIdParamSchema>,
   ) {
     return await this.svc.preview(u.id, p.id);
+  }
+
+  @Get(':id/rows')
+  async rows(
+    @CurrentUser() u: AuthedUser,
+    @Param(new ZodBodyPipe(ImportIdParamSchema))
+    p: z.infer<typeof ImportIdParamSchema>,
+    @Query(new ZodBodyPipe(ImportRowsQuerySchema))
+    q: z.infer<typeof ImportRowsQuerySchema>,
+  ) {
+    return await this.svc.rows(u.id, p.id, {
+      offset: q.offset ?? 0,
+      limit: q.limit ?? 50,
+    });
   }
 }
