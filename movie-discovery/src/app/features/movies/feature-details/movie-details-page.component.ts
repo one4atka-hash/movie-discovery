@@ -33,6 +33,7 @@ import {
   type MovieReleasesResponse,
   type ServerReleaseReminderItem,
 } from '@core/server-cinema-api.service';
+import { ServerPushSyncService } from '@core/server-push-sync.service';
 import { StorageService } from '@core/storage.service';
 import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
 import { FavoritesService } from '../data-access/services/favorites.service';
@@ -1054,6 +1055,7 @@ export class MovieDetailsPageComponent {
   private readonly watchState = inject(WatchStateService);
   private readonly storage = inject(StorageService);
   private readonly cinemaApi = inject(ServerCinemaApiService);
+  private readonly serverPushSync = inject(ServerPushSyncService);
 
   readonly isAuthed = computed(() => this.auth.isAuthenticated());
 
@@ -1422,6 +1424,7 @@ export class MovieDetailsPageComponent {
     if (!('Notification' in window)) return;
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') return;
+    await this.serverPushSync.registerIfPossible();
     new Notification('Movie Discovery', {
       body: `Пример уведомления: релиз будет в день выхода — ${title}`,
     });

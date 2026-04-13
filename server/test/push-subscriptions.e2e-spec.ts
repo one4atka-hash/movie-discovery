@@ -28,6 +28,17 @@ describe('Push subscriptions (e2e)', () => {
     await app.init();
   });
 
+  it('GET vapid-public without auth returns shape', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/push/vapid-public')
+      .expect(200);
+    const body = res.body as { publicKey: string | null };
+    expect(body).toHaveProperty('publicKey');
+    expect(body.publicKey === null || typeof body.publicKey === 'string').toBe(
+      true,
+    );
+  });
+
   it('requires auth', async () => {
     await request(app.getHttpServer())
       .get('/api/push/subscriptions')

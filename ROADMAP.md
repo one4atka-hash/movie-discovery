@@ -296,7 +296,7 @@ Component tests:
 - [x] **Rerank (опционально, v2 / отложено)**: нейро‑ре‑ранжирование top‑K + объяснения.
 - [x] **Notifications (v2 / частично)**:
   - [x] Email провайдер + scheduled job в день релиза — **не в текущем milestone**.
-  - [x] WebPush: хранение подписок на сервере (`POST /api/push/subscribe`, таблица `push_subscriptions`, `GET/DELETE`); **отправка** уведомлений через VAPID/worker — **отложено** (клиентские web push в MVP по-прежнему отдельно).
+  - [x] WebPush: хранение подписок на сервере (`POST /api/push/subscribe`, таблица `push_subscriptions`, `GET/DELETE`) + `GET /api/push/vapid-public`; **FE** синхронизирует Push-подписку с сервером при сохранении напоминания с каналом web push, если в API задан `VAPID_PUBLIC_KEY`; **отправка** уведомлений через VAPID/worker — **отложено** (клиентские web push в MVP по-прежнему отдельно).
 
 #### Итерация 4 — Workstreams (можно делать параллельно)
 
@@ -379,7 +379,7 @@ Component tests:
   - [x] “Why this?” панель у нотификации (frontend MVP, local).
   - [x] Rule Builder (chip-based clauses) + preview (“примерно N совпадений/нед”). (local)
 - [x] **Delivery (M2 — частично)**:
-  - [x] WebPush: `POST /api/push/subscribe` + таблица `push_subscriptions` + `GET /api/push/subscriptions`, `DELETE /api/push/subscriptions/:id` (хранение); **отправка** push через VAPID/worker — **отложено** (M1 alert delivery — in-app).
+  - [x] WebPush: `POST /api/push/subscribe` + таблица `push_subscriptions` + `GET /api/push/subscriptions`, `DELETE /api/push/subscriptions/:id` + публичный ключ `GET /api/push/vapid-public` (хранение и регистрация клиента); **отправка** push через VAPID/worker — **отложено** (M1 alert delivery — in-app).
   - [x] Email + digest: outbox + worker/cron — **не в текущем milestone**.
   - [x] Calendar: серверная `.ics` для правил — **не в текущем milestone** (клиентский .ics для подписок на релиз — по-прежнему в фронте где есть).
 - [x] **Тесты**:
@@ -577,7 +577,7 @@ Component tests:
 
 ### Статус плана (сводка)
 
-**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: серверные push-подписки).
+**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: Web Push storage + vapid-public + FE sync при сохранении напоминания).
 
 Все пункты выше **отмечены**; где работа **не выполнялась**, это явно указано текстом (**отложено**, **не в текущем milestone**, **v2**). Продуктовый объём итерации **5** и связанных MVP считается **закрытым**; дальнейшее развитие — из блоков с пометкой отложенного backlog.
 

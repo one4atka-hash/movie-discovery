@@ -96,6 +96,13 @@ export const EnvSchema = z.object({
 
   /** ISO region used when resolving dates from cached TMDB release_dates. */
   RELEASE_REMINDERS_REGION: z.string().optional().default('US'),
+
+  /**
+   * Web Push VAPID keys (URL-safe base64). Public key is exposed at GET /api/push/vapid-public;
+   * private key reserved for future outbound notifications.
+   */
+  VAPID_PUBLIC_KEY: z.string().optional().default(''),
+  VAPID_PRIVATE_KEY: z.string().optional().default(''),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
