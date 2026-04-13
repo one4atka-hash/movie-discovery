@@ -23,6 +23,7 @@ import { CollectionsModule } from './collections/collections.module';
 import { StreamingModule } from './streaming/streaming.module';
 import { DecisionModule } from './decision/decision.module';
 import { ImportsModule } from './imports/imports.module';
+import { ExportsModule } from './exports/exports.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { ImportsModule } from './imports/imports.module';
     StreamingModule,
     DecisionModule,
     ImportsModule,
+    ExportsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -460,7 +460,7 @@ Component tests:
   - [ ] Worker: parse → map → resolve TMDB ids (rate-limited) → preview.
   - [ ] FE: `/import` wizard + preview table + conflict resolver.
 - [ ] **Export (M2)**:
-  - [ ] API: `GET /api/exports?kind=...&format=csv|json` (diary/watchlist/ratings).
+  - [x] API: `GET /api/exports?kind=diary|watch_state|favorites&format=csv|json` (MVP).
   - [ ] FE: “Export my data” в профиле + shareable ссылки на файлы (если нужно).
 - [ ] **Тесты**:
   - [x] Unit: парсеры CSV (generic + 1 популярный формат).
