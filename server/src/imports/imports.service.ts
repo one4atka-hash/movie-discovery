@@ -765,6 +765,7 @@ export class ImportsService {
       id: string;
       entity: string;
       key: string;
+      rowN: number | null;
       server: unknown;
       incoming: unknown;
       resolution: unknown;
@@ -787,15 +788,22 @@ export class ImportsService {
       id: string;
       entity: string;
       key: string;
+      row_n: number | null;
       server: unknown;
       incoming: unknown;
       resolution: unknown;
       created_at: string;
     }>(
-      `select id, entity, key, server, incoming, resolution, created_at
-       from import_conflicts
-       where job_id = $1
-       order by created_at asc
+      `select c.id, c.entity, c.key,
+              r.row_n,
+              c.server, c.incoming, c.resolution, c.created_at
+       from import_conflicts c
+       left join import_job_rows r
+         on r.job_id = c.job_id
+        and r.status = 'conflict'
+        and (r.mapped->>'tmdbId') = c.key
+       where c.job_id = $1
+       order by c.created_at asc
        offset $2
        limit $3`,
       [id, input.offset, input.limit],
@@ -810,6 +818,7 @@ export class ImportsService {
         id: r.id,
         entity: r.entity,
         key: r.key,
+        rowN: r.row_n,
         server: r.server ?? null,
         incoming: r.incoming ?? null,
         resolution: r.resolution ?? null,

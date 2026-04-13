@@ -184,6 +184,13 @@ const TOKEN_KEY = 'server.jwt.token.v1';
                     <span class="muted">{{ c.createdAt }}</span>
                   </div>
                   <pre class="row__json">{{ pretty(c.incoming) }}</pre>
+                  @if (c.rowN) {
+                    <div class="row__actions">
+                      <app-button variant="ghost" (click)="openResolve(c.rowN, c.incoming)"
+                        >Resolve row</app-button
+                      >
+                    </div>
+                  }
                 </div>
               }
             </div>
@@ -370,6 +377,7 @@ export class ImportPageComponent {
       id: string;
       entity: string;
       key: string;
+      rowN: number | null;
       server: unknown;
       incoming: unknown;
       resolution: unknown;

@@ -51,6 +51,7 @@ export interface ImportConflictsResponse {
     readonly id: string;
     readonly entity: string;
     readonly key: string;
+    readonly rowN: number | null;
     readonly server: unknown;
     readonly incoming: unknown;
     readonly resolution: unknown;

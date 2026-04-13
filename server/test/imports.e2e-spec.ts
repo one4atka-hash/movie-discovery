@@ -242,9 +242,11 @@ describe('Imports (e2e)', () => {
     const items = (conflicts.body as { conflicts: unknown[] }).conflicts as {
       entity?: string;
       key?: string;
+      rowN?: number | null;
     }[];
     expect(items[0]?.entity).toBe('watch_state');
     expect(items[0]?.key).toBe('550');
+    expect(items[0]?.rowN).toBe(1);
   });
 
   it('diary json import applies items into /api/diary (MVP)', async () => {
