@@ -4,6 +4,7 @@ process.env.DATABASE_URL =
 process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-me';
 process.env.DB_RUN_MIGRATIONS = process.env.DB_RUN_MIGRATIONS ?? 'true';
 process.env.DEV_ALERTS_ENABLED = process.env.DEV_ALERTS_ENABLED ?? 'true';
+process.env.TMDB_API_KEY = process.env.TMDB_API_KEY ?? 'test';
 
 // Keep throttling relaxed for tests.
 process.env.THROTTLE_TTL_SECONDS = process.env.THROTTLE_TTL_SECONDS ?? '60';

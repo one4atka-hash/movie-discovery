@@ -49,6 +49,13 @@ export const EnvSchema = z.object({
     .transform((v) => (v ?? '').toLowerCase())
     .pipe(z.enum(['', '0', '1', 'false', 'true', 'no', 'yes', 'off', 'on']))
     .default(''),
+
+  /**
+   * Optional TMDB v3 key for server-side helpers (e.g. providers catalog).
+   * Keep optional to avoid hard dependency in local dev.
+   */
+  TMDB_API_KEY: z.string().optional().default(''),
+  TMDB_BASE_URL: z.string().optional().default('https://api.themoviedb.org/3'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

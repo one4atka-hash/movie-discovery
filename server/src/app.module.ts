@@ -20,6 +20,7 @@ import { MeModule } from './me/me.module';
 import { WatchStateModule } from './watch-state/watch-state.module';
 import { DiaryModule } from './diary/diary.module';
 import { CollectionsModule } from './collections/collections.module';
+import { StreamingModule } from './streaming/streaming.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { CollectionsModule } from './collections/collections.module';
     WatchStateModule,
     DiaryModule,
     CollectionsModule,
+    StreamingModule,
   ],
   controllers: [AppController],
   providers: [
