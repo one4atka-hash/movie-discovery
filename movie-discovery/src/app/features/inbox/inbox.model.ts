@@ -22,7 +22,10 @@ export interface AlertRule {
   readonly enabled: boolean;
   readonly filters: {
     readonly minRating?: number | null;
+    readonly genres?: readonly number[] | null;
     readonly maxRuntime?: number | null;
+    readonly languages?: readonly string[] | null;
+    readonly providerKeys?: readonly string[] | null;
   };
   readonly channels: {
     readonly inApp: boolean;

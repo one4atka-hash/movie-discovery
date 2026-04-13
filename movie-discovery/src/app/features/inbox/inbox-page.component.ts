@@ -10,10 +10,14 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
 import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.component';
 import { SectionComponent } from '@shared/ui/section/section.component';
 import { SegmentedControlComponent } from '@shared/ui/segmented-control/segmented-control.component';
+import { ChipComponent } from '@shared/ui/chip/chip.component';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import type { AlertRule, InboxItem } from './inbox.model';
 import { InboxService } from './inbox.service';
+import { firstValueFrom } from 'rxjs';
+import { MovieService } from '@features/movies/data-access/services/movie.service';
+import type { Movie } from '@features/movies/data-access/models/movie.model';
 
 @Component({
   selector: 'app-inbox-page',
@@ -29,6 +33,7 @@ import { InboxService } from './inbox.service';
     ButtonComponent,
     BottomSheetComponent,
     FormFieldComponent,
+    ChipComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -152,6 +157,32 @@ import { InboxService } from './inbox.service';
               step="0.5"
             />
           </app-form-field>
+
+          <app-form-field
+            label="Filters: genres (TMDB genre ids)"
+            hint="Пример: 28 (Action), 35 (Comedy)"
+          >
+            <div class="chipsRow">
+              <input
+                [(ngModel)]="draftGenreId"
+                name="genreId"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="28"
+              />
+              <app-button variant="secondary" type="button" (click)="addGenre()">Add</app-button>
+            </div>
+            <div class="chips" *ngIf="draftGenres().length">
+              <app-chip
+                *ngFor="let g of draftGenres(); trackBy: trackByNum"
+                [selected]="true"
+                (clicked)="removeGenre(g)"
+              >
+                {{ g }}
+              </app-chip>
+            </div>
+          </app-form-field>
           <app-form-field label="Filters: max runtime (min)">
             <input
               [(ngModel)]="draftMaxRuntime"
@@ -161,6 +192,43 @@ import { InboxService } from './inbox.service';
               max="500"
               step="5"
             />
+          </app-form-field>
+
+          <app-form-field label="Filters: languages" hint="ISO 639-1, напр. en, ru">
+            <div class="chipsRow">
+              <input [(ngModel)]="draftLang" name="lang" placeholder="en" />
+              <app-button variant="secondary" type="button" (click)="addLang()">Add</app-button>
+            </div>
+            <div class="chips" *ngIf="draftLangs().length">
+              <app-chip
+                *ngFor="let l of draftLangs(); trackBy: trackByText"
+                [selected]="true"
+                (clicked)="removeLang(l)"
+              >
+                {{ l }}
+              </app-chip>
+            </div>
+          </app-form-field>
+
+          <app-form-field
+            label="Filters: provider keys"
+            hint="MVP: free-form (используем позже на backend)"
+          >
+            <div class="chipsRow">
+              <input [(ngModel)]="draftProviderKey" name="providerKey" placeholder="netflix" />
+              <app-button variant="secondary" type="button" (click)="addProviderKey()"
+                >Add</app-button
+              >
+            </div>
+            <div class="chips" *ngIf="draftProviderKeys().length">
+              <app-chip
+                *ngFor="let p of draftProviderKeys(); trackBy: trackByText"
+                [selected]="true"
+                (clicked)="removeProviderKey(p)"
+              >
+                {{ p }}
+              </app-chip>
+            </div>
           </app-form-field>
           <app-form-field label="Channels">
             <div class="row">
@@ -178,6 +246,19 @@ import { InboxService } from './inbox.service';
               >
             </div>
           </app-form-field>
+
+          <div class="preview">
+            <p class="muted" *ngIf="previewText()">{{ previewText() }}</p>
+            <app-button
+              variant="ghost"
+              type="button"
+              [loading]="previewLoading()"
+              (click)="runPreview()"
+            >
+              Preview
+            </app-button>
+          </div>
+
           <div class="formActions">
             <app-button variant="ghost" type="button" (click)="closeRuleSheet()">Cancel</app-button>
             <app-button type="submit">Save</app-button>
@@ -240,6 +321,21 @@ import { InboxService } from './inbox.service';
         display: grid;
         gap: 0.75rem;
       }
+      .chipsRow {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .chipsRow input {
+        min-width: 140px;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-top: 0.55rem;
+      }
       .row {
         display: flex;
         gap: 0.75rem;
@@ -260,6 +356,17 @@ import { InboxService } from './inbox.service';
         justify-content: flex-end;
         margin-top: 0.25rem;
       }
+      .preview {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: 0.6rem 0.7rem;
+        background: color-mix(in srgb, var(--bg-elevated) 45%, transparent);
+      }
     `,
   ],
 })
@@ -267,6 +374,7 @@ export class InboxPageComponent {
   readonly i18n = inject(I18nService);
   readonly toast = inject(ToastService);
   readonly svc = inject(InboxService);
+  private readonly movies = inject(MovieService);
 
   readonly tab = signal<'feed' | 'rules'>('feed');
   readonly tabOptions = [
@@ -284,10 +392,18 @@ export class InboxPageComponent {
   draftEnabled = true;
   draftMinRating = '';
   draftMaxRuntime = '';
+  draftGenreId = '';
+  readonly draftGenres = signal<number[]>([]);
+  draftLang = '';
+  readonly draftLangs = signal<string[]>([]);
+  draftProviderKey = '';
+  readonly draftProviderKeys = signal<string[]>([]);
   chInApp = true;
   chWebPush = false;
   chEmail = false;
   chCal = false;
+  readonly previewLoading = signal(false);
+  readonly previewText = signal<string>('');
 
   openRuleCreate(): void {
     this.editingRule.set(null);
@@ -295,10 +411,17 @@ export class InboxPageComponent {
     this.draftEnabled = true;
     this.draftMinRating = '';
     this.draftMaxRuntime = '';
+    this.draftGenreId = '';
+    this.draftGenres.set([]);
+    this.draftLang = '';
+    this.draftLangs.set([]);
+    this.draftProviderKey = '';
+    this.draftProviderKeys.set([]);
     this.chInApp = true;
     this.chWebPush = false;
     this.chEmail = false;
     this.chCal = false;
+    this.previewText.set('');
     this.ruleSheetOpen.set(true);
   }
 
@@ -308,10 +431,17 @@ export class InboxPageComponent {
     this.draftEnabled = r.enabled;
     this.draftMinRating = r.filters.minRating != null ? String(r.filters.minRating) : '';
     this.draftMaxRuntime = r.filters.maxRuntime != null ? String(r.filters.maxRuntime) : '';
+    this.draftGenreId = '';
+    this.draftGenres.set([...(r.filters.genres ?? [])]);
+    this.draftLang = '';
+    this.draftLangs.set([...(r.filters.languages ?? [])]);
+    this.draftProviderKey = '';
+    this.draftProviderKeys.set([...(r.filters.providerKeys ?? [])]);
     this.chInApp = r.channels.inApp;
     this.chWebPush = r.channels.webPush;
     this.chEmail = r.channels.email;
     this.chCal = r.channels.calendar;
+    this.previewText.set('');
     this.ruleSheetOpen.set(true);
   }
 
@@ -330,7 +460,10 @@ export class InboxPageComponent {
         enabled: this.draftEnabled,
         filters: {
           minRating: Number.isFinite(minRating as number) ? minRating : null,
+          genres: this.draftGenres().length ? this.draftGenres() : null,
           maxRuntime: Number.isFinite(maxRuntime as number) ? maxRuntime : null,
+          languages: this.draftLangs().length ? this.draftLangs() : null,
+          providerKeys: this.draftProviderKeys().length ? this.draftProviderKeys() : null,
         },
         channels: {
           inApp: this.chInApp,
@@ -352,5 +485,96 @@ export class InboxPageComponent {
 
   trackByRuleId(_: number, r: AlertRule): string {
     return r.id;
+  }
+
+  trackByText(_: number, s: string): string {
+    return s;
+  }
+
+  trackByNum(_: number, n: number): number {
+    return n;
+  }
+
+  addGenre(): void {
+    const v = this.draftGenreId.trim();
+    if (!v) return;
+    const n = Number(v);
+    if (!Number.isFinite(n) || n <= 0) return;
+    const cur = this.draftGenres();
+    if (cur.includes(n)) return;
+    this.draftGenres.set([...cur, n].sort((a, b) => a - b));
+    this.draftGenreId = '';
+  }
+
+  removeGenre(id: number): void {
+    this.draftGenres.set(this.draftGenres().filter((x) => x !== id));
+  }
+
+  addLang(): void {
+    const v = this.draftLang.trim().toLowerCase();
+    if (!/^[a-z]{2}$/.test(v)) return;
+    const cur = this.draftLangs();
+    if (cur.includes(v)) return;
+    this.draftLangs.set([...cur, v].sort());
+    this.draftLang = '';
+  }
+
+  removeLang(v: string): void {
+    this.draftLangs.set(this.draftLangs().filter((x) => x !== v));
+  }
+
+  addProviderKey(): void {
+    const v = this.draftProviderKey.trim().toLowerCase();
+    if (!v) return;
+    const cur = this.draftProviderKeys();
+    if (cur.includes(v)) return;
+    this.draftProviderKeys.set([...cur, v].sort());
+    this.draftProviderKey = '';
+  }
+
+  removeProviderKey(v: string): void {
+    this.draftProviderKeys.set(this.draftProviderKeys().filter((x) => x !== v));
+  }
+
+  async runPreview(): Promise<void> {
+    if (this.previewLoading()) return;
+    this.previewLoading.set(true);
+    this.previewText.set('');
+    try {
+      const samplePages = [1, 2];
+      const sample: Movie[] = [];
+      for (const p of samplePages) {
+        const res = await firstValueFrom(this.movies.getPopularMovies(p));
+        sample.push(...(res?.results ?? []));
+      }
+
+      const minRating = this.draftMinRating.trim() ? Number(this.draftMinRating) : null;
+      const genres = this.draftGenres();
+      const langs = this.draftLangs();
+
+      const matches = sample.filter((m) => {
+        if (minRating != null && Number.isFinite(minRating) && (m.vote_average ?? 0) < minRating)
+          return false;
+        if (langs.length) {
+          const ol = (m.original_language ?? '').toLowerCase();
+          if (!ol || !langs.includes(ol)) return false;
+        }
+        if (genres.length) {
+          const g = m.genre_ids ?? [];
+          if (!g.some((id) => genres.includes(id))) return false;
+        }
+        return true;
+      });
+
+      const ratio = sample.length ? matches.length / sample.length : 0;
+      const estPerWeek = Math.round(ratio * 140); // heuristic, “order of magnitude”
+      this.previewText.set(
+        `Preview: ${matches.length}/${sample.length} matches in popular sample → примерно ${estPerWeek}/нед (грубо).`,
+      );
+    } catch {
+      this.toast.show('error', 'Preview failed', 'TMDB sample could not be loaded');
+    } finally {
+      this.previewLoading.set(false);
+    }
   }
 }

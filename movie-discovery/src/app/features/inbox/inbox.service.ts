@@ -81,7 +81,10 @@ export class InboxService {
       enabled: input.enabled,
       filters: {
         minRating: input.filters.minRating ?? null,
+        genres: input.filters.genres ?? null,
         maxRuntime: input.filters.maxRuntime ?? null,
+        languages: input.filters.languages ?? null,
+        providerKeys: input.filters.providerKeys ?? null,
       },
       channels: { ...input.channels },
       createdAt: existing?.createdAt ?? now,

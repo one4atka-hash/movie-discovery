@@ -375,7 +375,7 @@ Component tests:
 - [ ] **Frontend (M1)**:
   - [x] `/inbox`: feed + Rules CRUD (frontend MVP, local storage).
   - [x] “Why this?” панель у нотификации (frontend MVP, local).
-  - [ ] Rule Builder (chip-based clauses) + preview (“примерно N совпадений/нед”).
+  - [x] Rule Builder (chip-based clauses) + preview (“примерно N совпадений/нед”). (local)
 - [ ] **Delivery (M2)**:
   - [ ] WebPush: `POST /api/push/subscribe`, хранение `push_subscriptions`.
   - [ ] Email + digest: outbox таблица + worker/cron, “quiet hours”, weekly digest.
