@@ -50,6 +50,20 @@ describe('Push subscriptions (e2e)', () => {
         keys: { p256dh: 'x', auth: 'y' },
       })
       .expect(401);
+    await request(app.getHttpServer())
+      .post('/api/push/dev/send-self')
+      .send({})
+      .expect(401);
+  });
+
+  it('dev send-self returns disabled when DEV_PUSH_SEND_ENABLED is off', async () => {
+    const token = await registerAndGetToken(app);
+    const res = await request(app.getHttpServer())
+      .post('/api/push/dev/send-self')
+      .set('Authorization', `Bearer ${token}`)
+      .send({})
+      .expect(201);
+    expect(res.body).toEqual({ ok: false, error: 'Disabled' });
   });
 
   it('subscribe → list → delete', async () => {

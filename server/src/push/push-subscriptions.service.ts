@@ -52,4 +52,38 @@ export class PushSubscriptionsService {
     );
     if (rows.length === 0) throw new NotFoundException();
   }
+
+  /** Keys for `web-push` / delivery (same shape as browser PushSubscription JSON). */
+  async listForWebPushDelivery(userId: string): Promise<
+    {
+      id: string;
+      endpoint: string;
+      keys: { p256dh: string; auth: string };
+    }[]
+  > {
+    const rows = await this.db.query<{
+      id: string;
+      endpoint: string;
+      p256dh: string;
+      auth: string;
+    }>(
+      `select id, endpoint, p256dh, auth
+       from push_subscriptions
+       where user_id = $1`,
+      [userId],
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      endpoint: r.endpoint,
+      keys: { p256dh: r.p256dh, auth: r.auth },
+    }));
+  }
+
+  /** Remove a subscription invalidated at the push endpoint (410/404). */
+  async deleteById(userId: string, subscriptionId: string): Promise<void> {
+    await this.db.query(
+      `delete from push_subscriptions where id = $1 and user_id = $2`,
+      [subscriptionId, userId],
+    );
+  }
 }

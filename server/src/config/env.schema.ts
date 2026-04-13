@@ -51,6 +51,16 @@ export const EnvSchema = z.object({
     .default(''),
 
   /**
+   * Dev-only: POST /api/push/dev/send-self — send Web Push to caller's stored subscriptions.
+   */
+  DEV_PUSH_SEND_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').toLowerCase())
+    .pipe(z.enum(['', '0', '1', 'false', 'true', 'no', 'yes', 'off', 'on']))
+    .default(''),
+
+  /**
    * Optional TMDB v3 key for server-side helpers (e.g. providers catalog).
    * Keep optional to avoid hard dependency in local dev.
    */
@@ -99,10 +109,12 @@ export const EnvSchema = z.object({
 
   /**
    * Web Push VAPID keys (URL-safe base64). Public key is exposed at GET /api/push/vapid-public;
-   * private key reserved for future outbound notifications.
+   * private key used with subject for outbound sendNotification.
    */
   VAPID_PUBLIC_KEY: z.string().optional().default(''),
   VAPID_PRIVATE_KEY: z.string().optional().default(''),
+  /** mailto: or https: — required for outbound Web Push when keys are set. */
+  VAPID_SUBJECT: z.string().optional().default(''),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

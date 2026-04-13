@@ -19,3 +19,15 @@ export const PushSubscribeSchema = zodSchema(
 export const PushSubIdParamSchema = zodSchema(
   z.object({ id: z.string().uuid() }).strict(),
 );
+
+export const PushDevSendSelfSchema = zodSchema(
+  z.preprocess(
+    (v) => (v == null || typeof v !== 'object' ? {} : v),
+    z
+      .object({
+        title: z.string().min(1).max(120).optional(),
+        body: z.string().max(500).optional(),
+      })
+      .strict(),
+  ),
+);

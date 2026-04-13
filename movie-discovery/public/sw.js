@@ -9,3 +9,20 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
+
+self.addEventListener('push', (event) => {
+  let title = 'Movie Discovery';
+  let body = '';
+  try {
+    if (event.data) {
+      const j = event.data.json();
+      if (j && typeof j === 'object') {
+        if (typeof j.title === 'string') title = j.title;
+        if (typeof j.body === 'string') body = j.body;
+      }
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  event.waitUntil(self.registration.showNotification(title, { body }));
+});
