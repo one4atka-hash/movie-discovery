@@ -405,7 +405,7 @@ Component tests:
 #### 5.4 Watch Progress (прогресс и состояния, проще чем у Trakt)
 - [ ] **Backend/API (M1)**:
   - [x] `GET /api/watch-state`, `PUT /api/watch-state/:tmdbId`, `DELETE /api/watch-state/:tmdbId`.
-  - [ ] Статусы: `want|watching|watched|dropped|hidden` + (опц.) `progress{minutes|pct}`.
+  - [x] Статусы: `want|watching|watched|dropped|hidden` + (опц.) `progress{minutes|pct}`.
 - [ ] **DB (M1)**:
   - [x] `watch_state(user_id, tmdb_id, status, progress jsonb, updated_at)` PK `(user_id, tmdb_id)`.
 - [ ] **Frontend (M1)**:
