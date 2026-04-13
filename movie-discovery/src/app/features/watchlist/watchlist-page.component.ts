@@ -8,6 +8,7 @@ import { SectionComponent } from '@shared/ui/section/section.component';
 import { SegmentedControlComponent } from '@shared/ui/segmented-control/segmented-control.component';
 import { CardComponent } from '@shared/ui/card/card.component';
 import { ButtonComponent } from '@shared/ui/button/button.component';
+import { BadgeComponent } from '@shared/ui/badge/badge.component';
 import { tmdbImg } from '@core/tmdb-images';
 import type { WatchStatus } from './watch-state.model';
 import { WatchStateService } from './watch-state.service';
@@ -25,6 +26,7 @@ type WatchTab = 'all' | WatchStatus;
     SegmentedControlComponent,
     CardComponent,
     ButtonComponent,
+    BadgeComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -69,9 +71,13 @@ type WatchTab = 'all' | WatchStatus;
             </div>
             <div class="meta">
               <div class="pills">
-                <span class="pill">{{ statusLabel(it.status) }}</span>
-                <span class="pill" *ngIf="it.movie.release_date">{{ it.movie.release_date }}</span>
-                <span class="pill">★ {{ it.movie.vote_average | number: '1.1-1' }}</span>
+                <app-badge>{{ statusLabel(it.status) }}</app-badge>
+                <app-badge variant="muted" *ngIf="it.movie.release_date">{{
+                  it.movie.release_date
+                }}</app-badge>
+                <app-badge variant="accent"
+                  >★ {{ it.movie.vote_average | number: '1.1-1' }}</app-badge
+                >
               </div>
               <div class="actions">
                 <app-button variant="secondary" [routerLink]="['/movie', it.tmdbId]"
@@ -145,14 +151,6 @@ type WatchTab = 'all' | WatchStatus;
         gap: 0.4rem;
         flex-wrap: wrap;
         margin-bottom: 0.65rem;
-      }
-      .pill {
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-full);
-        padding: 0.2rem 0.55rem;
-        font-size: 0.82rem;
-        color: var(--text-muted);
-        background: rgba(255, 255, 255, 0.03);
       }
       .actions {
         display: flex;

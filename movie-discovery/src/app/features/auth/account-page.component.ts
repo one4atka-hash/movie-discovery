@@ -11,11 +11,12 @@ import { FavoritesService } from '@features/movies/data-access/services/favorite
 import { I18nService } from '@shared/i18n/i18n.service';
 import { tmdbImg } from '@core/tmdb-images';
 import { StreamingPrefsService } from '@features/streaming/streaming-prefs.service';
+import { BadgeComponent } from '@shared/ui/badge/badge.component';
 
 @Component({
   selector: 'app-account-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MovieCardComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MovieCardComponent, BadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -62,10 +63,10 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
                 </div>
               </div>
               <div class="subCard__meta">
-                <span class="pill" *ngIf="s.channels.inApp">In-app</span>
-                <span class="pill" *ngIf="s.channels.webPush">Web Push</span>
-                <span class="pill" *ngIf="s.channels.email">Email</span>
-                <span class="pill" *ngIf="s.channels.calendar">Calendar</span>
+                <app-badge *ngIf="s.channels.inApp">In-app</app-badge>
+                <app-badge *ngIf="s.channels.webPush">Web Push</app-badge>
+                <app-badge *ngIf="s.channels.email">Email</app-badge>
+                <app-badge *ngIf="s.channels.calendar">Calendar</app-badge>
               </div>
               <div class="subCard__actions">
                 <a class="btn" [routerLink]="['/movie', s.tmdbId]">{{
@@ -164,7 +165,7 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
           </div>
 
           <div class="subCard__meta" *ngIf="myProviders().length">
-            <span class="pill" *ngFor="let p of myProviders()">
+            <app-badge *ngFor="let p of myProviders()">
               {{ p }}
               <button
                 class="pill-x"
@@ -174,7 +175,7 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
               >
                 ✕
               </button>
-            </span>
+            </app-badge>
           </div>
           <p class="muted" *ngIf="!myProviders().length">
             Пока пусто — добавьте хотя бы один сервис.
@@ -373,14 +374,6 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
         display: flex;
         gap: 0.4rem;
         flex-wrap: wrap;
-      }
-      .pill {
-        border: 1px solid var(--border-subtle);
-        border-radius: 9999px;
-        padding: 0.2rem 0.55rem;
-        font-size: 0.82rem;
-        color: var(--text-muted);
-        background: rgba(255, 255, 255, 0.03);
       }
       .pill-x {
         margin-left: 0.35rem;

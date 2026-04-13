@@ -27,6 +27,7 @@ import { TmdbWatchProviderCountry } from '../data-access/models/watch-providers.
 import { TMDB_GENRE_LABELS } from '../data-access/tmdb-genres';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
 import { LoaderComponent } from '@shared/ui/loader/loader.component';
+import { BadgeComponent } from '@shared/ui/badge/badge.component';
 import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
 import { FavoritesService } from '../data-access/services/favorites.service';
 import { MovieService } from '../data-access/services/movie.service';
@@ -52,7 +53,7 @@ import {
 @Component({
   selector: 'app-movie-details-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, EmptyStateComponent, LoaderComponent],
+  imports: [CommonModule, RouterLink, EmptyStateComponent, LoaderComponent, BadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -323,11 +324,17 @@ import {
                     />
                     <span class="prov__name">{{ row.provider.provider_name }}</span>
                     <span class="prov__kinds">
-                      <span class="kind-badge" *ngFor="let k of row.kinds">{{ kindLabel(k) }}</span>
+                      <app-badge size="sm" variant="muted" *ngFor="let k of row.kinds">
+                        {{ kindLabel(k) }}
+                      </app-badge>
                     </span>
-                    <span class="prov__mine" *ngIf="isMyProvider(row.provider.provider_name)"
-                      >My</span
+                    <app-badge
+                      *ngIf="isMyProvider(row.provider.provider_name)"
+                      size="sm"
+                      variant="accent"
                     >
+                      My
+                    </app-badge>
                   </a>
                 </div>
               </div>
@@ -792,32 +799,12 @@ import {
         flex: 1 1 auto;
         min-width: 0;
       }
-      .prov__mine {
-        margin-left: auto;
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-full);
-        padding: 0.15rem 0.45rem;
-        background: rgba(255, 255, 255, 0.03);
-      }
       .prov__kinds {
         display: flex;
         flex-wrap: wrap;
         gap: 0.25rem;
         width: 100%;
         margin-top: 0.15rem;
-      }
-      .kind-badge {
-        font-size: 0.68rem;
-        font-weight: 600;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-        padding: 0.15rem 0.4rem;
-        border-radius: var(--radius-full);
-        border: 1px solid var(--border-subtle);
-        color: var(--text-muted);
-        background: color-mix(in srgb, var(--bg-elevated) 50%, transparent);
       }
 
       .facts {

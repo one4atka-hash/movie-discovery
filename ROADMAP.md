@@ -519,7 +519,7 @@ Component tests:
 - [ ] **Компоненты, которые стоит вынести в shared**:
   - [x] `Button` variants (primary/secondary/ghost/icon/loading), `Card`, `Chip`, `BottomSheet`, `Toast`.
   - [x] `Section`, `SegmentedControl`, `FormField` (label/hint/error slots).
-  - [ ] `Pill/Badge`.
+  - [x] `Pill/Badge`.
 - [ ] **Состояния**:
   - [ ] Skeleton loaders для списков и карточек; empty states всегда с CTA (“Add services”, “Create rule”, “Log first watch”, “Import history”).
   - [ ] Errors: коротко что сломалось + retry + контекст (“проверь регион/сервисы”).

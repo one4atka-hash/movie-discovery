@@ -10,6 +10,7 @@ import { ChipComponent } from '@shared/ui/chip/chip.component';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
 import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
 import { SectionComponent } from '@shared/ui/section/section.component';
+import { BadgeComponent } from '@shared/ui/badge/badge.component';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import type { DiaryEntry, DiaryLocation } from './diary.model';
@@ -29,6 +30,7 @@ import { DiaryService } from './diary.service';
     BottomSheetComponent,
     FormFieldComponent,
     ChipComponent,
+    BadgeComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -55,10 +57,10 @@ import { DiaryService } from './diary.service';
         <div class="list" *ngIf="entries().length">
           <app-card *ngFor="let e of entries(); trackBy: trackById" [title]="e.title">
             <div class="meta">
-              <span class="pill">{{ e.watchedAt }}</span>
-              <span class="pill">{{ locationLabel(e.location) }}</span>
+              <app-badge variant="muted">{{ e.watchedAt }}</app-badge>
+              <app-badge>{{ locationLabel(e.location) }}</app-badge>
               @if (e.rating != null) {
-                <span class="pill">★ {{ e.rating }}</span>
+                <app-badge variant="accent">★ {{ e.rating }}</app-badge>
               }
             </div>
 
@@ -171,14 +173,6 @@ import { DiaryService } from './diary.service';
         gap: 0.4rem;
         flex-wrap: wrap;
         margin-bottom: 0.65rem;
-      }
-      .pill {
-        border: 1px solid var(--border-subtle);
-        border-radius: var(--radius-full);
-        padding: 0.2rem 0.55rem;
-        font-size: 0.82rem;
-        color: var(--text-muted);
-        background: rgba(255, 255, 255, 0.03);
       }
       .tags {
         display: flex;
