@@ -531,7 +531,7 @@ Component tests:
 - [ ] **Synthesis hub (M2)**:
   - [ ] FE: `/me` (единый хаб): watchlist + diary + alerts + recs + quick add.
   - [ ] Общий “movie actions” bottom sheet для всех поверхностей.
-- [ ] **Тесты**:
+- [x] **Тесты**:
   - [x] e2e (server): публичный `GET /u/:slug` при unlisted + секции; `private` → 404; конфликт slug → 409.
   - [x] Unit (FE): детерминированный порядок строк share card (top10 / month recap / tonight) + стабильный `shareCardContentSnapshot`.
 
