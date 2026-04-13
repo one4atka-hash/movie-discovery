@@ -426,10 +426,10 @@ Component tests:
   - [x] Пресеты ограничений (weeknight/date night/family) + “use my services by default”.
   - [x] Быстрые действия на кандидатах: hide / like / add to watchlist.
 - [ ] **Backend/API (M1)**:
-  - [ ] `POST /api/decision-sessions` (constraints + mode) → candidates.
-  - [ ] `GET /api/decision-sessions/:id`, `POST /api/decision-sessions/:id/pick`.
+  - [x] `POST /api/decision-sessions` (constraints + mode) → candidates.
+  - [x] `GET /api/decision-sessions/:id`, `POST /api/decision-sessions/:id/pick`.
 - [ ] **DB (M1)**:
-  - [ ] `decision_sessions`, `decision_candidates`, `decision_picks`.
+  - [x] `decision_sessions`, `decision_candidates`, `decision_picks`.
 - [ ] **Group voting (M2)**:
   - [ ] `POST /api/decision-sessions/:id/share` → share link.
   - [ ] Public view + anonymous votes (rate-limited) + “reveal winner”.

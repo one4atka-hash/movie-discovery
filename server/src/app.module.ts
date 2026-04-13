@@ -21,6 +21,7 @@ import { WatchStateModule } from './watch-state/watch-state.module';
 import { DiaryModule } from './diary/diary.module';
 import { CollectionsModule } from './collections/collections.module';
 import { StreamingModule } from './streaming/streaming.module';
+import { DecisionModule } from './decision/decision.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { StreamingModule } from './streaming/streaming.module';
     DiaryModule,
     CollectionsModule,
     StreamingModule,
+    DecisionModule,
   ],
   controllers: [AppController],
   providers: [
