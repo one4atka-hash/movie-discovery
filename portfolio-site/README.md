@@ -18,3 +18,5 @@ Planned: lightweight static site (no backend), deployable to Netlify/Vercel/GitH
 
 **Testing:** root `README.md` lists optional `server` Jest e2e and `movie-discovery` Playwright; `scripts/verify-all.*` stays fast (no e2e).
 
+**CI:** `.github/workflows/ci.yml` runs gitleaks; full Angular lint/test/build; Nest build + unit tests (server lint is not a CI step); `docker build` for the API — no browser or API e2e jobs.
+
