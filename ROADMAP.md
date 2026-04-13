@@ -381,7 +381,7 @@ Component tests:
   - [ ] Email + digest: outbox таблица + worker/cron, “quiet hours”, weekly digest.
   - [ ] Calendar: `.ics` генерация для событий (или ссылкой на existing util).
 - [ ] **Тесты**:
-  - [ ] Unit: матчинг правил + quiet hours.
+  - [x] Unit: матчинг правил + quiet hours.
   - [x] Server e2e: CRUD rules + read/unread inbox.
   - [ ] FE e2e: создать правило → увидеть item в inbox (через dev run endpoint).
 
