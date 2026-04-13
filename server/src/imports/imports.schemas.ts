@@ -29,3 +29,5 @@ export const ImportRowsQuerySchema = zodSchema(
     })
     .strict(),
 );
+
+export const ImportConflictsQuerySchema = ImportRowsQuerySchema;

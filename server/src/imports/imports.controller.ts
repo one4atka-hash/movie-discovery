@@ -15,6 +15,7 @@ import { ZodBodyPipe } from '../common/zod-body.pipe';
 import {
   CreateImportSchema,
   ImportIdParamSchema,
+  ImportConflictsQuerySchema,
   ImportRowsQuerySchema,
 } from './imports.schemas';
 import { ImportsService } from './imports.service';
@@ -74,6 +75,20 @@ export class ImportsController {
     q: z.infer<typeof ImportRowsQuerySchema>,
   ) {
     return await this.svc.rows(u.id, p.id, {
+      offset: q.offset ?? 0,
+      limit: q.limit ?? 50,
+    });
+  }
+
+  @Get(':id/conflicts')
+  async conflicts(
+    @CurrentUser() u: AuthedUser,
+    @Param(new ZodBodyPipe(ImportIdParamSchema))
+    p: z.infer<typeof ImportIdParamSchema>,
+    @Query(new ZodBodyPipe(ImportConflictsQuerySchema))
+    q: z.infer<typeof ImportConflictsQuerySchema>,
+  ) {
+    return await this.svc.conflicts(u.id, p.id, {
       offset: q.offset ?? 0,
       limit: q.limit ?? 50,
     });

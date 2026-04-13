@@ -500,6 +500,72 @@ export class ImportsService {
       })),
     };
   }
+
+  async conflicts(
+    userId: string,
+    id: string,
+    input: { offset: number; limit: number },
+  ): Promise<{
+    ok: true;
+    offset: number;
+    limit: number;
+    total: number;
+    conflicts: {
+      id: string;
+      entity: string;
+      key: string;
+      server: unknown;
+      incoming: unknown;
+      resolution: unknown;
+      createdAt: string;
+    }[];
+  }> {
+    const jobs = await this.db.query<Pick<ImportJobRow, 'id'>>(
+      `select id from import_jobs where id = $1 and user_id = $2`,
+      [id, userId],
+    );
+    if (!jobs[0]) throw new NotFoundException('Import job not found');
+
+    const totalRows = await this.db.query<{ total: number }>(
+      `select count(*)::int as total from import_conflicts where job_id = $1`,
+      [id],
+    );
+    const total = totalRows[0]?.total ?? 0;
+
+    const rows = await this.db.query<{
+      id: string;
+      entity: string;
+      key: string;
+      server: unknown;
+      incoming: unknown;
+      resolution: unknown;
+      created_at: string;
+    }>(
+      `select id, entity, key, server, incoming, resolution, created_at
+       from import_conflicts
+       where job_id = $1
+       order by created_at asc
+       offset $2
+       limit $3`,
+      [id, input.offset, input.limit],
+    );
+
+    return {
+      ok: true,
+      offset: input.offset,
+      limit: input.limit,
+      total,
+      conflicts: rows.map((r) => ({
+        id: r.id,
+        entity: r.entity,
+        key: r.key,
+        server: r.server ?? null,
+        incoming: r.incoming ?? null,
+        resolution: r.resolution ?? null,
+        createdAt: r.created_at,
+      })),
+    };
+  }
 }
 
 const ImportDiaryJsonSchema = z.object({

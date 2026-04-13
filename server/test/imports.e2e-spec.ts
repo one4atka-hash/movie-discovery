@@ -154,6 +154,39 @@ describe('Imports (e2e)', () => {
     ]);
   });
 
+  it('GET /imports/:id/conflicts returns conflicts list (MVP)', async () => {
+    const token = await registerAndGetToken(app);
+
+    const created = await request(app.getHttpServer())
+      .post('/api/imports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        kind: 'favorites',
+        format: 'json',
+        payload: JSON.stringify({ items: [550] }),
+      })
+      .expect(201);
+    const id = (created.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/preview`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .get(`/api/imports/${id}/conflicts?offset=0&limit=50`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(res.body).toMatchObject({
+      ok: true,
+      offset: 0,
+      limit: 50,
+      total: 0,
+      conflicts: [],
+    });
+  });
+
   it('diary json import applies items into /api/diary (MVP)', async () => {
     const token = await registerAndGetToken(app);
 
