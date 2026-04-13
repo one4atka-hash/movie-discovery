@@ -31,6 +31,7 @@ const RU: Dict = {
   'lang.selectAria': 'Язык интерфейса и данные TMDB',
   'lang.tmdbDataHint':
     'Запросы к TMDB передают параметр language: названия и описания приходят на выбранном языке, если перевод есть в базе TMDB (иначе — на английском).',
+  'common.retry': 'Повторить',
 
   'home.title': 'Выбор фильма на вечер — быстро и без лишнего шума.',
   'home.subtitle': 'Поиск, избранное, трейлеры и ссылки на стриминги (подписка, аренда, покупка).',
@@ -293,6 +294,7 @@ const EN: Dict = {
   'lang.selectAria': 'Interface language and TMDB data language',
   'lang.tmdbDataHint':
     'TMDB requests include the language parameter: titles and overviews use that locale when a translation exists in TMDB (otherwise English).',
+  'common.retry': 'Retry',
 
   'home.title': 'Pick a movie for tonight — fast and distraction-free.',
   'home.subtitle': 'Search, favorites, trailers, and links to streaming (subscription, rent, buy).',

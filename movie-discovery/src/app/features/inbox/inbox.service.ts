@@ -2,6 +2,7 @@ import { Injectable, computed, signal } from '@angular/core';
 
 import { StorageService } from '@core/storage.service';
 import type { AlertRule, InboxItem } from './inbox.model';
+import { inboxExplainFromRuleClauses, INBOX_DEMO_RULE_FOR_SAMPLE } from './rule-clause.util';
 
 const ITEMS_KEY = 'inbox.items.v1';
 const RULES_KEY = 'inbox.rules.v1';
@@ -47,15 +48,20 @@ export class InboxService {
   }
 
   addSample(): void {
+    const enabled = this._rules().find((r) => r.enabled);
+    const explain = enabled
+      ? inboxExplainFromRuleClauses(enabled.name, enabled.filters, enabled.channels)
+      : inboxExplainFromRuleClauses(
+          INBOX_DEMO_RULE_FOR_SAMPLE.name,
+          INBOX_DEMO_RULE_FOR_SAMPLE.filters,
+          INBOX_DEMO_RULE_FOR_SAMPLE.channels,
+        );
     const item: InboxItem = {
       id: crypto.randomUUID(),
       type: 'info',
       title: 'Sample notification',
       body: 'Это локальный MVP Inbox (5.2). Дальше подключим backend rules/feed.',
-      explain: [
-        { label: 'Why', detail: 'Manual sample item' },
-        { label: 'Source', detail: 'Local inbox service' },
-      ],
+      explain: [...explain, { label: 'Source', detail: 'Local inbox service' }],
       createdAt: Date.now(),
       readAt: null,
     };

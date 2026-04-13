@@ -15,8 +15,9 @@ import { SegmentedControlComponent } from '@shared/ui/segmented-control/segmente
 import { ChipComponent } from '@shared/ui/chip/chip.component';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
-import type { AlertRule, InboxItem } from './inbox.model';
+import type { AlertRule, InboxExplain, InboxItem } from './inbox.model';
 import { InboxService } from './inbox.service';
+import { inboxExplainFromRuleClauses } from './rule-clause.util';
 import { AlertsApiService, type ServerNotificationItem } from './alerts-api.service';
 import {
   ServerCinemaApiService,
@@ -111,6 +112,16 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
           </div>
           @if (serverErr(); as se) {
             <p class="muted" role="alert" style="margin-top: 0.65rem">{{ se }}</p>
+            <div class="actions" style="margin-top: 0.5rem">
+              <app-button
+                variant="secondary"
+                [loading]="serverBusy()"
+                [disabled]="serverBusy() || !serverToken.trim()"
+                (click)="retryServerFeed()"
+              >
+                {{ i18n.t('common.retry') }}
+              </app-button>
+            </div>
           }
         </app-card>
 
@@ -233,6 +244,17 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
                 r.filters.maxRuntime ?? '—'
               }}
             </p>
+            <details class="why">
+              <summary class="why__sum">Why (clauses)</summary>
+              <ul class="why__list">
+                <li *ngFor="let e of explainForRule(r)">
+                  <b>{{ e.label }}</b>
+                  @if (e.detail) {
+                    <span> — {{ e.detail }}</span>
+                  }
+                </li>
+              </ul>
+            </details>
             <div class="actions">
               <app-button variant="secondary" (click)="openRuleEdit(r)">Edit</app-button>
               <app-button variant="danger" (click)="svc.removeRule(r.id)">Delete</app-button>
@@ -357,6 +379,16 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
             </div>
           </app-form-field>
 
+          <div class="whyPreview">
+            <p class="muted whyPreview__ttl">Why (from clauses)</p>
+            <ul class="whyPreview__list">
+              <li *ngFor="let e of whyPreviewLines(); trackBy: trackExplain">
+                <b>{{ e.label }}</b>
+                <span *ngIf="e.detail"> — {{ e.detail }}</span>
+              </li>
+            </ul>
+          </div>
+
           <div class="preview">
             <p class="muted" *ngIf="previewText()">{{ previewText() }}</p>
             <app-button
@@ -466,6 +498,25 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
         justify-content: flex-end;
         margin-top: 0.25rem;
       }
+      .whyPreview {
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-md);
+        padding: 0.55rem 0.65rem;
+        background: color-mix(in srgb, var(--bg-elevated) 40%, transparent);
+      }
+      .whyPreview__ttl {
+        margin: 0 0 0.45rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 0.88rem;
+      }
+      .whyPreview__list {
+        margin: 0;
+        padding-left: 1.1rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+        font-size: 0.88rem;
+      }
       .preview {
         display: flex;
         gap: 0.75rem;
@@ -507,6 +558,10 @@ export class InboxPageComponent {
 
   readonly items = computed(() => this.svc.itemsSorted());
   readonly rules = computed(() => this.svc.rulesSorted());
+
+  retryServerFeed(): void {
+    this.loadServerFeed();
+  }
 
   loadServerFeed(): void {
     const t = this.serverToken.trim();
@@ -710,6 +765,36 @@ export class InboxPageComponent {
 
   trackByNum(_: number, n: number): number {
     return n;
+  }
+
+  trackExplain(_: number, e: InboxExplain): string {
+    return `${e.label}\u0000${e.detail ?? ''}`;
+  }
+
+  whyPreviewLines(): InboxExplain[] {
+    const name = this.draftName.trim() || 'Untitled rule';
+    const minRating = this.draftMinRating.trim() ? Number(this.draftMinRating) : null;
+    const maxRuntime = this.draftMaxRuntime.trim() ? Number(this.draftMaxRuntime) : null;
+    return inboxExplainFromRuleClauses(
+      name,
+      {
+        minRating: Number.isFinite(minRating as number) ? minRating : null,
+        genres: this.draftGenres().length ? this.draftGenres() : null,
+        maxRuntime: Number.isFinite(maxRuntime as number) ? maxRuntime : null,
+        languages: this.draftLangs().length ? this.draftLangs() : null,
+        providerKeys: this.draftProviderKeys().length ? this.draftProviderKeys() : null,
+      },
+      {
+        inApp: this.chInApp,
+        webPush: this.chWebPush,
+        email: this.chEmail,
+        calendar: this.chCal,
+      },
+    );
+  }
+
+  explainForRule(r: AlertRule): InboxExplain[] {
+    return inboxExplainFromRuleClauses(r.name, r.filters, r.channels);
   }
 
   addGenre(): void {

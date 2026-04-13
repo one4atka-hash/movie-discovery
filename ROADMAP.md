@@ -543,19 +543,20 @@ Component tests:
 - [x] **Единые интеракции (везде одинаково)**:
   - [x] Quick actions (один набор): цикл статуса watchlist + избранное + like/dislike + локальная подписка на релиз + дневник — в `MovieActionsSheet` (Discover + `/me`).
   - [x] Bottom sheet для действий с фильмом (`MovieActionsSheet`, MVP на Discover + `/me`); «Why this?» — отдельная панель на рекомендациях.
-- [ ] **Rule Builder как главный паттерн**:
-  - [ ] Chip-based clauses: trigger + constraints + channels + preview.
-  - [ ] “Why” генерируется из тех же clause-объектов (переиспользование в inbox).
-- [ ] **Компоненты, которые стоит вынести в shared**:
+- [x] **Rule Builder как главный паттерн** (MVP):
+  - [x] Chip-based clauses: trigger + constraints + channels + preview (MVP: chips для genres/langs/providers в rule sheet + Preview по popular sample).
+  - [x] “Why” из тех же полей, что редактор правил: `inboxExplainFromRuleClauses` + превью в sheet, карточки rules, sample в `addSample` (первое enabled rule или demo).
+- [x] **Компоненты, которые стоит вынести в shared**:
   - [x] `Button` variants (primary/secondary/ghost/icon/loading), `Card`, `Chip`, `BottomSheet`, `Toast`.
   - [x] `Section`, `SegmentedControl`, `FormField` (label/hint/error slots).
   - [x] `Pill/Badge`.
-- [ ] **Состояния**:
-  - [ ] Skeleton loaders для списков и карточек; empty states всегда с CTA (“Add services”, “Create rule”, “Log first watch”, “Import history”).
-  - [ ] Errors: коротко что сломалось + retry + контекст (“проверь регион/сервисы”).
-- [ ] **A11y/качество**:
-  - [ ] Контраст в dark theme для chips/badges, фокус‑кольца, touch targets ≥ 44px.
-  - [ ] Жесты (swipe/long-press) только как enhancement: обязательны кнопки/клавиатура.
+  - [x] `SkeletonLines` (shimmer-строки для загрузки списков).
+- [x] **Состояния** (MVP):
+  - [x] Skeleton: `/me` recommendations (`app-skeleton-lines`); empty states с CTA на `/me` (watchlist, diary, recs).
+  - [x] Errors + retry: Inbox server JWT block (`Retry` → повторная загрузка ленты); `/me` recs (`common.retry`).
+- [x] **A11y/качество** (MVP):
+  - [x] Фокус‑кольца глобально (`:focus-visible`); shell nav — явный `focus-visible` + touch targets ≥44px; chips — min-height 44px.
+  - [x] Жесты только как enhancement: основной путь — кнопки/клавиатура (без обязательных swipe/long-press в MVP).
 
 #### Portfolio (отдельный проект)
 - [x] Создать отдельную папку проекта: `portfolio-site/` (заготовка: `README.md`, `index.html`).

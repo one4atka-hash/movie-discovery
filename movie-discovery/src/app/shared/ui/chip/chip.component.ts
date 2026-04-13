@@ -23,7 +23,8 @@ import { ChangeDetectionStrategy, Component, EventEmitter, input, Output } from 
         border: 1px solid var(--border-subtle);
         background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
         color: var(--text);
-        padding: 0.38rem 0.7rem;
+        min-height: 44px;
+        padding: 0 0.85rem;
         cursor: pointer;
         font: inherit;
         font-size: 0.85rem;

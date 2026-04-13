@@ -25,7 +25,9 @@ import { MovieService } from '@features/movies/data-access/services/movie.servic
 import { FavoritesService } from '@features/movies/data-access/services/favorites.service';
 import { ButtonComponent } from '@shared/ui/button/button.component';
 import { CardComponent } from '@shared/ui/card/card.component';
+import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
 import { SectionComponent } from '@shared/ui/section/section.component';
+import { SkeletonLinesComponent } from '@shared/ui/skeleton-lines/skeleton-lines.component';
 import { MovieActionsSheetComponent } from '@shared/ui/movie-actions-sheet/movie-actions-sheet.component';
 import { I18nService } from '@shared/i18n/i18n.service';
 import type { WatchStateItem } from '@features/watchlist/watch-state.model';
@@ -47,7 +49,9 @@ const EMPTY_SEARCH: MovieSearchResponse = {
     RouterLink,
     ButtonComponent,
     CardComponent,
+    EmptyStateComponent,
     SectionComponent,
+    SkeletonLinesComponent,
     MovieActionsSheetComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -80,7 +84,16 @@ const EMPTY_SEARCH: MovieSearchResponse = {
         <div sectionActions>
           <a class="link" routerLink="/watchlist">{{ i18n.t('me.seeAll') }}</a>
         </div>
-        <p class="muted" *ngIf="!watchPreview().length">{{ i18n.t('me.emptyWatchlist') }}</p>
+        <app-empty-state
+          *ngIf="!watchPreview().length"
+          [title]="i18n.t('me.sectionWatchlist')"
+          [subtitle]="i18n.t('me.emptyWatchlist')"
+        >
+          <app-button variant="primary" routerLink="/">{{ i18n.t('home.cta.search') }}</app-button>
+          <app-button variant="secondary" routerLink="/watchlist">{{
+            i18n.t('me.seeAll')
+          }}</app-button>
+        </app-empty-state>
         <ul class="rows" *ngIf="watchPreview().length">
           <li class="row" *ngFor="let it of watchPreview(); trackBy: trackByTmdb">
             <button type="button" class="row__main" (click)="openActions(watchToMovie(it))">
@@ -106,7 +119,13 @@ const EMPTY_SEARCH: MovieSearchResponse = {
         <div sectionActions>
           <a class="link" routerLink="/diary">{{ i18n.t('me.seeAll') }}</a>
         </div>
-        <p class="muted" *ngIf="!diaryPreview().length">{{ i18n.t('me.emptyDiary') }}</p>
+        <app-empty-state
+          *ngIf="!diaryPreview().length"
+          [title]="i18n.t('me.sectionDiary')"
+          [subtitle]="i18n.t('me.emptyDiary')"
+        >
+          <app-button variant="primary" routerLink="/diary">{{ i18n.t('me.seeAll') }}</app-button>
+        </app-empty-state>
         <ul class="rows" *ngIf="diaryPreview().length">
           @for (e of diaryPreview(); track e.id) {
             <li class="row">
@@ -149,12 +168,25 @@ const EMPTY_SEARCH: MovieSearchResponse = {
         <div sectionActions>
           <a class="link" routerLink="/favorites">{{ i18n.t('me.favoritesLink') }}</a>
         </div>
-        <p class="muted" *ngIf="recsLoading()">{{ i18n.t('me.recsLoading') }}</p>
-        <p class="muted" *ngIf="!recsLoading() && recsErr()">{{ recsErr() }}</p>
-        <p class="muted" *ngIf="!recsLoading() && !recsErr() && !recs().length">
-          {{ i18n.t('me.recsEmpty') }}
-        </p>
-        <div class="recGrid" *ngIf="!recsLoading() && recs().length">
+        <app-skeleton-lines *ngIf="recsLoading()" [count]="6" [label]="i18n.t('me.recsLoading')" />
+        <ng-container *ngIf="!recsLoading() && recsErr()">
+          <p class="muted recErr" role="alert">{{ recsErr() }}</p>
+          <div class="recRetry">
+            <app-button variant="secondary" type="button" (click)="retryRecs()">
+              {{ i18n.t('common.retry') }}
+            </app-button>
+          </div>
+        </ng-container>
+        <app-empty-state
+          *ngIf="!recsLoading() && !recsErr() && !recs().length"
+          [title]="i18n.t('me.sectionRecs')"
+          [subtitle]="i18n.t('me.recsEmpty')"
+        >
+          <app-button variant="primary" routerLink="/favorites">{{
+            i18n.t('me.favoritesLink')
+          }}</app-button>
+        </app-empty-state>
+        <div class="recGrid" *ngIf="!recsLoading() && !recsErr() && recs().length">
           <div class="recCell" *ngFor="let m of recs(); trackBy: trackByMovieId">
             <a class="recLink" [routerLink]="['/movie', m.id]">
               <div class="thumb lg" [class.thumb--empty]="!m.poster_path">
@@ -207,6 +239,12 @@ const EMPTY_SEARCH: MovieSearchResponse = {
         color: var(--text-muted);
         font-size: 0.9rem;
         line-height: 1.45;
+      }
+      .recErr {
+        margin: 0 0 0.5rem;
+      }
+      .recRetry {
+        margin: 0 0 0.75rem;
       }
       .quickRow {
         display: flex;
@@ -421,6 +459,11 @@ export class MeHubPageComponent {
 
   trackByMovieId(_: number, m: Movie): number {
     return m.id;
+  }
+
+  retryRecs(): void {
+    this.recsErr.set(null);
+    this.loadRecs();
   }
 
   private loadRecs(): void {
