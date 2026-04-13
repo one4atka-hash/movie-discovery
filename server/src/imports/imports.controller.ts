@@ -43,4 +43,13 @@ export class ImportsController {
   ) {
     return await this.svc.apply(u.id, p.id);
   }
+
+  @Post(':id/preview')
+  async preview(
+    @CurrentUser() u: AuthedUser,
+    @Param(new ZodBodyPipe(ImportIdParamSchema))
+    p: z.infer<typeof ImportIdParamSchema>,
+  ) {
+    return await this.svc.preview(u.id, p.id);
+  }
 }

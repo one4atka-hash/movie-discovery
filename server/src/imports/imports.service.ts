@@ -263,6 +263,186 @@ export class ImportsService {
     );
     return { ok: true };
   }
+
+  async preview(
+    userId: string,
+    id: string,
+  ): Promise<{
+    ok: true;
+    totalRows: number;
+    okRows: number;
+    errorRows: number;
+  }> {
+    const rows = await this.db.query<ImportJobRow>(
+      `select id, user_id, kind, format, status, error, meta, payload, created_at, updated_at
+       from import_jobs
+       where id = $1 and user_id = $2`,
+      [id, userId],
+    );
+    const r = rows[0];
+    if (!r) throw new NotFoundException('Import job not found');
+
+    if (!r.payload || !r.payload.trim()) {
+      await this.db.exec(
+        `update import_jobs set status = 'failed', error = 'Missing payload', updated_at = now()
+         where id = $1 and user_id = $2`,
+        [id, userId],
+      );
+      return { ok: true, totalRows: 0, okRows: 0, errorRows: 0 };
+    }
+
+    await this.db.exec(`delete from import_job_rows where job_id = $1`, [id]);
+
+    const collected: {
+      raw: unknown;
+      mapped: unknown;
+      status: 'ok' | 'error';
+      error?: string;
+    }[] = [];
+
+    if (r.kind === 'diary' && r.format === 'json') {
+      const parsed = ImportDiaryJsonSchema.safeParse(safeJsonParse(r.payload));
+      if (!parsed.success) {
+        collected.push({
+          raw: null,
+          mapped: null,
+          status: 'error',
+          error: 'Invalid diary JSON',
+        });
+      } else {
+        for (const it of parsed.data.items) {
+          collected.push({
+            raw: it,
+            mapped: {
+              tmdbId: it.tmdbId ?? null,
+              title: it.title,
+              watchedAt: it.watchedAt,
+              location: it.location,
+              providerKey: it.providerKey ?? null,
+              rating: it.rating ?? null,
+              tags: it.tags ?? [],
+              note: it.note ?? null,
+            },
+            status: 'ok',
+          });
+        }
+      }
+    } else if (r.kind === 'diary' && r.format === 'csv') {
+      const parsed = parseLetterboxdDiaryCsv(r.payload);
+      if (!parsed.length) {
+        collected.push({
+          raw: null,
+          mapped: null,
+          status: 'error',
+          error: 'Unsupported diary CSV',
+        });
+      } else {
+        for (const it of parsed) {
+          collected.push({
+            raw: it,
+            mapped: {
+              tmdbId: null,
+              title: it.title,
+              watchedAt: it.watchedAt,
+              location: 'home',
+              providerKey: null,
+              rating: it.rating10,
+              tags: it.tags,
+              note: null,
+            },
+            status: 'ok',
+          });
+        }
+      }
+    } else if (r.kind === 'watch_state' && r.format === 'json') {
+      const parsed = ImportWatchStateJsonSchema.safeParse(
+        safeJsonParse(r.payload),
+      );
+      if (!parsed.success) {
+        collected.push({
+          raw: null,
+          mapped: null,
+          status: 'error',
+          error: 'Invalid watch_state JSON',
+        });
+      } else {
+        for (const it of parsed.data.items) {
+          collected.push({
+            raw: it,
+            mapped: {
+              tmdbId: it.tmdbId,
+              status: it.status,
+              progress: it.progress ?? null,
+            },
+            status: 'ok',
+          });
+        }
+      }
+    } else if (r.kind === 'favorites' && r.format === 'json') {
+      const parsed = ImportFavoritesJsonSchema.safeParse(
+        safeJsonParse(r.payload),
+      );
+      if (!parsed.success) {
+        collected.push({
+          raw: null,
+          mapped: null,
+          status: 'error',
+          error: 'Invalid favorites JSON',
+        });
+      } else {
+        for (const tmdbId of parsed.data.items) {
+          collected.push({
+            raw: tmdbId,
+            mapped: { tmdbId },
+            status: 'ok',
+          });
+        }
+      }
+    } else {
+      collected.push({
+        raw: null,
+        mapped: null,
+        status: 'error',
+        error: 'Unsupported import kind/format',
+      });
+    }
+
+    let okRows = 0;
+    let errorRows = 0;
+    for (let i = 0; i < collected.length; i++) {
+      const it = collected[i];
+      const rowStatus = it.status === 'ok' ? 'ok' : 'error';
+      if (it.status === 'ok') okRows++;
+      else errorRows++;
+      await this.db.exec(
+        `insert into import_job_rows(job_id, row_n, raw, mapped, status, error)
+         values ($1, $2, $3::jsonb, $4::jsonb, $5, $6)`,
+        [
+          id,
+          i + 1,
+          it.raw ? JSON.stringify(it.raw) : null,
+          it.mapped ? JSON.stringify(it.mapped) : null,
+          rowStatus,
+          it.error ?? null,
+        ],
+      );
+    }
+
+    await this.db.exec(
+      `update import_jobs
+       set status = 'preview', error = null,
+           meta = jsonb_set(coalesce(meta, '{}'::jsonb), '{preview}', $3::jsonb, true),
+           updated_at = now()
+       where id = $1 and user_id = $2`,
+      [
+        id,
+        userId,
+        JSON.stringify({ totalRows: collected.length, okRows, errorRows }),
+      ],
+    );
+
+    return { ok: true, totalRows: collected.length, okRows, errorRows };
+  }
 }
 
 const ImportDiaryJsonSchema = z.object({

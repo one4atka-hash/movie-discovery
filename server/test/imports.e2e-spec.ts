@@ -83,6 +83,33 @@ describe('Imports (e2e)', () => {
     expect(got.body).toMatchObject({ id, status: 'applied' });
   });
 
+  it('preview stores rows and sets status preview (MVP)', async () => {
+    const token = await registerAndGetToken(app);
+
+    const created = await request(app.getHttpServer())
+      .post('/api/imports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        kind: 'favorites',
+        format: 'json',
+        payload: JSON.stringify({ items: [550] }),
+      })
+      .expect(201);
+    const id = (created.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/preview`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201)
+      .expect({ ok: true, totalRows: 1, okRows: 1, errorRows: 0 });
+
+    const got = await request(app.getHttpServer())
+      .get(`/api/imports/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(got.body).toMatchObject({ id, status: 'preview' });
+  });
+
   it('diary json import applies items into /api/diary (MVP)', async () => {
     const token = await registerAndGetToken(app);
 

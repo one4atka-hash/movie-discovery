@@ -455,6 +455,7 @@ Component tests:
 - [ ] **Import pipeline (M1)**:
   - [x] API: `POST /api/imports` (upload), `GET /api/imports/:id` (progress).
   - [x] API: `POST /api/imports/:id/apply`.
+  - [x] API: `POST /api/imports/:id/preview` → parse → `import_job_rows` (MVP).
   - [x] DB: `import_jobs`.
   - [x] DB: `import_job_rows` + `import_conflicts`.
   - [ ] Worker: parse → map → resolve TMDB ids (rate-limited) → preview.
@@ -468,6 +469,7 @@ Component tests:
   - [x] e2e (server): upload → apply → данные появились в watch-state.
   - [x] e2e (server): upload → apply → данные появились в favorites.
   - [x] e2e (server): upload → apply → diary CSV (Letterboxd) импортируется.
+  - [x] e2e (server): upload → preview → status=preview + rows сохранены.
   - [ ] e2e: upload → preview → apply → данные появились в diary/watchlist.
 
 #### 5.8 Explainable Recommendations (объяснимые рекомендации — доверие)
