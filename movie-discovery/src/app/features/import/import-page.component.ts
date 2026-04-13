@@ -212,13 +212,13 @@ const TOKEN_KEY = 'server.jwt.token.v1';
                   <div class="row__actions" style="justify-content: space-between; gap: 0.5rem">
                     <app-button
                       variant="ghost"
-                      [disabled]="busy()"
+                      [disabled]="busy() || !!c.resolution"
                       (click)="quickResolve(c.rowN, c.server)"
                       >Use server</app-button
                     >
                     <app-button
                       variant="ghost"
-                      [disabled]="busy()"
+                      [disabled]="busy() || !!c.resolution"
                       (click)="quickResolve(c.rowN, c.incoming)"
                       >Use incoming</app-button
                     >
