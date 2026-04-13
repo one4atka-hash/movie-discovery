@@ -398,7 +398,7 @@ Component tests:
 - [ ] **Stats + export/import (M2)**:
   - [x] `GET /api/diary/stats?year=...`.
   - [x] `GET /api/diary/export?format=csv|json` (+ optional `year`).
-  - [ ] `POST /api/diary/import` (через общий import pipeline 5.7).
+  - [x] `POST /api/diary/import` (через общий import pipeline 5.7).
 - [ ] **Тесты**:
   - [x] Server e2e: CRUD + фильтры по датам.
   - [x] FE: add/edit/delete entry; stats/empty state.

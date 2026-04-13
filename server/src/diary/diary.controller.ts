@@ -18,15 +18,20 @@ import {
   DiaryEntryUpsertSchema,
   DiaryIdParamSchema,
   DiaryExportQuerySchema,
+  DiaryImportBodySchema,
   DiaryQuerySchema,
   DiaryStatsQuerySchema,
 } from './diary.schemas';
 import { DiaryService } from './diary.service';
+import { ImportsService } from '../imports/imports.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('diary')
 export class DiaryController {
-  constructor(private readonly diary: DiaryService) {}
+  constructor(
+    private readonly diary: DiaryService,
+    private readonly imports: ImportsService,
+  ) {}
 
   @Get()
   async list(
@@ -56,6 +61,21 @@ export class DiaryController {
       format: q.format,
       year: q.year,
     });
+  }
+
+  /** Delegates to the shared import pipeline (`import_jobs` + preview/apply). */
+  @Post('import')
+  async importViaPipeline(
+    @CurrentUser() u: AuthedUser,
+    @Body(new ZodBodyPipe(DiaryImportBodySchema))
+    body: z.infer<typeof DiaryImportBodySchema>,
+  ) {
+    const out = await this.imports.create(u.id, {
+      kind: 'diary',
+      format: body.format,
+      payload: body.payload ?? null,
+    });
+    return { ok: true, id: out.id, createdAt: out.createdAt };
   }
 
   @Post()

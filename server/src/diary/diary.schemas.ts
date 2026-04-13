@@ -60,3 +60,13 @@ export const DiaryExportQuerySchema = zodSchema(
     })
     .strict(),
 );
+
+/** Same payload shape as `POST /api/imports` with kind fixed to `diary`. */
+export const DiaryImportBodySchema = zodSchema(
+  z
+    .object({
+      format: z.enum(['json', 'csv']),
+      payload: z.string().max(200_000).optional().nullable(),
+    })
+    .strict(),
+);

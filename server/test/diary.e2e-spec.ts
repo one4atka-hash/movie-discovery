@@ -31,6 +31,27 @@ describe('Diary (e2e)', () => {
   it('requires auth', async () => {
     await request(app.getHttpServer()).get('/api/diary').expect(401);
     await request(app.getHttpServer()).post('/api/diary').expect(401);
+    await request(app.getHttpServer()).post('/api/diary/import').expect(401);
+  });
+
+  it('POST /diary/import creates diary import job (shared pipeline)', async () => {
+    const token = await registerAndGetToken(app);
+
+    const res = await request(app.getHttpServer())
+      .post('/api/diary/import')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ format: 'json', payload: '{"items":[]}' })
+      .expect(201);
+
+    const body = res.body as {
+      ok: boolean;
+      id: string;
+      createdAt: string;
+    };
+    expect(body.ok).toBe(true);
+    expect(typeof body.id).toBe('string');
+    expect(body.id.length).toBeGreaterThan(10);
+    expect(typeof body.createdAt).toBe('string');
   });
 
   it('CRUD + date filters', async () => {
