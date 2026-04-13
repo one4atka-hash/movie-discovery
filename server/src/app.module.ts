@@ -26,6 +26,7 @@ import { ImportsModule } from './imports/imports.module';
 import { ExportsModule } from './exports/exports.module';
 import { TasteModule } from './taste/taste.module';
 import { AvailabilityModule } from './availability/availability.module';
+import { MoviesModule } from './movies/movies.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { AvailabilityModule } from './availability/availability.module';
     ExportsModule,
     TasteModule,
     AvailabilityModule,
+    MoviesModule,
   ],
   controllers: [AppController],
   providers: [

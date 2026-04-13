@@ -490,7 +490,7 @@ Component tests:
   - [x] Расширить `GET /api/recommendations`: `{ items: [{ tmdbId, score, explain[] }] }`.
   - [x] Action feedback: `POST /api/recommendations/feedback` (“more/less/hide”) (через `feedback` table + reason).
 - [ ] **DB**:
-  - [ ] (минимум) переиспользовать `feedback`; (опц.) `recommendation_feedback` для “more/less”.
+  - [x] (минимум) переиспользовать `feedback`; (опц.) `recommendation_feedback` для “more/less”.
 - [ ] **Frontend (M1)**:
   - [x] “Why this?” панель для рекомендаций (frontend MVP).
   - [x] “Less like this / Hide” (frontend MVP, local).
@@ -502,17 +502,18 @@ Component tests:
 
 #### 5.9 Edition-aware + Releases Timeline (точность релизов/версий)
 - [ ] **Release timeline (M1)**:
-  - [ ] API: `GET /api/movies/:tmdbId/releases?region=...` (snapshot/cached).
+  - [x] API: `GET /api/movies/:tmdbId/releases?region=...` (snapshot/cached, Postgres `movie_release_snapshots` + TTL `MOVIE_RELEASES_CACHE_TTL_MS`).
   - [ ] Reminders: `POST/GET/DELETE /api/release-reminders` (type + window + channels).
   - [ ] FE: секция “Timeline” в details + список upcoming reminders в Inbox/Notifications.
 - [ ] **DB + Jobs**:
-  - [ ] `movie_releases` snapshots + `release_reminders`.
-  - [ ] Cron: daily check → enqueue notifications (respect rules/quiet hours).
+  - [x] Postgres: `movie_release_snapshots` (кэш TMDB `release_dates`).
+  - [ ] `release_reminders` + cron: daily check → enqueue notifications (respect rules/quiet hours).
 - [ ] **Edition-aware (M2)**:
   - [ ] API: `GET /api/movies/:tmdbId/editions` (пока эвристика/ручные метки).
   - [ ] DB: `movie_editions` + связь diary/watch_state с `edition_key` (если нужно).
 - [ ] **Тесты**:
   - [ ] Unit: avoid double notify + window logic.
+  - [x] e2e (server): `GET /movies/:id/releases` (auth + cache hit; 503 без TMDB key).
   - [ ] e2e: создать reminder → появляется в inbox (через time-travel/mock clock).
 
 #### 5.10 Shareables (рост и «собирательность»)

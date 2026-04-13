@@ -72,6 +72,13 @@ export const EnvSchema = z.object({
     .int()
     .positive()
     .default(3_600_000),
+
+  /** Cache TTL for GET /movies/:id/releases (TMDB release_dates). */
+  MOVIE_RELEASES_CACHE_TTL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(86_400_000),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
