@@ -464,8 +464,8 @@ Component tests:
 
 #### 5.8 Explainable Recommendations (объяснимые рекомендации — доверие)
 - [ ] **API (M1: explain + controls)**:
-  - [ ] Расширить `GET /api/recommendations`: `{ items: [{ tmdbId, score, explain[] }] }`.
-  - [ ] Action feedback: `POST /api/recommendations/feedback` (“more/less/hide”) или расширить `/api/feedback` структурированным reason.
+  - [x] Расширить `GET /api/recommendations`: `{ items: [{ tmdbId, score, explain[] }] }`.
+  - [x] Action feedback: `POST /api/recommendations/feedback` (“more/less/hide”) (через `feedback` table + reason).
 - [ ] **DB**:
   - [ ] (минимум) переиспользовать `feedback`; (опц.) `recommendation_feedback` для “more/less”.
 - [ ] **Frontend (M1)**:
@@ -475,7 +475,7 @@ Component tests:
   - [ ] `GET /api/recommendations/metrics` (diversity/novelty/coverage) для отладки качества.
 - [ ] **Тесты**:
   - [ ] Unit: explain generator (ограниченный размер, i18n-ready).
-  - [ ] e2e: “Less like this” меняет выдачу на следующем запросе.
+  - [x] Server e2e: recommendations explain payload + feedback endpoint.
 
 #### 5.9 Edition-aware + Releases Timeline (точность релизов/версий)
 - [ ] **Release timeline (M1)**:

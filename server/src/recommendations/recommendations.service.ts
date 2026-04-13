@@ -19,7 +19,11 @@ export class RecommendationsService {
    * - now: return a stable payload with room for scores/explanations
    */
   async recommendForUser(userId: string): Promise<{
-    items: { tmdbId: number; score: number; reason: string }[];
+    items: {
+      tmdbId: number;
+      score: number;
+      explain: { label: string; detail?: string | null }[];
+    }[];
     meta: { mode: 'mvp'; generatedAt: string };
   }> {
     const [fav, fb] = await Promise.all([
@@ -58,9 +62,32 @@ export class RecommendationsService {
       items: unique.map((tmdbId, i) => ({
         tmdbId,
         score: 1 - i / Math.max(1, unique.length),
-        reason: 'Seed item (MVP): will expand via embeddings + ANN',
+        explain: [
+          { label: 'Seed', detail: 'From favorites/likes (MVP)' },
+          { label: 'Next', detail: 'Will expand via embeddings + ANN' },
+        ],
       })),
       meta: { mode: 'mvp', generatedAt: new Date().toISOString() },
     };
+  }
+
+  async applyFeedback(
+    userId: string,
+    input: { tmdbId: number; action: 'more' | 'less' | 'hide' },
+  ): Promise<void> {
+    const value =
+      input.action === 'hide'
+        ? 'hide'
+        : input.action === 'less'
+          ? 'dislike'
+          : 'like';
+    const reason = `recs:${input.action}`;
+    await this.db.exec(
+      `insert into feedback(user_id, tmdb_id, value, reason)
+       values ($1, $2, $3, $4)
+       on conflict (user_id, tmdb_id)
+       do update set value = excluded.value, reason = excluded.reason, updated_at = now()`,
+      [userId, input.tmdbId, value, reason],
+    );
   }
 }
