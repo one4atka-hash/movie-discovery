@@ -384,7 +384,7 @@ Component tests:
 - [ ] **Тесты**:
   - [x] Unit: матчинг правил + quiet hours.
   - [x] Server e2e: CRUD rules + read/unread inbox.
-  - [ ] FE e2e: создать правило → увидеть item в inbox (через dev run endpoint).
+  - [x] FE e2e: создать правило → увидеть item в inbox (через dev run endpoint).
 
 #### 5.3 Movie Diary (журнал просмотров как у Letterboxd/Trakt)
 - [ ] **Backend/API (M1: CRUD)**:

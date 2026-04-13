@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
+import { StorageService } from '@core/storage.service';
 import { ButtonComponent } from '@shared/ui/button/button.component';
 import { CardComponent } from '@shared/ui/card/card.component';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
@@ -15,9 +17,12 @@ import { I18nService } from '@shared/i18n/i18n.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import type { AlertRule, InboxItem } from './inbox.model';
 import { InboxService } from './inbox.service';
+import { AlertsApiService, type ServerNotificationItem } from './alerts-api.service';
 import { firstValueFrom } from 'rxjs';
 import { MovieService } from '@features/movies/data-access/services/movie.service';
 import type { Movie } from '@features/movies/data-access/models/movie.model';
+
+const SERVER_JWT_KEY = 'server.jwt.token.v1';
 
 @Component({
   selector: 'app-inbox-page',
@@ -59,14 +64,90 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
           <app-button variant="secondary" (click)="openRuleCreate()">New rule</app-button>
         </div>
 
+        <app-card>
+          <app-form-field
+            label="Server JWT (optional)"
+            hint="Для ленты с backend: тот же токен, что в Account / Import. Сохраняется локально."
+          >
+            <textarea
+              [(ngModel)]="serverToken"
+              rows="2"
+              placeholder="eyJhbGciOi..."
+              data-testid="inbox-server-jwt"
+            ></textarea>
+          </app-form-field>
+          <div class="actions" style="margin-top: 0.5rem">
+            <app-button
+              variant="secondary"
+              [loading]="serverBusy()"
+              [disabled]="serverBusy() || !serverToken.trim()"
+              (click)="loadServerFeed()"
+              data-testid="inbox-load-server-feed"
+            >
+              Load server feed
+            </app-button>
+            <app-button
+              variant="ghost"
+              [loading]="serverBusy()"
+              [disabled]="serverBusy() || !serverToken.trim()"
+              (click)="runDevAlerts()"
+              data-testid="inbox-dev-run-alerts"
+            >
+              Dev: run alerts
+            </app-button>
+            <app-button
+              variant="ghost"
+              [loading]="serverBusy()"
+              [disabled]="serverBusy() || !serverToken.trim()"
+              (click)="seedServerRule()"
+              data-testid="inbox-seed-server-rule"
+            >
+              Seed server rule
+            </app-button>
+          </div>
+          @if (serverErr(); as se) {
+            <p class="muted" role="alert" style="margin-top: 0.65rem">{{ se }}</p>
+          }
+        </app-card>
+
         <app-empty-state
-          *ngIf="tab() === 'feed' && !items().length"
+          *ngIf="tab() === 'feed' && !items().length && !serverRows().length"
           title="Нет событий"
           subtitle="Итерация 5.2: Inbox + Rules. Пока это локальный MVP. Добавьте sample или создайте rule."
         >
           <app-button variant="secondary" (click)="svc.addSample()">Add sample</app-button>
           <app-button variant="ghost" routerLink="/notifications">Релиз‑уведомления</app-button>
         </app-empty-state>
+
+        <div class="list" *ngIf="tab() === 'feed' && serverRows().length">
+          <p class="muted" style="margin: 0 0 0.5rem">Server inbox</p>
+          <app-card
+            *ngFor="let it of serverRows(); trackBy: trackByServerId"
+            [title]="it.title"
+            class="inbox-server-row"
+          >
+            @if (it.body) {
+              <p class="muted">{{ it.body }}</p>
+            }
+            <p class="muted">
+              <small>{{ it.createdAt }}</small>
+            </p>
+            <div class="actions">
+              <app-button
+                variant="secondary"
+                [disabled]="serverBusy() || !!it.readAt"
+                (click)="markServerRead(it)"
+              >
+                Read
+              </app-button>
+              @if (it.tmdbId != null) {
+                <app-button variant="ghost" [routerLink]="['/movie', it.tmdbId]"
+                  >Open movie</app-button
+                >
+              }
+            </div>
+          </app-card>
+        </div>
 
         <div class="list" *ngIf="tab() === 'feed' && items().length">
           <app-card *ngFor="let it of items(); trackBy: trackById" [title]="it.title">
@@ -375,6 +456,16 @@ export class InboxPageComponent {
   readonly toast = inject(ToastService);
   readonly svc = inject(InboxService);
   private readonly movies = inject(MovieService);
+  private readonly storage = inject(StorageService);
+  private readonly alertsApi = inject(AlertsApiService);
+
+  serverToken = this.storage.get<string>(SERVER_JWT_KEY, '') ?? '';
+  private readonly _serverRows = signal<ServerNotificationItem[]>([]);
+  readonly serverRows = this._serverRows.asReadonly();
+  private readonly _serverBusy = signal(false);
+  readonly serverBusy = this._serverBusy.asReadonly();
+  private readonly _serverErr = signal<string | null>(null);
+  readonly serverErr = this._serverErr.asReadonly();
 
   readonly tab = signal<'feed' | 'rules'>('feed');
   readonly tabOptions = [
@@ -384,6 +475,92 @@ export class InboxPageComponent {
 
   readonly items = computed(() => this.svc.itemsSorted());
   readonly rules = computed(() => this.svc.rulesSorted());
+
+  loadServerFeed(): void {
+    const t = this.serverToken.trim();
+    if (!t) return;
+    this.storage.set(SERVER_JWT_KEY, t);
+    this._serverErr.set(null);
+    this._serverBusy.set(true);
+    this.alertsApi.listNotifications(t).subscribe({
+      next: (r) => {
+        this._serverRows.set(r.items);
+        this._serverBusy.set(false);
+      },
+      error: (e) => this.handleServerErr(e),
+    });
+  }
+
+  runDevAlerts(): void {
+    const t = this.serverToken.trim();
+    if (!t) return;
+    this.storage.set(SERVER_JWT_KEY, t);
+    this._serverErr.set(null);
+    this._serverBusy.set(true);
+    this.alertsApi.runDevAlerts(t).subscribe({
+      next: (r) => {
+        if (!r.ok) {
+          this._serverErr.set(r.error ?? 'Dev alerts disabled on server');
+          this._serverBusy.set(false);
+          return;
+        }
+        this.loadServerFeed();
+      },
+      error: (e) => this.handleServerErr(e),
+    });
+  }
+
+  seedServerRule(): void {
+    const t = this.serverToken.trim();
+    if (!t) return;
+    this.storage.set(SERVER_JWT_KEY, t);
+    this._serverErr.set(null);
+    this._serverBusy.set(true);
+    this.alertsApi
+      .upsertRule(t, {
+        name: 'Inbox seed rule',
+        enabled: true,
+        filters: {},
+        channels: {
+          inApp: true,
+          webPush: false,
+          email: false,
+          calendar: false,
+        },
+        quietHours: null,
+      })
+      .subscribe({
+        next: () => {
+          this._serverBusy.set(false);
+          this.toast.show('success', 'Rule', 'Saved on server');
+        },
+        error: (e) => this.handleServerErr(e),
+      });
+  }
+
+  markServerRead(it: ServerNotificationItem): void {
+    const t = this.serverToken.trim();
+    if (!t) return;
+    this._serverErr.set(null);
+    this._serverBusy.set(true);
+    this.alertsApi.markRead(t, it.id).subscribe({
+      next: () => this.loadServerFeed(),
+      error: (e) => this.handleServerErr(e),
+    });
+  }
+
+  trackByServerId(_: number, it: ServerNotificationItem): string {
+    return it.id;
+  }
+
+  private handleServerErr(e: unknown): void {
+    const msg =
+      e instanceof HttpErrorResponse
+        ? `${e.status} ${e.statusText}${e.error?.message ? `: ${e.error.message}` : ''}`
+        : 'Request failed';
+    this._serverErr.set(msg);
+    this._serverBusy.set(false);
+  }
 
   readonly ruleSheetOpen = signal(false);
   readonly editingRule = signal<AlertRule | null>(null);

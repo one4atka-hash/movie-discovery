@@ -14,6 +14,8 @@
     "lint": "eslint \"src/**/*.ts\"",
     "test": "npm run ng -- test",
     "test:ci": "npm run ng -- test --watch=false",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install chromium",
     "postinstall": "node scripts/ensure-public-env.cjs",
     "prepare": "cd .. && husky"
   },
@@ -35,6 +37,7 @@
     "@angular/compiler-cli": "^21.2.0",
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
+    "@playwright/test": "^1.59.1",
     "@types/jasmine": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.58.0",
     "@typescript-eslint/parser": "^8.58.0",

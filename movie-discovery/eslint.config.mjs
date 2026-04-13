@@ -5,7 +5,7 @@ import tsPlugin from '@typescript-eslint/eslint-plugin';
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   eslintConfigPrettier,
-  { ignores: ['dist/**', '.angular/**', '**/out-tsc/**', '**/*.spec.ts'] },
+  { ignores: ['dist/**', '.angular/**', '**/out-tsc/**', '**/*.spec.ts', 'e2e/**'] },
   {
     files: ['src/**/*.ts'],
     languageOptions: {

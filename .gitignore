@@ -1,2 +1,6 @@
 # Локальные настройки редактора (не коммитим)
 .vscode/
+
+# Playwright output
+movie-discovery/test-results/
+movie-discovery/playwright-report/
