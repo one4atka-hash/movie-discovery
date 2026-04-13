@@ -16,6 +16,15 @@ type DiaryRow = {
   updated_at: string;
 };
 
+type DiaryStatsRow = {
+  total: number;
+  rated_count: number;
+  avg_rating: number | null;
+  cinema_count: number;
+  streaming_count: number;
+  home_count: number;
+};
+
 @Injectable()
 export class DiaryService {
   constructor(private readonly db: DbService) {}
@@ -155,5 +164,69 @@ export class DiaryService {
       `delete from diary_entries where user_id = $1 and id = $2`,
       [userId, id],
     );
+  }
+
+  async stats(
+    userId: string,
+    year: number,
+  ): Promise<{
+    year: number;
+    total: number;
+    ratedCount: number;
+    avgRating: number | null;
+    byLocation: { cinema: number; streaming: number; home: number };
+    topTags: { tag: string; count: number }[];
+  }> {
+    const y = Math.trunc(year);
+    const from = `${y}-01-01`;
+    const to = `${y}-12-31`;
+
+    const [base] = await this.db.query<DiaryStatsRow>(
+      `
+      select
+        count(*)::int as total,
+        count(rating)::int as rated_count,
+        avg(rating)::float as avg_rating,
+        sum(case when location = 'cinema' then 1 else 0 end)::int as cinema_count,
+        sum(case when location = 'streaming' then 1 else 0 end)::int as streaming_count,
+        sum(case when location = 'home' then 1 else 0 end)::int as home_count
+      from diary_entries
+      where user_id = $1 and watched_at >= $2::date and watched_at <= $3::date
+      `,
+      [userId, from, to],
+    );
+
+    const tags = await this.db.query<{ tag: string; count: number }>(
+      `
+      select
+        t.tag as tag,
+        count(*)::int as count
+      from diary_entries e
+      cross join lateral jsonb_array_elements_text(coalesce(e.tags, '[]'::jsonb)) as t(tag)
+      where e.user_id = $1 and e.watched_at >= $2::date and e.watched_at <= $3::date
+      group by t.tag
+      order by count desc, tag asc
+      limit 10
+      `,
+      [userId, from, to],
+    );
+
+    const avg =
+      typeof base?.avg_rating === 'number' && Number.isFinite(base.avg_rating)
+        ? Math.round(base.avg_rating * 10) / 10
+        : null;
+
+    return {
+      year: y,
+      total: base?.total ?? 0,
+      ratedCount: base?.rated_count ?? 0,
+      avgRating: avg,
+      byLocation: {
+        cinema: base?.cinema_count ?? 0,
+        streaming: base?.streaming_count ?? 0,
+        home: base?.home_count ?? 0,
+      },
+      topTags: tags.map((r) => ({ tag: r.tag, count: r.count })),
+    };
   }
 }

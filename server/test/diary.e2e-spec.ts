@@ -89,6 +89,53 @@ describe('Diary (e2e)', () => {
       .expect({ ok: true });
   });
 
+  it('stats endpoint returns year summary', async () => {
+    const token = await registerAndGetToken(app);
+
+    await request(app.getHttpServer())
+      .post('/api/diary')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        tmdbId: 1,
+        title: 'A',
+        watchedAt: '2026-02-10',
+        location: 'cinema',
+        rating: 8,
+        tags: ['classic'],
+        note: null,
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/api/diary')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        tmdbId: 2,
+        title: 'B',
+        watchedAt: '2026-03-10',
+        location: 'home',
+        rating: null,
+        tags: ['classic', 'rewatch'],
+        note: null,
+      })
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .get('/api/diary/stats?year=2026')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(res.body).toMatchObject({
+      year: 2026,
+      total: 2,
+      ratedCount: 1,
+      byLocation: { cinema: 1, home: 1 },
+    });
+    expect(Array.isArray((res.body as { topTags: unknown[] }).topTags)).toBe(
+      true,
+    );
+  });
+
   afterEach(async () => {
     await app.close();
   });

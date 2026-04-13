@@ -18,6 +18,7 @@ import {
   DiaryEntryUpsertSchema,
   DiaryIdParamSchema,
   DiaryQuerySchema,
+  DiaryStatsQuerySchema,
 } from './diary.schemas';
 import { DiaryService } from './diary.service';
 
@@ -33,6 +34,15 @@ export class DiaryController {
     q: z.infer<typeof DiaryQuerySchema>,
   ) {
     return { items: await this.diary.list(u.id, q) };
+  }
+
+  @Get('stats')
+  async stats(
+    @CurrentUser() u: AuthedUser,
+    @Query(new ZodBodyPipe(DiaryStatsQuerySchema))
+    q: z.infer<typeof DiaryStatsQuerySchema>,
+  ) {
+    return await this.diary.stats(u.id, q.year);
   }
 
   @Post()

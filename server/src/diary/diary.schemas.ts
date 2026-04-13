@@ -43,3 +43,11 @@ export const DiaryQuerySchema = zodSchema(
     })
     .strict(),
 );
+
+export const DiaryStatsQuerySchema = zodSchema(
+  z
+    .object({
+      year: z.coerce.number().int().min(1900).max(2100),
+    })
+    .strict(),
+);
