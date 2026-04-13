@@ -15,8 +15,10 @@ import { ZodBodyPipe } from '../common/zod-body.pipe';
 import {
   CreateImportSchema,
   ImportIdParamSchema,
+  ImportRowParamSchema,
   ImportConflictsQuerySchema,
   ImportRowsQuerySchema,
+  ResolveImportRowSchema,
 } from './imports.schemas';
 import { ImportsService } from './imports.service';
 
@@ -91,6 +93,21 @@ export class ImportsController {
     return await this.svc.conflicts(u.id, p.id, {
       offset: q.offset ?? 0,
       limit: q.limit ?? 50,
+    });
+  }
+
+  @Post(':id/rows/:rowN/resolve')
+  async resolveRow(
+    @CurrentUser() u: AuthedUser,
+    @Param(new ZodBodyPipe(ImportRowParamSchema))
+    p: z.infer<typeof ImportRowParamSchema>,
+    @Body(new ZodBodyPipe(ResolveImportRowSchema))
+    body: z.infer<typeof ResolveImportRowSchema>,
+  ) {
+    return await this.svc.resolveRow(u.id, p.id, p.rowN, {
+      status: body.status,
+      mapped: body.mapped ?? undefined,
+      error: body.error ?? undefined,
     });
   }
 }

@@ -741,6 +741,60 @@ export class ImportsService {
       })),
     };
   }
+
+  async resolveRow(
+    userId: string,
+    id: string,
+    rowN: number,
+    input: {
+      status?: 'pending' | 'ok' | 'conflict' | 'error';
+      mapped?: unknown;
+      error?: string | null;
+    },
+  ): Promise<{ ok: true }> {
+    const jobs = await this.db.query<Pick<ImportJobRow, 'id'>>(
+      `select id from import_jobs where id = $1 and user_id = $2`,
+      [id, userId],
+    );
+    if (!jobs[0]) throw new NotFoundException('Import job not found');
+
+    const existing = await this.db.query<{ job_id: string }>(
+      `select job_id from import_job_rows where job_id = $1 and row_n = $2`,
+      [id, rowN],
+    );
+    if (!existing[0]) throw new NotFoundException('Import row not found');
+
+    const setParts: string[] = [];
+    const params: unknown[] = [id, rowN];
+    let n = 2;
+
+    if (input.status !== undefined) {
+      n++;
+      setParts.push(`status = $${n}`);
+      params.push(input.status);
+    }
+    if (input.mapped !== undefined) {
+      n++;
+      setParts.push(`mapped = $${n}::jsonb`);
+      params.push(input.mapped === null ? null : JSON.stringify(input.mapped));
+    }
+    if (input.error !== undefined) {
+      n++;
+      setParts.push(`error = $${n}`);
+      params.push(input.error ?? null);
+    }
+
+    if (setParts.length === 0) return { ok: true };
+
+    await this.db.exec(
+      `update import_job_rows
+       set ${setParts.join(', ')}
+       where job_id = $1 and row_n = $2`,
+      params,
+    );
+
+    return { ok: true };
+  }
 }
 
 const ImportDiaryJsonSchema = z.object({

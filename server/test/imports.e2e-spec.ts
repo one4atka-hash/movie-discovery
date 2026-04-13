@@ -315,6 +315,47 @@ describe('Imports (e2e)', () => {
     expect(items.some((x) => x.tmdbId === 500)).toBe(true);
   });
 
+  it('resolve row updates mapped and affects apply (MVP)', async () => {
+    const token = await registerAndGetToken(app);
+
+    const created = await request(app.getHttpServer())
+      .post('/api/imports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        kind: 'favorites',
+        format: 'json',
+        payload: JSON.stringify({ items: [550, 500] }),
+      })
+      .expect(201);
+    const id = (created.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/preview`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/rows/2/resolve`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ status: 'ok', mapped: { tmdbId: 123 } })
+      .expect(201)
+      .expect({ ok: true });
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/apply`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
+
+    const list = await request(app.getHttpServer())
+      .get('/api/favorites')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const items = list.body as unknown[] as { tmdbId?: number }[];
+    expect(items.some((x) => x.tmdbId === 550)).toBe(true);
+    expect(items.some((x) => x.tmdbId === 500)).toBe(false);
+    expect(items.some((x) => x.tmdbId === 123)).toBe(true);
+  });
+
   it('diary csv import applies items into /api/diary (Letterboxd MVP)', async () => {
     const token = await registerAndGetToken(app);
 

@@ -21,6 +21,12 @@ export const ImportIdParamSchema = zodSchema(
   z.object({ id: z.string().uuid() }).strict(),
 );
 
+export const ImportRowParamSchema = zodSchema(
+  z
+    .object({ id: z.string().uuid(), rowN: z.coerce.number().int().min(1) })
+    .strict(),
+);
+
 export const ImportRowsQuerySchema = zodSchema(
   z
     .object({
@@ -31,3 +37,13 @@ export const ImportRowsQuerySchema = zodSchema(
 );
 
 export const ImportConflictsQuerySchema = ImportRowsQuerySchema;
+
+export const ResolveImportRowSchema = zodSchema(
+  z
+    .object({
+      status: z.enum(['ok', 'error', 'pending', 'conflict']).optional(),
+      mapped: z.unknown().optional().nullable(),
+      error: z.string().max(5000).optional().nullable(),
+    })
+    .strict(),
+);

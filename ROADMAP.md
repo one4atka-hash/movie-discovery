@@ -458,6 +458,7 @@ Component tests:
   - [x] API: `POST /api/imports/:id/preview` → parse → `import_job_rows` (MVP).
   - [x] API: `GET /api/imports/:id/rows?offset&limit` (preview rows for FE).
   - [x] API: `GET /api/imports/:id/conflicts?offset&limit` (preview conflicts for FE).
+  - [x] API: `POST /api/imports/:id/rows/:rowN/resolve` (edit mapped/status for wizard).
   - [x] Apply: использовать `import_job_rows.mapped` после preview (под /import wizard).
   - [x] DB: `import_jobs`.
   - [x] DB: `import_job_rows` + `import_conflicts`.
