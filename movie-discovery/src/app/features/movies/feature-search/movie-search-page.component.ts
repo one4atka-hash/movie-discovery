@@ -45,6 +45,7 @@ import { RecommendationsFeedbackService } from '../data-access/services/recommen
 import { StreamingPrefsService } from '@features/streaming/streaming-prefs.service';
 import { ChipComponent } from '@shared/ui/chip/chip.component';
 import { mergeWatchProviderRows } from '@core/streaming/streaming-links';
+import { filterOnlyMyServices } from '@features/streaming/only-my-services.util';
 
 @Component({
   selector: 'app-movie-search-page',
@@ -1000,15 +1001,11 @@ export class MovieSearchPageComponent {
   readonly hasMyServices = computed(() => (this.prefs.providers() ?? []).length > 0);
 
   readonly moviesVisible = computed(() => {
-    const list = this._movies();
-    if (!this.onlyMyServices()) return list;
-    return list.filter((m) => (this._myProviders()[String(m.id)] ?? []).length > 0);
+    return filterOnlyMyServices(this._movies(), this.onlyMyServices(), this._myProviders());
   });
 
   readonly randomVisible = computed(() => {
-    const list = this._randomMovies();
-    if (!this.onlyMyServices()) return list;
-    return list.filter((m) => (this._myProviders()[String(m.id)] ?? []).length > 0);
+    return filterOnlyMyServices(this._randomMovies(), this.onlyMyServices(), this._myProviders());
   });
 
   myProvidersFor(tmdbId: number): readonly string[] {

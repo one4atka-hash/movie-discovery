@@ -361,7 +361,7 @@ Component tests:
 - [ ] **Тесты**:
   - [x] Server e2e: prefs GET/PUT auth + validation.
   - [ ] Unit: diff алгоритм snapshots→events (детерминизм).
-  - [ ] FE: фильтр по моим сервисам (predicate + UI).
+  - [x] FE: фильтр по моим сервисам (predicate + UI).
 
 #### 5.2 Smart Alerts 2.0 (умные уведомления с правилами)
 - [ ] **Backend/API (M1: rules + inbox feed)**:
