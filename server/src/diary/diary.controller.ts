@@ -17,6 +17,7 @@ import { ZodBodyPipe } from '../common/zod-body.pipe';
 import {
   DiaryEntryUpsertSchema,
   DiaryIdParamSchema,
+  DiaryExportQuerySchema,
   DiaryQuerySchema,
   DiaryStatsQuerySchema,
 } from './diary.schemas';
@@ -43,6 +44,18 @@ export class DiaryController {
     q: z.infer<typeof DiaryStatsQuerySchema>,
   ) {
     return await this.diary.stats(u.id, q.year);
+  }
+
+  @Get('export')
+  async export(
+    @CurrentUser() u: AuthedUser,
+    @Query(new ZodBodyPipe(DiaryExportQuerySchema))
+    q: z.infer<typeof DiaryExportQuerySchema>,
+  ) {
+    return await this.diary.export(u.id, {
+      format: q.format,
+      year: q.year,
+    });
   }
 
   @Post()

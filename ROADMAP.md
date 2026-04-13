@@ -397,7 +397,7 @@ Component tests:
   - [x] “Log watch” bottom sheet: create/edit/delete (frontend MVP).
 - [ ] **Stats + export/import (M2)**:
   - [x] `GET /api/diary/stats?year=...`.
-  - [ ] `GET /api/diary/export?format=...`.
+  - [x] `GET /api/diary/export?format=csv|json` (+ optional `year`).
   - [ ] `POST /api/diary/import` (через общий import pipeline 5.7).
 - [ ] **Тесты**:
   - [x] Server e2e: CRUD + фильтры по датам.

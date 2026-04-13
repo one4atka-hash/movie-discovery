@@ -229,4 +229,102 @@ export class DiaryService {
       topTags: tags.map((r) => ({ tag: r.tag, count: r.count })),
     };
   }
+
+  async export(
+    userId: string,
+    input: { format: 'csv' | 'json'; year?: number },
+  ): Promise<{ filename: string; contentType: string; body: string }> {
+    const year = input.year ? Math.trunc(input.year) : null;
+    const from = year ? `${year}-01-01` : null;
+    const to = year ? `${year}-12-31` : null;
+
+    const where: string[] = ['user_id = $1'];
+    const params: unknown[] = [userId];
+    if (from && to) {
+      params.push(from);
+      where.push(`watched_at >= $${params.length}::date`);
+      params.push(to);
+      where.push(`watched_at <= $${params.length}::date`);
+    }
+
+    const rows = await this.db.query<DiaryRow>(
+      `select id, tmdb_id, title, watched_at::text as watched_at, location, provider_key, rating, tags, note, created_at, updated_at
+       from diary_entries
+       where ${where.join(' and ')}
+       order by watched_at desc, updated_at desc`,
+      params,
+    );
+
+    const items = rows.map((r) => ({
+      id: r.id,
+      tmdbId: r.tmdb_id,
+      title: r.title,
+      watchedAt: r.watched_at,
+      location: r.location,
+      providerKey: r.provider_key,
+      rating: r.rating,
+      tags: Array.isArray(r.tags)
+        ? (r.tags as unknown[])
+            .filter((x) => typeof x === 'string')
+            .map((x) => x.trim())
+            .filter(Boolean)
+        : [],
+      note: r.note,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }));
+
+    const suffix = year ? `${year}` : 'all';
+    if (input.format === 'json') {
+      return {
+        filename: `diary_${suffix}.json`,
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify({ items }, null, 2),
+      };
+    }
+
+    const header = [
+      'id',
+      'tmdbId',
+      'title',
+      'watchedAt',
+      'location',
+      'providerKey',
+      'rating',
+      'tags',
+      'note',
+      'createdAt',
+      'updatedAt',
+    ];
+    const csv = [
+      header.join(','),
+      ...items.map((it) =>
+        [
+          it.id,
+          it.tmdbId ?? '',
+          csvCell(it.title),
+          it.watchedAt,
+          it.location,
+          it.providerKey ?? '',
+          it.rating ?? '',
+          csvCell(it.tags.join('|')),
+          csvCell(it.note ?? ''),
+          it.createdAt,
+          it.updatedAt,
+        ].join(','),
+      ),
+    ].join('\n');
+
+    return {
+      filename: `diary_${suffix}.csv`,
+      contentType: 'text/csv; charset=utf-8',
+      body: csv,
+    };
+  }
+}
+
+function csvCell(v: string): string {
+  const s = String(v ?? '');
+  if (!/[,"\n\r]/.test(s)) return s;
+  return `"${s.replaceAll('"', '""')}"`;
 }

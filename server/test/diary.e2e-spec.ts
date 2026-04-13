@@ -136,6 +136,41 @@ describe('Diary (e2e)', () => {
     );
   });
 
+  it('export endpoint returns json and csv', async () => {
+    const token = await registerAndGetToken(app);
+
+    await request(app.getHttpServer())
+      .post('/api/diary')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        tmdbId: 1,
+        title: 'A, "quoted"',
+        watchedAt: '2026-02-10',
+        location: 'home',
+        rating: 8,
+        tags: ['t1', 't2'],
+        note: 'line1\nline2',
+      })
+      .expect(201);
+
+    const json = await request(app.getHttpServer())
+      .get('/api/diary/export?format=json&year=2026')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect((json.body as { filename: string }).filename).toContain('2026');
+    expect((json.body as { contentType: string }).contentType).toContain(
+      'application/json',
+    );
+
+    const csv = await request(app.getHttpServer())
+      .get('/api/diary/export?format=csv&year=2026')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const csvBody = csv.body as { body: string; contentType: string };
+    expect(csvBody.contentType).toContain('text/csv');
+    expect(csvBody.body).toContain('id,tmdbId,title');
+  });
+
   afterEach(async () => {
     await app.close();
   });

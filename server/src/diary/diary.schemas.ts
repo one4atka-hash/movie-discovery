@@ -51,3 +51,12 @@ export const DiaryStatsQuerySchema = zodSchema(
     })
     .strict(),
 );
+
+export const DiaryExportQuerySchema = zodSchema(
+  z
+    .object({
+      format: z.enum(['csv', 'json']).default('json'),
+      year: z.coerce.number().int().min(1900).max(2100).optional(),
+    })
+    .strict(),
+);
