@@ -391,8 +391,8 @@ Component tests:
 - [ ] **DB (M1)**:
   - [ ] `diary_entries(id, user_id, tmdb_id, watched_at, location, provider_key, rating, note, tags[], created_at, updated_at)` + индексы.
 - [ ] **Frontend (M1)**:
-  - [ ] Роут `/diary` (timeline по дням/неделям).
-  - [ ] “Log watch” bottom sheet / page: быстрый ввод (prefill из movie details / decision winner).
+  - [x] Роут `/diary`: список записей (frontend MVP, local storage).
+  - [x] “Log watch” bottom sheet: create/edit/delete (frontend MVP).
 - [ ] **Stats + export/import (M2)**:
   - [ ] `GET /api/diary/stats?year=...` + `GET /api/diary/export?format=...`.
   - [ ] `POST /api/diary/import` (через общий import pipeline 5.7).
