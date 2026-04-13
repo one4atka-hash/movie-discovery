@@ -407,8 +407,8 @@ Component tests:
 - [ ] **DB (M1)**:
   - [ ] `watch_state(user_id, tmdb_id, status, progress jsonb, updated_at)` PK `(user_id, tmdb_id)`.
 - [ ] **Frontend (M1)**:
-  - [ ] Quick actions единым набором: карточка/детали/списки (tap cycle + long-press picker).
-  - [ ] Страница `/watchlist` с табами по статусам.
+  - [x] Quick action на карточке: cycle status (frontend MVP, local storage).
+  - [x] Страница `/watchlist` с табами по статусам (frontend MVP, local storage).
   - [ ] Merge-логика: server truth + optimistic UI + конфликт по `updatedAt`.
 - [ ] **Bulk ops (M2)**:
   - [ ] `POST /api/watch-state/bulk` + UI массового “hide/want”.

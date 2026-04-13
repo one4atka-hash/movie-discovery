@@ -11,6 +11,7 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { ReleaseSubscriptionsService } from '@features/notifications/release-subscriptions.service';
 import { AuthService } from '@features/auth/auth.service';
+import { WatchStateService } from '@features/watchlist/watch-state.service';
 
 @Component({
   selector: 'app-movie-card',
@@ -101,6 +102,16 @@ import { AuthService } from '@features/auth/auth.service';
                 [title]="subscriptionTitle()"
               >
                 🔔
+              </button>
+              <button
+                class="chip"
+                type="button"
+                [class.chip--active]="!!watchStatus()"
+                [attr.aria-pressed]="!!watchStatus()"
+                (click)="onCycleStatus($event)"
+                [title]="statusTitle()"
+              >
+                {{ statusEmoji() }}
               </button>
             </div>
           </div>
@@ -396,9 +407,11 @@ export class MovieCardComponent {
   private readonly reactions = inject(MovieReactionsService);
   private readonly subs = inject(ReleaseSubscriptionsService);
   private readonly auth = inject(AuthService);
+  private readonly watchState = inject(WatchStateService);
   readonly movie = input.required<Movie>();
 
   readonly reaction = computed(() => this.reactions.reactionFor(this.movie().id)());
+  readonly watchStatus = computed(() => this.watchState.getStatus(this.movie().id));
 
   isLiked(): boolean {
     return this.favorites.has(this.movie().id) || this.reaction() === 'like';
@@ -476,6 +489,32 @@ export class MovieCardComponent {
         calendar: false,
       },
     });
+  }
+
+  statusEmoji = computed(() => {
+    const s = this.watchStatus();
+    if (!s) return '👀';
+    if (s === 'want') return '👀';
+    if (s === 'watching') return '▶';
+    if (s === 'watched') return '✅';
+    if (s === 'dropped') return '⏸';
+    return '🙈';
+  });
+
+  statusTitle = computed(() => {
+    const s = this.watchStatus();
+    if (!s) return 'Статус: не задан (нажмите, чтобы поставить)';
+    if (s === 'want') return 'Статус: хочу посмотреть (нажмите для следующего)';
+    if (s === 'watching') return 'Статус: смотрю (нажмите для следующего)';
+    if (s === 'watched') return 'Статус: посмотрел (нажмите для следующего)';
+    if (s === 'dropped') return 'Статус: брошено (нажмите для следующего)';
+    return 'Статус: скрыто (нажмите для следующего)';
+  });
+
+  onCycleStatus(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.watchState.cycle(this.movie());
   }
 
   posterUrl(path: string): string {

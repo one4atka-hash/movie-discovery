@@ -24,6 +24,11 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'watchlist',
+    loadComponent: () =>
+      import('./features/watchlist/watchlist-page.component').then((c) => c.WatchlistPageComponent),
+  },
+  {
     path: 'inbox',
     loadComponent: () =>
       import('./features/inbox/inbox-page.component').then((c) => c.InboxPageComponent),
