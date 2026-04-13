@@ -25,6 +25,7 @@ import { DecisionModule } from './decision/decision.module';
 import { ImportsModule } from './imports/imports.module';
 import { ExportsModule } from './exports/exports.module';
 import { TasteModule } from './taste/taste.module';
+import { AvailabilityModule } from './availability/availability.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { TasteModule } from './taste/taste.module';
     ImportsModule,
     ExportsModule,
     TasteModule,
+    AvailabilityModule,
   ],
   controllers: [AppController],
   providers: [

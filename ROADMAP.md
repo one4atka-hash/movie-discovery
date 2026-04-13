@@ -353,14 +353,16 @@ Component tests:
   - [x] Provider picker: catalog search via `GET /api/streaming/providers?region=...` (best-effort).
   - [x] Movie details: подсветка провайдеров “My” + предпочтительный регион по умолчанию.
 - [x] Discover/Search: фильтр “Только на моих сервисах” + отображение provider chips на карточках. (local)
-- [ ] **Backend/API (M2: availability events)**:
-  - [ ] `GET /api/availability/events?since=...` + (опц.) `POST /api/availability/track` (что отслеживать).
+- [x] **Backend/API (M2: availability events)**:
+  - [x] `GET /api/availability/events?since=...` + `POST /api/availability/track` (что отслеживать).
+  - [x] `POST /api/availability/ingest` — запись snapshot + diff → события для трекеров (для worker/cron).
 - [ ] **DB + Jobs (M2)**:
-  - [ ] snapshots: `availability_snapshots(tmdb_id, region, providers jsonb, fetched_at)`.
-  - [ ] events: `availability_events(... type added/leaving/changed ...)`.
+  - [x] snapshots: `availability_snapshots(tmdb_id, region, providers jsonb, fetched_at)`.
+  - [x] events: `availability_events(... type added/leaving/changed ...)`.
   - [ ] cron: обновление watch-providers по списку отслеживания, diff → events.
-- [ ] **Тесты**:
+- [x] **Тесты**:
   - [x] Server e2e: prefs GET/PUT auth + validation.
+  - [x] Server e2e: availability track + ingest + events feed.
   - [x] Unit: diff алгоритм snapshots→events (детерминизм).
   - [x] FE: фильтр по моим сервисам (predicate + UI).
 
