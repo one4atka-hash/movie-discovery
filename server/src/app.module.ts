@@ -24,6 +24,7 @@ import { StreamingModule } from './streaming/streaming.module';
 import { DecisionModule } from './decision/decision.module';
 import { ImportsModule } from './imports/imports.module';
 import { ExportsModule } from './exports/exports.module';
+import { TasteModule } from './taste/taste.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { ExportsModule } from './exports/exports.module';
     DecisionModule,
     ImportsModule,
     ExportsModule,
+    TasteModule,
   ],
   controllers: [AppController],
   providers: [

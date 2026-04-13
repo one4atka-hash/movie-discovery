@@ -443,13 +443,13 @@ Component tests:
   - [x] API: `GET/POST/DELETE /api/collections`, items CRUD. (PUT via POST upsert)
   - [x] DB: `collections`, `collection_items`.
   - [x] FE: `/collections` list + CRUD + items (frontend MVP, local storage).
-- [ ] **Auto-collections + taste (M2)**:
-  - [ ] API: `GET /api/auto-collections` (computed из watch_state/diary/favorites).
-  - [ ] API: `GET /api/taste/summary`, `GET /api/taste/similar-to?tmdbId=...`.
+- [x] **Auto-collections + taste (M2)**:
+  - [x] API: `GET /api/auto-collections` (computed из watch_state/diary/favorites).
+  - [x] API: `GET /api/taste/summary`, `GET /api/taste/similar-to?tmdbId=...`.
   - [ ] (опц.) кеш `taste_snapshots` nightly.
 - [ ] **Тесты**:
   - [x] Server e2e: создать список → добавить/удалить фильм.
-  - [ ] Unit: весовые алгоритмы taste summary (устойчивость).
+  - [x] Unit: весовые алгоритмы taste summary (устойчивость).
 
 #### 5.7 Import & Sync (онбординг сильнее конкурентов)
 - [ ] **Import pipeline (M1)**:

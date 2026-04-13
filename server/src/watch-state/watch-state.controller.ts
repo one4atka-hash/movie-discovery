@@ -38,7 +38,14 @@ export class WatchStateController {
     @Body(new ZodBodyPipe(BulkWatchStateSchema))
     body: z.infer<typeof BulkWatchStateSchema>,
   ) {
-    const out = await this.svc.bulkPut(u.id, body.items);
+    const out = await this.svc.bulkPut(
+      u.id,
+      body.items.map((it) => ({
+        tmdbId: it.tmdbId,
+        status: it.status,
+        progress: it.progress ?? null,
+      })),
+    );
     return { ok: true, ...out };
   }
 
