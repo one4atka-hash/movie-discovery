@@ -106,6 +106,15 @@ In development the app is configured to call TMDB through a same-origin proxy pr
 
 This avoids browser CORS issues. Do **not** set `TMDB_BASE_URL=https://api.themoviedb.org/3` in `public/env.js` when running `npm start`.
 
+### Backend API (NestJS, optional)
+
+The dev server proxies **`/api`** → `http://127.0.0.1:3001` (see `proxy.conf.json`). Start the API from `server/` (Docker Compose or `cd server && npm run start:dev`).
+
+- **Account → Server JWT**: paste a token from `POST /api/auth/register` or `login` to use exports, import, public profile, and the **Send test email** dev action (calls `POST /api/email/dev/send-test`; requires `DEV_EMAIL_SEND_ENABLED` and `SMTP_*` on the API).
+- **Movie details** (with JWT): **Timeline** can create server **release reminders** with in-app / Web Push / **email** channels (email delivery needs SMTP on the server; Web Push needs VAPID).
+
+**RU:** Прокси `/api` на локальный Nest. В Account вставьте JWT — экспорт, импорт, публичный профиль и кнопка теста SMTP. На странице фильма — серверные напоминания о релизе с каналом email.
+
 ### Постеры не грузятся (403 / блокировки)
 
 Приложение ходит за картинками через тот же origin: префикс **`/imgtmdb`** (см. `proxy.conf.json` в dev и `vercel.json` / `netlify.toml` в проде). Если постеры пустые, проверьте, что запросы идут на **`/imgtmdb/...`**, а не напрямую на `image.tmdb.org`, и что DNS не подменяет TMDB на `localhost`.

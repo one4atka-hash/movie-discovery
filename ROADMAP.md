@@ -577,7 +577,7 @@ Component tests:
 
 ### Статус плана (сводка)
 
-**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: FE Account — dev SMTP test; FE movie details — серверное напоминание с каналом email; SMTP + dev `POST /api/email/dev/send-test`; cron release reminders — email при `channels.email` + `SMTP_*`; Web Push из dev `alerts/run` при правиле с `channels.webPush`).
+**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: `movie-discovery/README.md` — прокси `/api`, Server JWT, dev SMTP test, серверные напоминания; FE Account — dev SMTP test; FE movie details — канал email; SMTP + `POST /api/email/dev/send-test`; cron release reminders — email при `channels.email` + `SMTP_*`; Web Push из dev `alerts/run` при правиле с `channels.webPush`).
 
 Все пункты выше **отмечены**; где работа **не выполнялась**, это явно указано текстом (**отложено**, **не в текущем milestone**, **v2**). Продуктовый объём итерации **5** и связанных MVP считается **закрытым**; дальнейшее развитие — из блоков с пометкой отложенного backlog.
 
