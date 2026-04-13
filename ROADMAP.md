@@ -474,7 +474,7 @@ Component tests:
 - [ ] **Метрики (M2)**:
   - [ ] `GET /api/recommendations/metrics` (diversity/novelty/coverage) для отладки качества.
 - [ ] **Тесты**:
-  - [ ] Unit: explain generator (ограниченный размер, i18n-ready).
+  - [x] Unit: explain generator (ограниченный размер, i18n-ready).
   - [x] Server e2e: “Less/Hide” меняет выдачу на следующем запросе.
 
 #### 5.9 Edition-aware + Releases Timeline (точность релизов/версий)

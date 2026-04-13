@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { DbService } from '../db/db.service';
+import { buildExplain } from './recommendations-explain.util';
 
 type FeedbackRow = {
   tmdb_id: number;
@@ -22,7 +23,7 @@ export class RecommendationsService {
     items: {
       tmdbId: number;
       score: number;
-      explain: { label: string; detail?: string | null }[];
+      explain: { key: string; params?: Record<string, string> }[];
     }[];
     meta: { mode: 'mvp'; generatedAt: string };
   }> {
@@ -62,10 +63,10 @@ export class RecommendationsService {
       items: unique.map((tmdbId, i) => ({
         tmdbId,
         score: 1 - i / Math.max(1, unique.length),
-        explain: [
-          { label: 'Seed', detail: 'From favorites/likes (MVP)' },
-          { label: 'Next', detail: 'Will expand via embeddings + ANN' },
-        ],
+        explain: buildExplain(
+          { seedCount: unique.length, mode: 'mvp' },
+          { maxItems: 4 },
+        ),
       })),
       meta: { mode: 'mvp', generatedAt: new Date().toISOString() },
     };
