@@ -581,5 +581,5 @@ Component tests:
 
 Все пункты выше **отмечены**; где работа **не выполнялась**, это явно указано текстом (**отложено**, **не в текущем milestone**, **v2**). Продуктовый объём итерации **5** и связанных MVP считается **закрытым**; дальнейшее развитие — из блоков с пометкой отложенного backlog.
 
-**Регрессия перед коммитами:** для `movie-discovery` — `npm run build`, `npm run lint`, `npm run test:ci`; для `server` — `npm run build`, `npm run lint`, `npm test` (зелёный прогон зафиксирован при обновлении этого раздела). Одной командой из корня репозитория (Windows): `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-all.ps1`.
+**Регрессия перед коммитами:** для `movie-discovery` — `npm run build`, `npm run lint`, `npm run test:ci`; для `server` — `npm run build`, `npm run lint`, `npm test` (зелёный прогон зафиксирован при обновлении этого раздела). Одной командой из корня репозитория: Windows — `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-all.ps1`; Unix/macOS/CI — `sh scripts/verify-all.sh`.
 
