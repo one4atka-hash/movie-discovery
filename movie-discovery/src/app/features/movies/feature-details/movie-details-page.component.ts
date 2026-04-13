@@ -327,10 +327,21 @@ import type { WatchStatus } from '@features/watchlist/watch-state.model';
                   />
                   {{ i18n.t('details.timeline.webPush') }}
                 </label>
+                <label class="timeline__lbl chk">
+                  <input
+                    type="checkbox"
+                    [checked]="serverReminderEmail()"
+                    (change)="serverReminderEmail.set($any($event.target).checked)"
+                  />
+                  {{ i18n.t('details.timeline.email') }}
+                </label>
                 <button class="btn btn--primary" type="button" (click)="saveServerReminder(m)">
                   {{ i18n.t('details.timeline.save') }}
                 </button>
               </div>
+              @if (serverReminderEmail()) {
+                <p class="muted timeline__email-hint">{{ i18n.t('details.timeline.emailHint') }}</p>
+              }
 
               @if (serverRemindersForMovie().length === 0) {
                 <p class="muted">{{ i18n.t('details.timeline.none') }}</p>
@@ -338,9 +349,28 @@ import type { WatchStatus } from '@features/watchlist/watch-state.model';
                 <ul class="timeline__reminders">
                   @for (r of serverRemindersForMovie(); track r.id) {
                     <li class="timeline__reminder-row">
-                      <span>{{ r.reminderType }} · {{ r.window.daysBefore }}d</span>
+                      <div class="timeline__reminder-meta">
+                        <span>{{ r.reminderType }} · {{ r.window.daysBefore }}d</span>
+                        <span class="timeline__chips">
+                          @if (r.channels['inApp']) {
+                            <app-badge size="sm" variant="muted">{{
+                              i18n.t('details.timeline.chInApp')
+                            }}</app-badge>
+                          }
+                          @if (r.channels['webPush']) {
+                            <app-badge size="sm" variant="muted">{{
+                              i18n.t('details.timeline.chPush')
+                            }}</app-badge>
+                          }
+                          @if (r.channels['email']) {
+                            <app-badge size="sm" variant="muted">{{
+                              i18n.t('details.timeline.chEmail')
+                            }}</app-badge>
+                          }
+                        </span>
+                      </div>
                       <button class="btn" type="button" (click)="deleteServerReminder(r.id)">
-                        Remove
+                        {{ i18n.t('details.timeline.remove') }}
                       </button>
                     </li>
                   }
@@ -856,6 +886,25 @@ import type { WatchStatus } from '@features/watchlist/watch-state.model';
         border: 1px solid var(--border-subtle);
         background: rgba(0, 0, 0, 0.12);
       }
+      .timeline__reminder-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        align-items: center;
+        flex: 1;
+        min-width: 0;
+      }
+      .timeline__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        align-items: center;
+      }
+      .timeline__email-hint {
+        margin: 0;
+        font-size: 0.86rem;
+        line-height: 1.45;
+      }
 
       .watch {
         margin-top: 1rem;
@@ -1207,6 +1256,7 @@ export class MovieDetailsPageComponent {
   readonly serverReminderDaysBefore = signal(7);
   readonly serverReminderInApp = signal(true);
   readonly serverReminderWebPush = signal(false);
+  readonly serverReminderEmail = signal(false);
 
   readonly serverRemindersForMovie = computed(() => {
     const m = this.movie();
@@ -1389,7 +1439,7 @@ export class MovieDetailsPageComponent {
         channels: {
           inApp: this.serverReminderInApp(),
           webPush: this.serverReminderWebPush(),
-          email: false,
+          email: this.serverReminderEmail(),
           calendar: false,
         },
       })

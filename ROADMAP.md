@@ -503,7 +503,7 @@ Component tests:
 - [x] **Release timeline (M1)**:
   - [x] API: `GET /api/movies/:tmdbId/releases?region=...` (snapshot/cached, Postgres `movie_release_snapshots` + TTL `MOVIE_RELEASES_CACHE_TTL_MS`).
   - [x] Reminders: `POST/GET/DELETE /api/release-reminders` (type + window + channels; Postgres `release_reminders`).
-  - [x] FE: секция “Timeline” на movie details + форма server reminders (in-app + опционально Web Push / email); в Inbox — блок «Release reminders (server)» при Load server feed (нужен Server JWT).
+  - [x] FE: секция “Timeline” на movie details + форма server reminders (чекбоксы in-app / Web Push / **email** → API `channels.*`); в Inbox — блок «Release reminders (server)» при Load server feed (нужен Server JWT).
 - [x] **DB + Jobs**:
   - [x] Postgres: `movie_release_snapshots` (кэш TMDB `release_dates`).
   - [x] Postgres: `release_reminders` (правила: `reminder_type` + `window` + `channels`; `last_notified_at` для будущего cron).
@@ -577,7 +577,7 @@ Component tests:
 
 ### Статус плана (сводка)
 
-**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: SMTP + dev `POST /api/email/dev/send-test`; cron release reminders — email при `channels.email` + `SMTP_*`; Web Push из dev `alerts/run` при правиле с `channels.webPush`).
+**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: FE movie details — серверное напоминание с каналом email; SMTP + dev `POST /api/email/dev/send-test`; cron release reminders — email при `channels.email` + `SMTP_*`; Web Push из dev `alerts/run` при правиле с `channels.webPush`).
 
 Все пункты выше **отмечены**; где работа **не выполнялась**, это явно указано текстом (**отложено**, **не в текущем milestone**, **v2**). Продуктовый объём итерации **5** и связанных MVP считается **закрытым**; дальнейшее развитие — из блоков с пометкой отложенного backlog.
 
