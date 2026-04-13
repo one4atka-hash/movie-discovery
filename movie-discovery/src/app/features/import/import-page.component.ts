@@ -188,20 +188,25 @@ const TOKEN_KEY = 'server.jwt.token.v1';
                     <span
                       ><b>{{ c.entity }}</b> · <code>{{ c.key }}</code></span
                     >
-                    <span class="muted">{{ c.createdAt }}</span>
+                    <span class="muted">
+                      {{ c.createdAt }}
+                      @if (c.resolution) {
+                        · <b>resolved</b>
+                      }
+                    </span>
                   </div>
                   <pre class="row__json">{{ pretty(c.incoming) }}</pre>
                   <div class="row__actions" style="justify-content: space-between; gap: 0.5rem">
                     <app-button
                       variant="ghost"
                       [disabled]="busy()"
-                      (click)="openResolve(c.rowN ?? null, c.server)"
+                      (click)="quickResolve(c.rowN, c.server)"
                       >Use server</app-button
                     >
                     <app-button
                       variant="ghost"
                       [disabled]="busy()"
-                      (click)="openResolve(c.rowN ?? null, c.incoming)"
+                      (click)="quickResolve(c.rowN, c.incoming)"
                       >Use incoming</app-button
                     >
                     @if (c.rowN) {
@@ -550,6 +555,27 @@ export class ImportPageComponent {
     if (next >= this._conflictsTotal()) return;
     this._conflictsOffset.set(next);
     this.loadConflicts();
+  }
+
+  quickResolve(rowN: number | null, mapped: unknown): void {
+    this._err.set(null);
+    const token = this.token.trim();
+    const id = this._jobId();
+    if (!token || !id) return;
+    if (!rowN) {
+      this._err.set('Row number неизвестен (нет rowN).');
+      return;
+    }
+    this.storage.set(TOKEN_KEY, token);
+    this._busy.set(true);
+    this.api.resolveRow(token, id, rowN, { status: 'ok', mapped }).subscribe({
+      next: () => {
+        this._busy.set(false);
+        this.loadRows();
+        this.loadConflicts();
+      },
+      error: (e) => this.handleHttpError(e),
+    });
   }
 
   apply(): void {

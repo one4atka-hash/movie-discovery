@@ -468,6 +468,7 @@ Component tests:
   - [ ] Worker: parse → map → resolve TMDB ids (rate-limited) → preview.
   - [x] FE: `/import` wizard (MVP): create → preview → rows/conflicts list (+pager) → resolve row → apply (JWT token input).
   - [x] FE: conflict quick actions (Use server / Use incoming) for faster resolving.
+  - [x] FE: conflict quick actions do one-click resolve (no JSON editing).
 - [ ] **Export (M2)**:
   - [x] API: `GET /api/exports?kind=diary|watch_state|favorites&format=csv|json` (MVP).
   - [x] FE: “Export my data” в профиле (MVP: JWT token input + download CSV/JSON).
