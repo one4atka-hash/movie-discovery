@@ -5,6 +5,10 @@ export type DecisionMode = 'top5' | 'roulette';
 export interface DecisionConstraints {
   readonly maxMinutes: number | null;
   readonly genre: 'thriller' | 'comedy' | 'drama' | null;
+  /** If true, try to keep only candidates available on user's streaming services (best-effort, MVP). */
+  readonly onlyMyServices: boolean;
+  readonly region: string;
+  readonly myProviders: readonly string[];
 }
 
 export function pickWinner(candidates: readonly Movie[], mode: DecisionMode): Movie | null {

@@ -1,10 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 
 import { MovieService } from '@features/movies/data-access/services/movie.service';
 import type { Movie } from '@features/movies/data-access/models/movie.model';
 import { FavoritesService } from '@features/movies/data-access/services/favorites.service';
 import type { DecisionConstraints } from './decision.util';
+import { mergeWatchProviderRows } from '@core/streaming/streaming-links';
 
 @Injectable({ providedIn: 'root' })
 export class DecisionService {
@@ -40,6 +41,7 @@ export class DecisionService {
       map((arr) => dedupeById(arr)),
       map((arr) => applyConstraints(arr, constraints)),
       map((arr) => arr.slice(0, 20)),
+      switchMap((arr) => filterByMyServices(arr, constraints, this.movies)),
       catchError(() => of([])),
     );
   }
@@ -75,4 +77,29 @@ function applyConstraints(arr: readonly Movie[], c: DecisionConstraints): Movie[
   const maxMinutesPred = (_m: Movie) => (maxMinutes ? true : true);
 
   return arr.filter((m) => genrePred(m) && maxMinutesPred(m));
+}
+
+function filterByMyServices(
+  arr: readonly Movie[],
+  c: DecisionConstraints,
+  movies: MovieService,
+): Observable<Movie[]> {
+  if (!c.onlyMyServices) return of([...arr]);
+  const mine = c.myProviders.map((x) => x.trim().toLowerCase()).filter(Boolean);
+  if (!mine.length) return of([...arr]);
+
+  const region = (c.region || 'US').trim().toUpperCase();
+  const checks$ = arr.map((m) =>
+    movies.getMovieWatchProviders(m.id).pipe(
+      map((resp) => {
+        const country = resp.results?.[region] ?? null;
+        const rows = mergeWatchProviderRows(country);
+        const names = rows.map((r) => r.provider.provider_name.trim().toLowerCase());
+        return names.some((n) => mine.includes(n));
+      }),
+      catchError(() => of(false)),
+    ),
+  );
+
+  return forkJoin(checks$).pipe(map((flags) => arr.filter((_, i) => Boolean(flags[i]))));
 }

@@ -15,6 +15,7 @@ import { DecisionService } from './decision.service';
 import type { Movie } from '@features/movies/data-access/models/movie.model';
 import { pickWinner, type DecisionConstraints, type DecisionMode } from './decision.util';
 import { MovieCardComponent } from '@features/movies/ui/movie-card/movie-card.component';
+import { StreamingPrefsService } from '@features/streaming/streaming-prefs.service';
 
 @Component({
   selector: 'app-decision-page',
@@ -60,6 +61,13 @@ import { MovieCardComponent } from '@features/movies/ui/movie-card/movie-card.co
           >
         </div>
 
+        <div class="row" *ngIf="hasMyServices()">
+          <app-chip [selected]="onlyMyServices()" (clicked)="toggleOnlyMyServices()">
+            Только на моих сервисах
+          </app-chip>
+          <a class="link" routerLink="/account" fragment="account-streaming">Настроить</a>
+        </div>
+
         <div class="row">
           <app-chip [selected]="genre() === 'thriller'" (clicked)="setGenre('thriller')">
             Триллер
@@ -83,8 +91,22 @@ import { MovieCardComponent } from '@features/movies/ui/movie-card/movie-card.co
         ariaLabel="More constraints"
         (closed)="openMore.set(false)"
       >
-        <p class="muted">
-          Здесь будет выбор: мои сервисы, язык, возрастной рейтинг, рейтинг ≥ X и пресеты.
+        <p class="muted">Пресеты (MVP) — быстро собрать shortlist под сценарий.</p>
+
+        <div class="row">
+          <app-chip [selected]="preset() === 'weeknight'" (clicked)="applyPreset('weeknight')">
+            Будний вечер
+          </app-chip>
+          <app-chip [selected]="preset() === 'date'" (clicked)="applyPreset('date')">
+            Свидание
+          </app-chip>
+          <app-chip [selected]="preset() === 'family'" (clicked)="applyPreset('family')">
+            Семейный
+          </app-chip>
+        </div>
+
+        <p class="muted" *ngIf="hasMyServices()">
+          В пресетах мы включаем «Только на моих сервисах» по умолчанию.
         </p>
         <div class="sheetActions">
           <app-button
@@ -168,6 +190,17 @@ import { MovieCardComponent } from '@features/movies/ui/movie-card/movie-card.co
         gap: 0.45rem;
         margin-bottom: 0.55rem;
       }
+      .link {
+        align-self: center;
+        color: var(--text-muted);
+        text-decoration: none;
+        border-bottom: 1px dashed color-mix(in srgb, var(--text-muted) 55%, transparent);
+        padding-bottom: 2px;
+      }
+      .link:hover {
+        color: var(--text);
+        border-bottom-color: color-mix(in srgb, var(--text) 60%, transparent);
+      }
       .actions {
         display: flex;
         gap: 0.6rem;
@@ -241,14 +274,19 @@ export class DecisionPageComponent {
   readonly i18n = inject(I18nService);
   readonly toast = inject(ToastService);
   private readonly decision = inject(DecisionService);
+  private readonly streamingPrefs = inject(StreamingPrefsService);
 
   readonly openMore = signal(false);
   readonly maxMinutes = signal<number | null>(110);
   readonly genre = signal<'thriller' | 'comedy' | 'drama' | null>(null);
+  readonly onlyMyServices = signal(false);
+  readonly preset = signal<'weeknight' | 'date' | 'family' | null>(null);
   readonly mode = signal<DecisionMode>('top5');
   readonly candidates = signal<Movie[]>([]);
   readonly winner = signal<Movie | null>(null);
   readonly loading = signal(false);
+
+  readonly hasMyServices = computed(() => this.streamingPrefs.providers().length > 0);
 
   readonly modeOptions = [
     { value: 'top5' as const, label: 'Top 5' },
@@ -258,6 +296,9 @@ export class DecisionPageComponent {
   readonly constraints = computed<DecisionConstraints>(() => ({
     maxMinutes: this.maxMinutes(),
     genre: this.genre(),
+    onlyMyServices: this.onlyMyServices() && this.hasMyServices(),
+    region: this.streamingPrefs.region(),
+    myProviders: this.streamingPrefs.providers(),
   }));
 
   readonly shortlist = computed(() => {
@@ -276,9 +317,35 @@ export class DecisionPageComponent {
   reset(): void {
     this.maxMinutes.set(null);
     this.genre.set(null);
+    this.onlyMyServices.set(false);
+    this.preset.set(null);
     this.candidates.set([]);
     this.winner.set(null);
     this.toast.show('info', 'Сброшено', 'Ограничения очищены');
+  }
+
+  toggleOnlyMyServices(): void {
+    if (!this.hasMyServices()) return;
+    this.onlyMyServices.set(!this.onlyMyServices());
+  }
+
+  applyPreset(kind: 'weeknight' | 'date' | 'family'): void {
+    this.preset.set(this.preset() === kind ? null : kind);
+    const v = this.preset();
+    if (!v) return;
+
+    if (v === 'weeknight') {
+      this.maxMinutes.set(110);
+      this.genre.set(null);
+    } else if (v === 'date') {
+      this.maxMinutes.set(140);
+      this.genre.set('drama');
+    } else {
+      this.maxMinutes.set(110);
+      this.genre.set('comedy');
+    }
+
+    if (this.hasMyServices()) this.onlyMyServices.set(true);
   }
 
   build(): void {

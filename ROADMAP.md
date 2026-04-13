@@ -422,8 +422,8 @@ Component tests:
 - [ ] **Frontend-first (M1: solo)**:
   - [x] Роут `/decide` (“Tonight”): каркас + constraints MVP UI.
   - [x] Shortlist UI: Top 5 / Roulette + выбор победителя (frontend MVP).
-  - [ ] Пресеты ограничений (weeknight/date night/family) + “use my services by default”.
-  - [ ] Быстрые действия на кандидатах: hide / like / add to watchlist.
+  - [x] Пресеты ограничений (weeknight/date night/family) + “use my services by default”.
+  - [x] Быстрые действия на кандидатах: hide / like / add to watchlist.
 - [ ] **Backend/API (M1)**:
   - [ ] `POST /api/decision-sessions` (constraints + mode) → candidates.
   - [ ] `GET /api/decision-sessions/:id`, `POST /api/decision-sessions/:id/pick`.
