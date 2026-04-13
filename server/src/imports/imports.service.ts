@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
 
 import { DbService } from '../db/db.service';
@@ -57,7 +58,10 @@ const ImportMappedFavoriteItemSchema = z
 
 @Injectable()
 export class ImportsService {
-  constructor(private readonly db: DbService) {}
+  constructor(
+    private readonly db: DbService,
+    private readonly config: ConfigService,
+  ) {}
 
   async create(
     userId: string,
@@ -590,6 +594,10 @@ export class ImportsService {
       });
     }
 
+    // Worker-like step (MVP): resolve missing tmdbId for diary rows via TMDB search (rate-limited).
+    // Optional dependency: if TMDB_API_KEY is not configured, we skip silently.
+    const tmdbResolveStats = await this.resolveDiaryTmdbIds(collected);
+
     const existingWatch = new Map<
       number,
       { status: string; progress: unknown }
@@ -682,6 +690,9 @@ export class ImportsService {
           okRows,
           conflictRows,
           errorRows,
+          tmdbResolved: tmdbResolveStats.resolved,
+          tmdbResolveAttempts: tmdbResolveStats.attempted,
+          tmdbResolveSkipped: tmdbResolveStats.skipped,
         }),
       ],
     );
@@ -896,6 +907,119 @@ export class ImportsService {
 
     return { ok: true };
   }
+
+  private async resolveDiaryTmdbIds(
+    collected: {
+      raw: unknown;
+      mapped: unknown;
+      status: 'ok' | 'error';
+      error?: string;
+    }[],
+  ): Promise<{ attempted: number; resolved: number; skipped: number }> {
+    // Only useful for diary rows where tmdbId may be missing.
+    const apiKey = (this.config.get<string>('TMDB_API_KEY') ?? '').trim();
+    if (!apiKey)
+      return { attempted: 0, resolved: 0, skipped: collected.length };
+
+    const baseUrl = (
+      this.config.get<string>('TMDB_BASE_URL') ?? 'https://api.themoviedb.org/3'
+    )
+      .trim()
+      .replace(/\/+$/, '');
+
+    const cache = new Map<string, number | null>();
+    let attempted = 0;
+    let resolved = 0;
+    let skipped = 0;
+    let lastFetchAt = 0;
+
+    for (const row of collected) {
+      if (row.status !== 'ok') {
+        skipped++;
+        continue;
+      }
+
+      const mapped = row.mapped as
+        | { tmdbId?: unknown; title?: unknown }
+        | null
+        | undefined;
+      if (!mapped || typeof mapped !== 'object') {
+        skipped++;
+        continue;
+      }
+
+      const tmdbId = mapped.tmdbId;
+      const title = mapped.title;
+      if (typeof tmdbId === 'number' && Number.isFinite(tmdbId) && tmdbId > 0) {
+        skipped++;
+        continue;
+      }
+      if (typeof title !== 'string' || !title.trim()) {
+        skipped++;
+        continue;
+      }
+
+      // Optional year hint comes from Letterboxd CSV raw row.
+      const year =
+        typeof (row.raw as { year?: unknown } | null)?.year === 'number'
+          ? ((row.raw as { year?: unknown }).year as number)
+          : null;
+
+      const cacheKey = `${title.trim().toLowerCase()}|${year ?? ''}`;
+      attempted++;
+
+      let found = cache.get(cacheKey);
+      if (found === undefined) {
+        const now = Date.now();
+        const minGapMs = 250;
+        const waitMs = Math.max(0, minGapMs - (now - lastFetchAt));
+        if (waitMs > 0) await sleep(waitMs);
+
+        found = await this.tmdbSearchMovieId(baseUrl, apiKey, title, year);
+        cache.set(cacheKey, found);
+        lastFetchAt = Date.now();
+      }
+
+      if (typeof found === 'number' && found > 0) {
+        (mapped as Record<string, unknown>).tmdbId = found;
+        resolved++;
+      }
+    }
+
+    return { attempted, resolved, skipped };
+  }
+
+  private async tmdbSearchMovieId(
+    baseUrl: string,
+    apiKey: string,
+    title: string,
+    year: number | null,
+  ): Promise<number | null> {
+    const url = new URL(`${baseUrl}/search/movie`);
+    url.searchParams.set('api_key', apiKey);
+    url.searchParams.set('query', title);
+    url.searchParams.set('include_adult', 'false');
+    if (typeof year === 'number' && Number.isFinite(year) && year > 1800) {
+      url.searchParams.set('year', String(Math.trunc(year)));
+    }
+
+    const res = await fetch(url.toString(), {
+      headers: { accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as unknown;
+
+    const parsed = z
+      .object({
+        results: z
+          .array(z.object({ id: z.number().int().positive() }).passthrough())
+          .default([]),
+      })
+      .passthrough()
+      .safeParse(json);
+    if (!parsed.success) return null;
+    return parsed.data.results[0]?.id ?? null;
+  }
 }
 
 const ImportDiaryJsonSchema = z.object({
@@ -952,4 +1076,8 @@ function safeJsonParse(s: string): unknown {
   } catch {
     return null;
   }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

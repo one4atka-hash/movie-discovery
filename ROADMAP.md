@@ -465,7 +465,7 @@ Component tests:
   - [x] Preview: conflict detection MVP (watch_state) → `import_conflicts` + row status=conflict.
   - [x] Conflicts: возвращать `rowN` (когда возможно), чтобы FE мог открыть resolve сразу из conflicts.
   - [x] Resolve: записывать `import_conflicts.resolution` при выборе решения (watch_state MVP).
-  - [ ] Worker: parse → map → resolve TMDB ids (rate-limited) → preview.
+  - [x] Worker: parse → map → resolve TMDB ids (rate-limited) → preview.
   - [x] FE: `/import` wizard (MVP): create → preview → rows/conflicts list (+pager) → resolve row → apply (JWT token input).
   - [x] FE: conflict quick actions (Use server / Use incoming) for faster resolving.
   - [x] FE: conflict quick actions do one-click resolve (no JSON editing).
