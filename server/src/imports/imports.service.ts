@@ -17,6 +17,44 @@ type ImportJobRow = {
   updated_at: string;
 };
 
+const ImportMappedDiaryItemSchema = z
+  .object({
+    tmdbId: z.number().int().positive().optional().nullable(),
+    title: z.string().trim().min(1).max(200),
+    watchedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    location: z.enum(['cinema', 'streaming', 'home']),
+    providerKey: z.string().trim().max(80).optional().nullable(),
+    rating: z.number().min(0).max(10).optional().nullable(),
+    tags: z
+      .array(z.string().trim().min(1).max(40))
+      .max(30)
+      .optional()
+      .nullable(),
+    note: z.string().max(2000).optional().nullable(),
+  })
+  .strict();
+
+const ImportMappedWatchStateItemSchema = z
+  .object({
+    tmdbId: z.number().int().positive(),
+    status: z.enum(['want', 'watching', 'watched', 'dropped', 'hidden']),
+    progress: z
+      .object({
+        minutes: z.number().int().nonnegative().optional().nullable(),
+        pct: z.number().min(0).max(100).optional().nullable(),
+      })
+      .strict()
+      .optional()
+      .nullable(),
+  })
+  .strict();
+
+const ImportMappedFavoriteItemSchema = z
+  .object({
+    tmdbId: z.number().int().positive(),
+  })
+  .strict();
+
 @Injectable()
 export class ImportsService {
   constructor(private readonly db: DbService) {}
@@ -79,7 +117,18 @@ export class ImportsService {
     const r = rows[0];
     if (!r) throw new NotFoundException('Import job not found');
 
-    if (!r.payload || !r.payload.trim()) {
+    const previewRows = await this.db.query<{
+      mapped: unknown;
+    }>(
+      `select mapped
+       from import_job_rows
+       where job_id = $1 and status = 'ok'
+       order by row_n asc`,
+      [id],
+    );
+
+    const canApplyFromPreview = previewRows.length > 0;
+    if (!canApplyFromPreview && (!r.payload || !r.payload.trim())) {
       await this.db.exec(
         `update import_jobs set status = 'failed', error = 'Missing payload', updated_at = now()
          where id = $1 and user_id = $2`,
@@ -88,8 +137,134 @@ export class ImportsService {
       return { ok: true };
     }
 
+    const payload = r.payload ?? '';
+
+    if (canApplyFromPreview && r.kind === 'diary') {
+      const mappedItems: z.infer<typeof ImportMappedDiaryItemSchema>[] = [];
+      for (const pr of previewRows) {
+        const parsed = ImportMappedDiaryItemSchema.safeParse(pr.mapped);
+        if (!parsed.success) continue;
+        mappedItems.push(parsed.data);
+      }
+
+      for (const it of mappedItems) {
+        await this.db.exec(
+          `insert into diary_entries(user_id, tmdb_id, title, watched_at, location, provider_key, rating, tags, note)
+           values ($1, $2, $3, $4::date, $5, $6, $7, $8::jsonb, $9)`,
+          [
+            userId,
+            it.tmdbId ?? null,
+            it.title,
+            it.watchedAt,
+            it.location,
+            it.providerKey ?? null,
+            it.rating ?? null,
+            it.tags ? JSON.stringify(it.tags) : null,
+            it.note ?? null,
+          ],
+        );
+      }
+
+      await this.db.exec(
+        `update import_jobs
+         set status = 'applied', error = null,
+             meta = jsonb_set(coalesce(meta, '{}'::jsonb), '{applied}', $3::jsonb, true),
+             updated_at = now()
+         where id = $1 and user_id = $2`,
+        [
+          id,
+          userId,
+          JSON.stringify({
+            kind: 'diary_preview',
+            items: mappedItems.length,
+          }),
+        ],
+      );
+
+      return { ok: true };
+    }
+
+    if (canApplyFromPreview && r.kind === 'watch_state') {
+      const mappedItems: z.infer<typeof ImportMappedWatchStateItemSchema>[] =
+        [];
+      for (const pr of previewRows) {
+        const parsed = ImportMappedWatchStateItemSchema.safeParse(pr.mapped);
+        if (!parsed.success) continue;
+        mappedItems.push(parsed.data);
+      }
+
+      for (const it of mappedItems) {
+        await this.db.exec(
+          `insert into watch_state(user_id, tmdb_id, status, progress)
+           values ($1, $2, $3, $4::jsonb)
+           on conflict (user_id, tmdb_id)
+           do update set status = excluded.status, progress = excluded.progress, updated_at = now()`,
+          [
+            userId,
+            it.tmdbId,
+            it.status,
+            it.progress ? JSON.stringify(it.progress) : null,
+          ],
+        );
+      }
+
+      await this.db.exec(
+        `update import_jobs
+         set status = 'applied', error = null,
+             meta = jsonb_set(coalesce(meta, '{}'::jsonb), '{applied}', $3::jsonb, true),
+             updated_at = now()
+         where id = $1 and user_id = $2`,
+        [
+          id,
+          userId,
+          JSON.stringify({
+            kind: 'watch_state_preview',
+            items: mappedItems.length,
+          }),
+        ],
+      );
+
+      return { ok: true };
+    }
+
+    if (canApplyFromPreview && r.kind === 'favorites') {
+      const mappedItems: z.infer<typeof ImportMappedFavoriteItemSchema>[] = [];
+      for (const pr of previewRows) {
+        const parsed = ImportMappedFavoriteItemSchema.safeParse(pr.mapped);
+        if (!parsed.success) continue;
+        mappedItems.push(parsed.data);
+      }
+
+      for (const it of mappedItems) {
+        await this.db.exec(
+          `insert into favorites(user_id, tmdb_id)
+           values ($1, $2)
+           on conflict (user_id, tmdb_id) do nothing`,
+          [userId, it.tmdbId],
+        );
+      }
+
+      await this.db.exec(
+        `update import_jobs
+         set status = 'applied', error = null,
+             meta = jsonb_set(coalesce(meta, '{}'::jsonb), '{applied}', $3::jsonb, true),
+             updated_at = now()
+         where id = $1 and user_id = $2`,
+        [
+          id,
+          userId,
+          JSON.stringify({
+            kind: 'favorites_preview',
+            items: mappedItems.length,
+          }),
+        ],
+      );
+
+      return { ok: true };
+    }
+
     if (r.kind === 'diary' && r.format === 'json') {
-      const parsed = ImportDiaryJsonSchema.safeParse(safeJsonParse(r.payload));
+      const parsed = ImportDiaryJsonSchema.safeParse(safeJsonParse(payload));
       if (!parsed.success) {
         await this.db.exec(
           `update import_jobs set status = 'failed', error = 'Invalid diary JSON', updated_at = now()
@@ -131,7 +306,7 @@ export class ImportsService {
     }
 
     if (r.kind === 'diary' && r.format === 'csv') {
-      const rows = parseLetterboxdDiaryCsv(r.payload);
+      const rows = parseLetterboxdDiaryCsv(payload);
       if (rows.length === 0) {
         await this.db.exec(
           `update import_jobs set status = 'failed', error = 'Unsupported diary CSV', updated_at = now()
@@ -173,7 +348,7 @@ export class ImportsService {
 
     if (r.kind === 'watch_state' && r.format === 'json') {
       const parsed = ImportWatchStateJsonSchema.safeParse(
-        safeJsonParse(r.payload),
+        safeJsonParse(payload),
       );
       if (!parsed.success) {
         await this.db.exec(
@@ -218,7 +393,7 @@ export class ImportsService {
 
     if (r.kind === 'favorites' && r.format === 'json') {
       const parsed = ImportFavoritesJsonSchema.safeParse(
-        safeJsonParse(r.payload),
+        safeJsonParse(payload),
       );
       if (!parsed.success) {
         await this.db.exec(
