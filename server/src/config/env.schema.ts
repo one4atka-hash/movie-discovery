@@ -61,6 +61,30 @@ export const EnvSchema = z.object({
     .default(''),
 
   /**
+   * Dev-only: POST /api/email/dev/send-test — send plain email to JWT user (requires SMTP_*).
+   */
+  DEV_EMAIL_SEND_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').toLowerCase())
+    .pipe(z.enum(['', '0', '1', 'false', 'true', 'no', 'yes', 'off', 'on']))
+    .default(''),
+
+  /** Outbound SMTP (optional until you enable dev send-test or future cron). */
+  SMTP_HOST: z.string().optional().default(''),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_SECURE: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').toLowerCase())
+    .pipe(z.enum(['', '0', '1', 'false', 'true', 'no', 'yes', 'off', 'on']))
+    .default(''),
+  SMTP_USER: z.string().optional().default(''),
+  SMTP_PASS: z.string().optional().default(''),
+  /** Defaults to SMTP_USER if empty. */
+  SMTP_FROM: z.string().optional().default(''),
+
+  /**
    * Optional TMDB v3 key for server-side helpers (e.g. providers catalog).
    * Keep optional to avoid hard dependency in local dev.
    */

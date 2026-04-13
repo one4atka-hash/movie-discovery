@@ -29,6 +29,7 @@ import { AvailabilityModule } from './availability/availability.module';
 import { MoviesModule } from './movies/movies.module';
 import { ReleaseRemindersModule } from './release-reminders/release-reminders.module';
 import { PushModule } from './push/push.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { PushModule } from './push/push.module';
     MoviesModule,
     ReleaseRemindersModule,
     PushModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [

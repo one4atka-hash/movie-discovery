@@ -6,6 +6,8 @@ process.env.DB_RUN_MIGRATIONS = process.env.DB_RUN_MIGRATIONS ?? 'true';
 process.env.DEV_ALERTS_ENABLED = process.env.DEV_ALERTS_ENABLED ?? 'true';
 process.env.DEV_PUSH_SEND_ENABLED =
   process.env.DEV_PUSH_SEND_ENABLED ?? 'false';
+process.env.DEV_EMAIL_SEND_ENABLED =
+  process.env.DEV_EMAIL_SEND_ENABLED ?? 'false';
 process.env.TMDB_API_KEY = process.env.TMDB_API_KEY ?? 'test';
 
 // Keep throttling relaxed for tests.

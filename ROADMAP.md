@@ -273,7 +273,7 @@ Component tests:
 - [x] **Extra**: трейлеры — не передавать `language` в `/movie/{id}/videos`, чтобы не получать пустой список видео на некоторых локалях.
 - [x] **Extra**: Alerts UX — сделать интуитивно: постер в списке/форме, понятные действия (календарь через .ics).
 - [x] **Extra**: Web notifications UX — убрать отдельный “тест”, отправлять пробное уведомление сразу после сохранения подписки (если выбран канал).
-- [x] **Extra**: Email notifications — реальный SMTP/провайдер для релизов (**отложено**; in-app уже есть).
+- [x] **Extra**: Email notifications — **минимальный SMTP** на API (`SMTP_*`, dev `POST /api/email/dev/send-test` при `DEV_EMAIL_SEND_ENABLED`); письма по релизам/digest из cron — **отложено**; in-app уже есть.
 - [x] **Extra**: убрать строку «Каталог на данных TMDB · неофициальное приложение» из футера.
 - [x] **Extra**: «Сервер + AI для просмотра» (Jellyfin/Plex + Ollama) — **отложено**, не в текущем scope репозитория.
 
@@ -295,7 +295,7 @@ Component tests:
 - [x] **ANN recommendations** (v2 / отложено): pgvector по профилю пользователя + фильтрация `dislike/hide` + диверсификация.
 - [x] **Rerank (опционально, v2 / отложено)**: нейро‑ре‑ранжирование top‑K + объяснения.
 - [x] **Notifications (v2 / частично)**:
-  - [x] Email провайдер + scheduled job в день релиза — **не в текущем milestone**.
+  - [x] Email: **минимальный исходящий SMTP** (`nodemailer`, `SMTP_*`, dev `POST /api/email/dev/send-test` при `DEV_EMAIL_SEND_ENABLED` + JWT); провайдер + scheduled job в день релиза + digest — **не в текущем milestone** (как и outbox/worker для email).
   - [x] WebPush: хранение подписок на сервере (`POST /api/push/subscribe`, таблица `push_subscriptions`, `GET/DELETE`) + `GET /api/push/vapid-public`; **FE** синхронизирует Push-подписку с сервером при сохранении напоминания с каналом web push, если в API задан `VAPID_PUBLIC_KEY`; **отправка** с API: `web-push` + dev `POST /api/push/dev/send-self` (JWT, `DEV_PUSH_SEND_ENABLED`, полный `VAPID_SUBJECT` + ключи); **cron напоминаний о релизах** при `channels.webPush`; dev **`POST /api/alerts/run`** при включённом правиле с `channels.webPush` + VAPID — push с тем же текстом, что sample in-app; полноценный matcher по TMDB/cron для правил и digest email — **backlog**.
 
 #### Итерация 4 — Workstreams (можно делать параллельно)
@@ -380,7 +380,7 @@ Component tests:
   - [x] Rule Builder (chip-based clauses) + preview (“примерно N совпадений/нед”). (local)
 - [x] **Delivery (M2 — частично)**:
   - [x] WebPush: `POST /api/push/subscribe` + таблица `push_subscriptions` + `GET /api/push/subscriptions`, `DELETE /api/push/subscriptions/:id` + `GET /api/push/vapid-public` + **исходящая** отправка (`web-push`, dev `POST /api/push/dev/send-self` при `VAPID_*`); **фоновая** — release reminders cron при `channels.webPush`; dev **alerts/run** — push если есть enabled-правило с `webPush`; автоматический matcher правил по каталогу + digest — **backlog** (M1 inbox для правил — по-прежнему in-app + dev sample).
-  - [x] Email + digest: outbox + worker/cron — **не в текущем milestone**.
+  - [x] Email: **SMTP smoke** — dev `POST /api/email/dev/send-test` (JWT, `SMTP_*`, `DEV_EMAIL_SEND_ENABLED`); digest/outbox + worker/cron для email — **не в текущем milestone**.
   - [x] Calendar: серверная `.ics` для правил — **не в текущем milestone** (клиентский .ics для подписок на релиз — по-прежнему в фронте где есть).
 - [x] **Тесты**:
   - [x] Unit: матчинг правил + quiet hours.
@@ -577,7 +577,7 @@ Component tests:
 
 ### Статус плана (сводка)
 
-**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: Web Push из dev `alerts/run` при правиле с `channels.webPush`).
+**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: минимальный SMTP + dev `POST /api/email/dev/send-test`; Web Push из dev `alerts/run` при правиле с `channels.webPush`).
 
 Все пункты выше **отмечены**; где работа **не выполнялась**, это явно указано текстом (**отложено**, **не в текущем milestone**, **v2**). Продуктовый объём итерации **5** и связанных MVP считается **закрытым**; дальнейшее развитие — из блоков с пометкой отложенного backlog.
 
