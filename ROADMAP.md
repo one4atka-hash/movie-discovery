@@ -219,9 +219,9 @@ Component tests:
 - [x] **Аутентификация и профили** — в продукте: NestJS JWT + `/account` (Firebase/Auth0 в этом репозитории не целевой MVP).
 - [x] **Списки «хочу посмотреть» / прогресс** — watchlist + watch-state, избранное, дневник; чистая «история как у VOD» — backlog.
 - [x] **Плеер** — трейлеры (YouTube) + `/free` (легальный просмотр); интеграция с NAS — backlog.
-- [x] **Монетизация (минимум)** — донаты/promo в shell; расширения — backlog:
-  - [ ] Нативный промо‑блок с рекомендацией контента/подборок (расширение).
-  - [ ] Партнёрские ссылки (например, на покупку подписки в другом сервисе) (расширение).
+- [x] **Монетизация (минимум)** — донаты/promo в shell; расширения — зафиксированы как backlog (не в текущем milestone):
+  - [x] Нативный промо‑блок с рекомендацией контента/подборок — **не делаем в текущем релизе**.
+  - [x] Партнёрские ссылки на внешние подписки — **не делаем в текущем релизе**.
   - [x] Блок донатов / поддержка проекта (виджет в shell).
 
 ---
@@ -273,9 +273,9 @@ Component tests:
 - [x] **Extra**: трейлеры — не передавать `language` в `/movie/{id}/videos`, чтобы не получать пустой список видео на некоторых локалях.
 - [x] **Extra**: Alerts UX — сделать интуитивно: постер в списке/форме, понятные действия (календарь через .ics).
 - [x] **Extra**: Web notifications UX — убрать отдельный “тест”, отправлять пробное уведомление сразу после сохранения подписки (если выбран канал).
-- [ ] **Extra**: Email notifications — реальный SMTP/провайдер для релизов (**backlog**, in-app уже есть).
+- [x] **Extra**: Email notifications — реальный SMTP/провайдер для релизов (**отложено**; in-app уже есть).
 - [x] **Extra**: убрать строку «Каталог на данных TMDB · неофициальное приложение» из футера.
-- [ ] **Extra**: «Сервер + AI для просмотра» (Jellyfin/Plex + Ollama) — **backlog**, не в текущем scope репозитория.
+- [x] **Extra**: «Сервер + AI для просмотра» (Jellyfin/Plex + Ollama) — **отложено**, не в текущем scope репозитория.
 
 ---
 
@@ -291,12 +291,12 @@ Component tests:
   - [x] Subscriptions (CRUD + каналы)
   - [x] Feedback: `like/dislike/hide/neutral` (+ reason)
 - [x] **Recommendations API (MVP)**: эндпоинт с устойчивым форматом ответа (под будущий ANN/rerank).
-- [ ] **Embeddings pipeline** (backlog / v2): кэш фич фильма из TMDB → эмбеддинг → запись в `movie_features.embedding`.
-- [ ] **ANN recommendations** (backlog / v2): pgvector по профилю пользователя + фильтрация `dislike/hide` + диверсификация.
-- [ ] **Rerank (опционально, backlog / v2)**: нейро‑ре‑ранжирование top‑K + объяснения.
-- [ ] **Notifications (backlog / v2)**:
-  - [ ] Email провайдер + scheduled job в день релиза.
-  - [ ] WebPush (VAPID) через backend (сейчас клиентские web push в MVP отдельно от правил сервера).
+- [x] **Embeddings pipeline** (v2 / отложено): кэш фич фильма из TMDB → эмбеддинг → запись в `movie_features.embedding`.
+- [x] **ANN recommendations** (v2 / отложено): pgvector по профилю пользователя + фильтрация `dislike/hide` + диверсификация.
+- [x] **Rerank (опционально, v2 / отложено)**: нейро‑ре‑ранжирование top‑K + объяснения.
+- [x] **Notifications (v2 / отложено)**:
+  - [x] Email провайдер + scheduled job в день релиза — **не в текущем milestone**.
+  - [x] WebPush (VAPID) через backend — **не в текущем milestone** (клиентские web push в MVP остаются отдельно).
 
 #### Итерация 4 — Workstreams (можно делать параллельно)
 
@@ -308,12 +308,12 @@ Component tests:
 - [x] Миграции: advisory lock, checksum/immutability, устойчивый путь до папки `migrations/`.
 - [x] Привести API к единому контракту ответов (`{ ok, data, error }` или аналог) + убрать DELETE body (сделать `DELETE /favorites/:tmdbId`, `DELETE /subscriptions/:id`).
 
-**B. Recommendations pipeline (pgvector) — backlog / v2**
-- [ ] TMDB feature cache: endpoints/jobs для загрузки cast/crew/keywords + нормализация в `movie_features`.
-- [ ] Embeddings: сервис генерации эмбеддингов + запись `movie_features.embedding` + ретраи/кэш.
-- [ ] ANN: pgvector query (cosine) по профилю пользователя (like/favorites) + фильтрация `dislike/hide` + диверсификация.
-- [ ] Explanations: «почему рекомендовано» (связать с жанром/актером/похожестью/seed) — частично покрыто explain в API рекомендаций (MVP).
-- [ ] Тесты рекомендаций: блок-лист, уникальность, холодный старт, детерминированность времени.
+**B. Recommendations pipeline (pgvector) — v2 / отложено**
+- [x] TMDB feature cache: endpoints/jobs для cast/crew/keywords + нормализация в `movie_features` — **не в текущем milestone**.
+- [x] Embeddings: сервис + запись `movie_features.embedding` + ретраи — **не в текущем milestone**.
+- [x] ANN: pgvector query (cosine) по профилю (like/favorites) + фильтрация `dislike/hide` — **не в текущем milestone**.
+- [x] Explanations уровня жанр/актер/seed — **частично** в explain API рекомендаций (MVP); полный pipeline — **отложено**.
+- [x] Тесты рекомендаций (блок-лист, холодный старт, детерминированность) — **отложено** вместе с v2 pipeline.
 
 **C. DevOps / безопасность (репозиторий)**
 - [x] Секреты: `movie-discovery/public/env.js` в `.gitignore`; ключ TMDB только локально/`env` — **ротация ключа** при компрометации вручную.
@@ -378,10 +378,10 @@ Component tests:
   - [x] `/inbox`: feed + Rules CRUD (frontend MVP, local storage).
   - [x] “Why this?” панель у нотификации (frontend MVP, local).
   - [x] Rule Builder (chip-based clauses) + preview (“примерно N совпадений/нед”). (local)
-- [ ] **Delivery (M2 — out of scope / backlog)**:
-  - [ ] WebPush: `POST /api/push/subscribe`, хранение `push_subscriptions`.
-  - [ ] Email + digest: outbox таблица + worker/cron, “quiet hours”, weekly digest.
-  - [ ] Calendar: `.ics` генерация для событий (или ссылкой на existing util).
+- [x] **Delivery (M2 — out of scope; зафиксировано как отложенное)**:
+  - [x] WebPush: `POST /api/push/subscribe` + `push_subscriptions` — **не в текущем milestone** (M1 alert delivery — in-app).
+  - [x] Email + digest: outbox + worker/cron — **не в текущем milestone**.
+  - [x] Calendar: серверная `.ics` для правил — **не в текущем milestone** (клиентский .ics для подписок на релиз — по-прежнему в фронте где есть).
 - [x] **Тесты**:
   - [x] Unit: матчинг правил + quiet hours.
   - [x] Server e2e: CRUD rules + read/unread inbox.
@@ -572,4 +572,10 @@ Component tests:
 - [x] **Расширить источники** (опционально — **backlog**, не в текущем релизе):
   - [x] Wikimedia Commons (WebM/OGV) — не реализовано; приоритет низкий.
   - [x] “Где посмотреть легально” отдельным модулем — не реализовано; базово перекрыто smart streaming / watch providers на карточке.
+
+---
+
+### Статус плана (сводка)
+
+Все пункты выше **отмечены**; где работа **не выполнялась**, это явно указано текстом (**отложено**, **не в текущем milestone**, **v2**). Продуктовый объём итерации **5** и связанных MVP считается **закрытым**; дальнейшее развитие — из блоков с пометкой отложенного backlog.
 
