@@ -9,6 +9,9 @@ import { Component, input } from '@angular/core';
       @if (subtitle(); as s) {
         <p class="empty__subtitle">{{ s }}</p>
       }
+      <div class="empty__actions">
+        <ng-content></ng-content>
+      </div>
     </section>
   `,
   styles: [
@@ -37,6 +40,14 @@ import { Component, input } from '@angular/core';
         line-height: 1.5;
         text-align: left;
         color: var(--text-muted);
+      }
+
+      .empty__actions {
+        margin-top: 1.1rem;
+        display: flex;
+        gap: 0.6rem;
+        justify-content: center;
+        flex-wrap: wrap;
       }
     `,
   ],

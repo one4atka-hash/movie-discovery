@@ -7,6 +7,28 @@ export const routes: Routes = [
       import('./features/movies/feature-search/search.routes').then((r) => r.SEARCH_ROUTES),
   },
   {
+    path: 'decide',
+    loadComponent: () =>
+      import('./features/decision/decision-page.component').then((c) => c.DecisionPageComponent),
+  },
+  {
+    path: 'diary',
+    loadComponent: () =>
+      import('./features/diary/diary-page.component').then((c) => c.DiaryPageComponent),
+  },
+  {
+    path: 'collections',
+    loadComponent: () =>
+      import('./features/collections/collections-page.component').then(
+        (c) => c.CollectionsPageComponent,
+      ),
+  },
+  {
+    path: 'inbox',
+    loadComponent: () =>
+      import('./features/inbox/inbox-page.component').then((c) => c.InboxPageComponent),
+  },
+  {
     path: 'account',
     loadComponent: () =>
       import('./features/auth/account-page.component').then((c) => c.AccountPageComponent),

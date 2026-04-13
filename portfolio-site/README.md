@@ -3,6 +3,7 @@
 This folder will host a standalone portfolio page describing architectural decisions and skills demonstrated across:
 
 - `movie-discovery/` (this repo)
+- `server/` (NestJS API + Postgres/pgvector)
 - future projects to be added later
 
 Planned: lightweight static site (no backend), deployable to Netlify/Vercel/GitHub Pages.

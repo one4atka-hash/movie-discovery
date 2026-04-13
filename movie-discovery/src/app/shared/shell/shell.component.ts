@@ -13,13 +13,21 @@ import { readThemePreference, writeThemePreference } from '@core/browser-prefs';
 import { localeToFlagEmoji } from '@core/locale-flag.util';
 import { TmdbConfigurationService } from '@core/tmdb-configuration.service';
 import { ErrorBannerComponent } from '@shared/ui/error-banner/error-banner.component';
+import { ToastViewportComponent } from '@shared/ui/toast/toast-viewport.component';
 import { ReleaseReminderService } from '@features/notifications/release-reminder.service';
 import { I18nService } from '@shared/i18n/i18n.service';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ErrorBannerComponent],
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    ErrorBannerComponent,
+    ToastViewportComponent,
+  ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

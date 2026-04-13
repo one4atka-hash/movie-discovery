@@ -36,6 +36,9 @@ docker compose up --build
 Then:
 
 - `GET /api/health` → `{ ok: true }`
+- Swagger (set `SWAGGER_ENABLED=1`):
+  - UI: `GET /api/docs`
+  - OpenAPI JSON: `GET /api/docs-json`
 - Auth:
   - `POST /api/auth/register` `{ email, password }`
   - `POST /api/auth/login` `{ email, password }` → `{ token, user }`

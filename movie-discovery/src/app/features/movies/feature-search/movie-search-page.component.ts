@@ -11,7 +11,16 @@ import {
 } from '@angular/core';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, tap } from 'rxjs';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  filter,
+  forkJoin,
+  of,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { ConfigService } from '@core/config.service';
@@ -194,6 +203,49 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
                 role="status"
               >
                 {{ nowPlayingError() }}
+              </p>
+            </section>
+
+            <section class="dashSection" id="home-recs" aria-labelledby="home-recs-title">
+              <div class="dashSection__head">
+                <h2 class="dashSection__title" id="home-recs-title">
+                  {{ i18n.t('home.section.recommendations') }}
+                </h2>
+                <button
+                  type="button"
+                  class="btn btn--icon btn--refresh"
+                  (click)="refreshRecommendations()"
+                  [disabled]="recsLoading()"
+                  [attr.aria-label]="i18n.t('home.recommendationsRefreshAria')"
+                  [title]="i18n.t('home.recommendationsRefresh')"
+                >
+                  <span aria-hidden="true" class="btn__refreshIcon">↻</span>
+                </button>
+              </div>
+              <div class="grid grid--random" *ngIf="recsLoading()">
+                <div
+                  class="skeleton-card"
+                  *ngFor="let _ of randomSkeletonSlots; trackBy: trackByIndex"
+                ></div>
+              </div>
+              <div class="grid grid--random" *ngIf="!recsLoading() && recs().length">
+                <a
+                  class="grid__item"
+                  *ngFor="let m of recs(); trackBy: trackById"
+                  [routerLink]="['/movie', m.id]"
+                >
+                  <app-movie-card [movie]="m" />
+                </a>
+              </div>
+              <p
+                class="muted"
+                *ngIf="!recsLoading() && !recs().length && !recsError()"
+                role="status"
+              >
+                {{ i18n.t('home.recommendationsEmpty') }}
+              </p>
+              <p class="muted" *ngIf="!recsLoading() && recsError()" role="status">
+                {{ recsError() }}
               </p>
             </section>
 
@@ -561,11 +613,46 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
         padding: 1.1rem 1.15rem;
         box-shadow: var(--shadow-xs);
       }
+      .dashSection__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.85rem;
+      }
+
+      .dashSection__head .dashSection__title {
+        margin: 0;
+        flex: 1;
+        min-width: 0;
+      }
+
       .dashSection__title {
         margin: 0 0 0.85rem;
         font-size: 1.08rem;
         font-weight: 600;
         letter-spacing: -0.02em;
+      }
+
+      .btn--icon {
+        padding: 0.45rem 0.55rem;
+        min-width: 2.25rem;
+        min-height: 2.25rem;
+      }
+
+      .btn--refresh {
+        flex-shrink: 0;
+      }
+
+      .btn__refreshIcon {
+        display: inline-block;
+        font-size: 1.15rem;
+        line-height: 1;
+        transition: transform 0.35s ease;
+      }
+
+      .btn--refresh:not(:disabled):hover .btn__refreshIcon {
+        transform: rotate(-180deg);
       }
 
       .muted {
@@ -780,6 +867,10 @@ export class MovieSearchPageComponent {
   private readonly _randomLoading = signal(true);
   private readonly _randomError = signal<string | null>(null);
 
+  private readonly _recs = signal<Movie[]>([]);
+  private readonly _recsLoading = signal(true);
+  private readonly _recsError = signal<string | null>(null);
+
   readonly movies = computed(() => this._movies());
   readonly loading = computed(() => this._loading());
   readonly loadingMore = computed(() => this._loadingMore());
@@ -790,6 +881,9 @@ export class MovieSearchPageComponent {
   readonly randomMovies = computed(() => this._randomMovies());
   readonly randomLoading = computed(() => this._randomLoading());
   readonly randomError = computed(() => this._randomError());
+  readonly recs = computed(() => this._recs());
+  readonly recsLoading = computed(() => this._recsLoading());
+  readonly recsError = computed(() => this._recsError());
   private readonly _subsAll = computed(() => this.subsSvc.mySubscriptions());
   private readonly _favAll = computed(() => this.fav.favorites());
   readonly subsCount = computed(() => this._subsAll().length);
@@ -817,6 +911,7 @@ export class MovieSearchPageComponent {
   constructor() {
     this._draft.set(this.queryControl.value);
     this.loadNowPlaying();
+    this.loadRecommendations();
     this.loadRandomStrip();
     effect(() => {
       this.i18n.tmdbLocale();
@@ -926,6 +1021,7 @@ export class MovieSearchPageComponent {
 
   private reloadAfterLocaleChange(): void {
     this.loadNowPlaying();
+    this.loadRecommendations();
     this.loadRandomStrip();
     const q = this.queryControl.value.trim();
     if (!this._hasSearched() || q.length < 2) return;
@@ -975,6 +1071,10 @@ export class MovieSearchPageComponent {
       });
   }
 
+  refreshRecommendations(): void {
+    this.loadRecommendations();
+  }
+
   private loadRandomStrip(): void {
     this._randomLoading.set(true);
     this._randomError.set(null);
@@ -994,6 +1094,59 @@ export class MovieSearchPageComponent {
         shuffleInPlace(list);
         this._randomMovies.set(list.slice(0, 8));
         this._randomLoading.set(false);
+      });
+  }
+
+  private loadRecommendations(): void {
+    this._recsLoading.set(true);
+    this._recsError.set(null);
+
+    const favorites = this._favAll();
+    if (!favorites.length) {
+      this._recs.set([]);
+      this._recsLoading.set(false);
+      return;
+    }
+
+    const seedIds = favorites
+      .map((m) => m.id)
+      .filter((id) => Number.isFinite(id) && id > 0)
+      .slice(0, 3);
+
+    if (!seedIds.length) {
+      this._recs.set([]);
+      this._recsLoading.set(false);
+      return;
+    }
+
+    forkJoin(
+      seedIds.map((id) =>
+        this.api.getMovieRecommendations(id, 1).pipe(
+          catchError((err: unknown) => {
+            // Keep a single readable error, but don't fail the whole block.
+            this._recsError.set(friendlyHttpErrorMessage(err, 'Рекомендации'));
+            return of(EMPTY_SEARCH_RESPONSE);
+          }),
+        ),
+      ),
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((responses) => {
+        const banned = new Set(seedIds);
+        const out: Movie[] = [];
+        const seen = new Set<number>();
+        for (const res of responses) {
+          for (const m of res.results ?? []) {
+            if (!m?.id || banned.has(m.id) || seen.has(m.id)) continue;
+            seen.add(m.id);
+            out.push(m);
+          }
+        }
+        const withPoster = out.filter((m) => m.poster_path);
+        const pool = withPoster.length >= 8 ? withPoster : out;
+        shuffleInPlace(pool);
+        this._recs.set(pool.slice(0, 8));
+        this._recsLoading.set(false);
       });
   }
 }

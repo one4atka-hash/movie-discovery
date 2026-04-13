@@ -81,6 +81,18 @@ export class MovieService {
     });
   }
 
+  /** Рекомендации TMDB для конкретного фильма (используем для персональных рекомендаций по избранному). */
+  getMovieRecommendations(movieId: number, page = 1): Observable<MovieSearchResponse> {
+    const lang = this.i18n.tmdbLocale();
+    const cacheKey = `recommendations:${lang}:${movieId}:${page}`;
+
+    return this.getOrCreate<MovieSearchResponse>(cacheKey, () => {
+      const params = this.baseParams().set('page', String(page));
+      const url = `${this.config.api.baseUrl}/movie/${movieId}/recommendations`;
+      return this.getJson<MovieSearchResponse>(url, params);
+    });
+  }
+
   getMovie(id: number): Observable<Movie> {
     const lang = this.i18n.tmdbLocale();
     const cacheKey = `movie:${lang}:${id}`;

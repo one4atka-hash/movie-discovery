@@ -27,6 +27,17 @@ export const EnvSchema = z.object({
 
   THROTTLE_TTL_SECONDS: z.coerce.number().int().positive().default(60),
   THROTTLE_LIMIT: z.coerce.number().int().positive().default(30),
+
+  /**
+   * Swagger/OpenAPI docs.
+   * Keep disabled by default (enable explicitly per environment).
+   */
+  SWAGGER_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').toLowerCase())
+    .pipe(z.enum(['', '0', '1', 'false', 'true', 'no', 'yes', 'off', 'on']))
+    .default(''),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

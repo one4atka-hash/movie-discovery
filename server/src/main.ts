@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import { truthy } from './config/env.schema';
 import { HttpException, HttpStatus, ValidationPipe } from '@nestjs/common';
 import { GlobalExceptionFilter } from './common/global-exception.filter';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -32,6 +33,30 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   const config = app.get(ConfigService);
+
+  if (truthy(config.get<string>('SWAGGER_ENABLED'))) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Movie Discovery API')
+      .setDescription('Backend API')
+      .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+        'bearer',
+      )
+      .build();
+
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+    });
+  }
+
   const rawOrigins = (config.get<string>('CORS_ORIGINS') ?? '').trim();
   const allowOrigins = rawOrigins
     ? rawOrigins

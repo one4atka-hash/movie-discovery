@@ -48,7 +48,7 @@ create table if not exists movie_features (
   title text,
   overview text,
   genres jsonb,
-  cast jsonb,
+  "cast" jsonb,
   crew jsonb,
   keywords jsonb,
   lang text,

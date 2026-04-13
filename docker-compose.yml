@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: cinema
       POSTGRES_USER: cinema
@@ -26,6 +26,7 @@ services:
       DB_RUN_MIGRATIONS: "true"
       JWT_SECRET: dev-secret-change-me
       JWT_EXPIRES_IN_SECONDS: "604800"
+      SWAGGER_ENABLED: "1"
       CORS_ORIGINS: http://localhost:4200
       CORS_CREDENTIALS: "true"
       THROTTLE_TTL_SECONDS: "60"
