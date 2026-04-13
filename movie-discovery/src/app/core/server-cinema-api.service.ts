@@ -98,6 +98,15 @@ export class ServerCinemaApiService {
       .pipe(catchError(() => of(null)));
   }
 
+  /** Dev: `POST /api/email/dev/send-test` — requires `DEV_EMAIL_SEND_ENABLED` + SMTP on API. */
+  devEmailSendTest(): Observable<{ ok: boolean; error?: string } | null> {
+    const h = this.authHeaders();
+    if (!h) return of(null);
+    return this.http
+      .post<{ ok: boolean; error?: string }>('/api/email/dev/send-test', {}, { headers: h })
+      .pipe(catchError(() => of(null)));
+  }
+
   getMePublicProfile(): Observable<MePublicProfile | null> {
     const h = this.authHeaders();
     if (!h) return of(null);

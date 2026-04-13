@@ -380,7 +380,7 @@ Component tests:
   - [x] Rule Builder (chip-based clauses) + preview (“примерно N совпадений/нед”). (local)
 - [x] **Delivery (M2 — частично)**:
   - [x] WebPush: `POST /api/push/subscribe` + таблица `push_subscriptions` + `GET /api/push/subscriptions`, `DELETE /api/push/subscriptions/:id` + `GET /api/push/vapid-public` + **исходящая** отправка (`web-push`, dev `POST /api/push/dev/send-self` при `VAPID_*`); **фоновая** — release reminders cron при `channels.webPush`; dev **alerts/run** — push если есть enabled-правило с `webPush`; автоматический matcher правил по каталогу + digest — **backlog** (M1 inbox для правил — по-прежнему in-app + dev sample).
-  - [x] Email: dev `POST /api/email/dev/send-test` (JWT, `DEV_EMAIL_SEND_ENABLED`); **cron release reminders** — plain-text при `channels.email` + `SMTP_*`; digest/outbox для правил — **не в текущем milestone**.
+  - [x] Email: dev `POST /api/email/dev/send-test` (JWT, `DEV_EMAIL_SEND_ENABLED`); **FE Account** — кнопка smoke-теста письма (Server JWT); **cron release reminders** — plain-text при `channels.email` + `SMTP_*`; digest/outbox для правил — **не в текущем milestone**.
   - [x] Calendar: серверная `.ics` для правил — **не в текущем milestone** (клиентский .ics для подписок на релиз — по-прежнему в фронте где есть).
 - [x] **Тесты**:
   - [x] Unit: матчинг правил + quiet hours.
@@ -577,7 +577,7 @@ Component tests:
 
 ### Статус плана (сводка)
 
-**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: FE movie details — серверное напоминание с каналом email; SMTP + dev `POST /api/email/dev/send-test`; cron release reminders — email при `channels.email` + `SMTP_*`; Web Push из dev `alerts/run` при правиле с `channels.webPush`).
+**Последняя полная сверка чеклиста:** 2026-04-13 (обновлено: FE Account — dev SMTP test; FE movie details — серверное напоминание с каналом email; SMTP + dev `POST /api/email/dev/send-test`; cron release reminders — email при `channels.email` + `SMTP_*`; Web Push из dev `alerts/run` при правиле с `channels.webPush`).
 
 Все пункты выше **отмечены**; где работа **не выполнялась**, это явно указано текстом (**отложено**, **не в текущем milestone**, **v2**). Продуктовый объём итерации **5** и связанных MVP считается **закрытым**; дальнейшее развитие — из блоков с пометкой отложенного backlog.
 

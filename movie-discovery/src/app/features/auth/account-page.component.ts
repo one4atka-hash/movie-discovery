@@ -124,6 +124,22 @@ import {
             </div>
 
             <p class="err" *ngIf="exportError()">{{ exportError() }}</p>
+
+            <div class="field" style="margin-top: 0.35rem">
+              <span>{{ i18n.t('account.emailDev.hint') }}</span>
+              <div class="actions" style="margin-top: 0">
+                <button
+                  class="btn"
+                  type="button"
+                  (click)="sendDevTestEmail()"
+                  [disabled]="emailDevBusy()"
+                >
+                  {{ i18n.t('account.emailDev.button') }}
+                </button>
+              </div>
+              <p class="ok" *ngIf="emailDevOk()">{{ emailDevOk() }}</p>
+              <p class="err" *ngIf="emailDevErr()" style="margin-bottom: 0">{{ emailDevErr() }}</p>
+            </div>
           </div>
         </section>
 
@@ -659,6 +675,10 @@ export class AccountPageComponent {
   readonly exportFormat = new FormControl<ExportFormat>('csv', { nonNullable: true });
   readonly exportError = signal<string | null>(null);
 
+  readonly emailDevBusy = signal(false);
+  readonly emailDevOk = signal<string | null>(null);
+  readonly emailDevErr = signal<string | null>(null);
+
   readonly ppSlug = new FormControl('', { nonNullable: true });
   readonly ppEnabled = new FormControl(false, { nonNullable: true });
   readonly ppVisibility = new FormControl<'private' | 'unlisted' | 'public'>('private', {
@@ -763,6 +783,37 @@ export class AccountPageComponent {
       error: (e) => {
         this.exportError.set(e?.message ?? 'Export failed');
         this._busy.set(false);
+      },
+    });
+  }
+
+  sendDevTestEmail(): void {
+    this.emailDevOk.set(null);
+    this.emailDevErr.set(null);
+    const token = this.serverJwt.value.trim();
+    if (!token) {
+      this.emailDevErr.set(this.i18n.t('account.publicProfile.needJwt'));
+      return;
+    }
+    this.storage.set('server.jwt.token.v1', token);
+    this.emailDevBusy.set(true);
+    this.cinemaApi.devEmailSendTest().subscribe({
+      next: (r) => {
+        this.emailDevBusy.set(false);
+        if (!r) {
+          this.emailDevErr.set(this.i18n.t('account.emailDev.failed'));
+          return;
+        }
+        if (r.ok) {
+          this.emailDevOk.set(this.i18n.t('account.emailDev.ok'));
+          return;
+        }
+        const err = r.error ?? '—';
+        this.emailDevErr.set(this.i18n.t('account.emailDev.apiError').replace('{{error}}', err));
+      },
+      error: () => {
+        this.emailDevBusy.set(false);
+        this.emailDevErr.set(this.i18n.t('account.emailDev.failed'));
       },
     });
   }
