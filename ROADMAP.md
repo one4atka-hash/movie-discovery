@@ -419,6 +419,7 @@ Component tests:
 #### 5.5 Decision Mode (“Что смотреть сегодня?”) — уникальный UX
 - [ ] **Frontend-first (M1: solo)**:
   - [x] Роут `/decide` (“Tonight”): каркас + constraints MVP UI.
+  - [x] Shortlist UI: Top 5 / Roulette + выбор победителя (frontend MVP).
   - [ ] Пресеты ограничений (weeknight/date night/family) + “use my services by default”.
   - [ ] Быстрые действия на кандидатах: hide / like / add to watchlist.
 - [ ] **Backend/API (M1)**:
@@ -516,7 +517,8 @@ Component tests:
   - [ ] “Why” генерируется из тех же clause-объектов (переиспользование в inbox).
 - [ ] **Компоненты, которые стоит вынести в shared**:
   - [x] `Button` variants (primary/secondary/ghost/icon/loading), `Card`, `Chip`, `BottomSheet`, `Toast`.
-  - [ ] `Section`, `SegmentedControl`, `Pill/Badge`, `FormField` (label/hint/error slots).
+  - [x] `Section`, `SegmentedControl`, `FormField` (label/hint/error slots).
+  - [ ] `Pill/Badge`.
 - [ ] **Состояния**:
   - [ ] Skeleton loaders для списков и карточек; empty states всегда с CTA (“Add services”, “Create rule”, “Log first watch”, “Import history”).
   - [ ] Errors: коротко что сломалось + retry + контекст (“проверь регион/сервисы”).

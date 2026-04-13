@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.component';
@@ -6,19 +7,29 @@ import { ButtonComponent } from '@shared/ui/button/button.component';
 import { CardComponent } from '@shared/ui/card/card.component';
 import { ChipComponent } from '@shared/ui/chip/chip.component';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
+import { SegmentedControlComponent } from '@shared/ui/segmented-control/segmented-control.component';
+import { SectionComponent } from '@shared/ui/section/section.component';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { DecisionService } from './decision.service';
+import type { Movie } from '@features/movies/data-access/models/movie.model';
+import { pickWinner, type DecisionConstraints, type DecisionMode } from './decision.util';
+import { MovieCardComponent } from '@features/movies/ui/movie-card/movie-card.component';
 
 @Component({
   selector: 'app-decision-page',
   standalone: true,
   imports: [
+    CommonModule,
     RouterLink,
     EmptyStateComponent,
     CardComponent,
     ChipComponent,
     ButtonComponent,
     BottomSheetComponent,
+    SegmentedControlComponent,
+    SectionComponent,
+    MovieCardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -62,7 +73,7 @@ import { ToastService } from '@shared/ui/toast/toast.service';
         <div class="actions" cardActions>
           <app-button variant="ghost" (click)="reset()">Сбросить</app-button>
           <app-button variant="secondary" (click)="openMore.set(true)">Ещё…</app-button>
-          <app-button (click)="build()">Собрать shortlist</app-button>
+          <app-button [loading]="loading()" (click)="build()">Собрать shortlist</app-button>
         </div>
       </app-card>
 
@@ -85,11 +96,47 @@ import { ToastService } from '@shared/ui/toast/toast.service';
         </div>
       </app-bottom-sheet>
 
+      <app-section title="Shortlist" *ngIf="candidates().length">
+        <div sectionActions>
+          <app-segmented
+            ariaLabel="Decision mode"
+            [options]="modeOptions"
+            [value]="mode()"
+            (select)="mode.set($event)"
+          />
+          <app-button variant="secondary" (click)="pick()">Выбрать</app-button>
+        </div>
+
+        <div class="grid">
+          <a
+            class="grid__item"
+            *ngFor="let m of shortlist(); trackBy: trackByMovieId"
+            [routerLink]="['/movie', m.id]"
+          >
+            <app-movie-card [movie]="m" />
+          </a>
+        </div>
+      </app-section>
+
+      <app-card title="Победитель" *ngIf="winner() as w">
+        <div class="winner">
+          <div class="winner__left">
+            <strong class="winner__title">{{ w.title }}</strong>
+            <p class="muted" *ngIf="w.overview">{{ w.overview }}</p>
+          </div>
+          <div class="winner__actions">
+            <app-button variant="secondary" [routerLink]="['/movie', w.id]">Открыть</app-button>
+            <app-button variant="ghost" (click)="pick()">Перевыбрать</app-button>
+          </div>
+        </div>
+      </app-card>
+
       <app-empty-state
-        title="Shortlist пока не реализован"
-        subtitle="Следующий шаг: карточки кандидатов + режим Roulette/Top 5 + экран Winner."
+        *ngIf="!candidates().length && !loading()"
+        title="Пока пусто"
+        subtitle="Нажмите “Собрать shortlist”. Чем больше избранного — тем точнее рекомендации."
       >
-        <a class="btn" routerLink="/">← {{ i18n.t('nav.home') }}</a>
+        <app-button variant="secondary" [routerLink]="['/']">Открыть поиск</app-button>
       </app-empty-state>
     </section>
   `,
@@ -133,6 +180,38 @@ import { ToastService } from '@shared/ui/toast/toast.service';
         flex-wrap: wrap;
         margin-top: 0.9rem;
       }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.9rem;
+        justify-items: start;
+      }
+      .grid__item {
+        width: 100%;
+        max-width: 220px;
+        text-decoration: none;
+        color: inherit;
+      }
+      .grid__item:hover {
+        transform: translateY(-2px);
+        transition: transform 0.18s ease;
+      }
+      .winner {
+        display: flex;
+        gap: 0.9rem;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .winner__title {
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+      .winner__actions {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+      }
       .btn {
         border-radius: var(--radius-full);
         border: 1px solid var(--border-subtle);
@@ -161,10 +240,30 @@ import { ToastService } from '@shared/ui/toast/toast.service';
 export class DecisionPageComponent {
   readonly i18n = inject(I18nService);
   readonly toast = inject(ToastService);
+  private readonly decision = inject(DecisionService);
 
   readonly openMore = signal(false);
   readonly maxMinutes = signal<number | null>(110);
   readonly genre = signal<'thriller' | 'comedy' | 'drama' | null>(null);
+  readonly mode = signal<DecisionMode>('top5');
+  readonly candidates = signal<Movie[]>([]);
+  readonly winner = signal<Movie | null>(null);
+  readonly loading = signal(false);
+
+  readonly modeOptions = [
+    { value: 'top5' as const, label: 'Top 5' },
+    { value: 'roulette' as const, label: 'Roulette' },
+  ];
+
+  readonly constraints = computed<DecisionConstraints>(() => ({
+    maxMinutes: this.maxMinutes(),
+    genre: this.genre(),
+  }));
+
+  readonly shortlist = computed(() => {
+    const arr = this.candidates();
+    return this.mode() === 'top5' ? arr.slice(0, 5) : arr.slice(0, 12);
+  });
 
   setMaxMinutes(v: number): void {
     this.maxMinutes.set(this.maxMinutes() === v ? null : v);
@@ -177,10 +276,48 @@ export class DecisionPageComponent {
   reset(): void {
     this.maxMinutes.set(null);
     this.genre.set(null);
+    this.candidates.set([]);
+    this.winner.set(null);
     this.toast.show('info', 'Сброшено', 'Ограничения очищены');
   }
 
   build(): void {
-    this.toast.show('success', 'Собрано', 'Shortlist появится в следующей итерации UI');
+    if (this.loading()) return;
+    this.loading.set(true);
+    this.winner.set(null);
+    this.decision.buildCandidates(this.constraints()).subscribe({
+      next: (arr) => {
+        this.candidates.set(arr);
+        if (!arr.length) {
+          this.toast.show(
+            'warning',
+            'Пусто',
+            'Попробуйте убрать ограничения или добавьте избранное',
+          );
+        } else {
+          this.toast.show('success', 'Готово', `Кандидатов: ${arr.length}`);
+        }
+      },
+      error: () => {
+        this.toast.show('error', 'Ошибка', 'Не удалось собрать кандидатов');
+      },
+      complete: () => {
+        this.loading.set(false);
+      },
+    });
+  }
+
+  pick(): void {
+    const w = pickWinner(this.shortlist(), this.mode());
+    this.winner.set(w);
+    if (!w) {
+      this.toast.show('warning', 'Некого выбирать', 'Сначала соберите shortlist');
+      return;
+    }
+    this.toast.show('success', 'Выбор сделан', w.title);
+  }
+
+  trackByMovieId(_: number, m: Movie): number {
+    return m.id;
   }
 }
