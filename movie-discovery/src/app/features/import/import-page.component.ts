@@ -77,6 +77,13 @@ const TOKEN_KEY = 'server.jwt.token.v1';
             </p>
           }
 
+          @if (previewSummary(); as s) {
+            <p class="meta">
+              <b>Preview</b>: total {{ s.totalRows }}, ok {{ s.okRows }}, conflict
+              {{ s.conflictRows }}, error {{ s.errorRows }}
+            </p>
+          }
+
           @if (err(); as e) {
             <p class="err" role="alert">{{ e }}</p>
           }
@@ -360,6 +367,14 @@ export class ImportPageComponent {
   private readonly _err = signal<string | null>(null);
   readonly err = this._err.asReadonly();
 
+  private readonly _previewSummary = signal<{
+    totalRows: number;
+    okRows: number;
+    conflictRows: number;
+    errorRows: number;
+  } | null>(null);
+  readonly previewSummary = this._previewSummary.asReadonly();
+
   private readonly _rows = signal<
     { rowN: number; status: string; mapped: unknown; error: string | null }[]
   >([]);
@@ -423,6 +438,7 @@ export class ImportPageComponent {
         next: (r) => {
           this._jobId.set(r.id);
           this._jobStatus.set('uploaded');
+          this._previewSummary.set(null);
           this._rows.set([]);
           this._rowsTotal.set(0);
           this._rowsOffset.set(0);
@@ -443,8 +459,14 @@ export class ImportPageComponent {
     this.storage.set(TOKEN_KEY, token);
     this._busy.set(true);
     this.api.preview(token, id).subscribe({
-      next: () => {
+      next: (r) => {
         this._jobStatus.set('preview');
+        this._previewSummary.set({
+          totalRows: r.totalRows,
+          okRows: r.okRows,
+          conflictRows: r.conflictRows,
+          errorRows: r.errorRows,
+        });
         this._busy.set(false);
         this.loadRows();
         this.loadConflicts();

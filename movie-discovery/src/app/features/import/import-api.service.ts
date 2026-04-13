@@ -26,6 +26,7 @@ export interface ImportPreviewResponse {
   readonly ok: true;
   readonly totalRows: number;
   readonly okRows: number;
+  readonly conflictRows: number;
   readonly errorRows: number;
 }
 
