@@ -387,10 +387,10 @@ Component tests:
 
 #### 5.3 Movie Diary (журнал просмотров как у Letterboxd/Trakt)
 - [ ] **Backend/API (M1: CRUD)**:
-  - [ ] `GET /api/diary?from&to`, `POST/PUT/DELETE /api/diary/:id`.
-  - [ ] Поля: `watchedAt`, `location`, `providerKey?`, `rating?`, `note?`, `tags?`.
+  - [x] `GET /api/diary?from&to`, `POST/PUT/DELETE /api/diary/:id`.
+  - [x] Поля: `watchedAt`, `location`, `providerKey?`, `rating?`, `note?`, `tags?`.
 - [ ] **DB (M1)**:
-  - [ ] `diary_entries(id, user_id, tmdb_id, watched_at, location, provider_key, rating, note, tags[], created_at, updated_at)` + индексы.
+  - [x] `diary_entries(id, user_id, tmdb_id, watched_at, location, provider_key, rating, note, tags[], created_at, updated_at)` + индексы.
 - [ ] **Frontend (M1)**:
   - [x] Роут `/diary`: список записей (frontend MVP, local storage).
   - [x] “Log watch” bottom sheet: create/edit/delete (frontend MVP).
@@ -398,7 +398,7 @@ Component tests:
   - [ ] `GET /api/diary/stats?year=...` + `GET /api/diary/export?format=...`.
   - [ ] `POST /api/diary/import` (через общий import pipeline 5.7).
 - [ ] **Тесты**:
-  - [ ] Server e2e: CRUD + фильтры по датам.
+  - [x] Server e2e: CRUD + фильтры по датам.
   - [ ] FE: add/edit/delete entry; stats/empty state.
 
 #### 5.4 Watch Progress (прогресс и состояния, проще чем у Trakt)
