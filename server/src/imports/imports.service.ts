@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { z } from 'zod';
 
 import { DbService } from '../db/db.service';
 
@@ -77,13 +78,54 @@ export class ImportsService {
     const r = rows[0];
     if (!r) throw new NotFoundException('Import job not found');
 
-    // MVP: validate payload presence; real parsing/apply comes next iteration.
     if (!r.payload || !r.payload.trim()) {
       await this.db.exec(
         `update import_jobs set status = 'failed', error = 'Missing payload', updated_at = now()
          where id = $1 and user_id = $2`,
         [id, userId],
       );
+      return { ok: true };
+    }
+
+    if (r.kind === 'diary' && r.format === 'json') {
+      const parsed = ImportDiaryJsonSchema.safeParse(safeJsonParse(r.payload));
+      if (!parsed.success) {
+        await this.db.exec(
+          `update import_jobs set status = 'failed', error = 'Invalid diary JSON', updated_at = now()
+           where id = $1 and user_id = $2`,
+          [id, userId],
+        );
+        return { ok: true };
+      }
+
+      const items = parsed.data.items;
+      for (const it of items) {
+        await this.db.exec(
+          `insert into diary_entries(user_id, tmdb_id, title, watched_at, location, provider_key, rating, tags, note)
+           values ($1, $2, $3, $4::date, $5, $6, $7, $8::jsonb, $9)`,
+          [
+            userId,
+            it.tmdbId ?? null,
+            it.title,
+            it.watchedAt,
+            it.location,
+            it.providerKey ?? null,
+            it.rating ?? null,
+            it.tags ? JSON.stringify(it.tags) : null,
+            it.note ?? null,
+          ],
+        );
+      }
+
+      await this.db.exec(
+        `update import_jobs
+         set status = 'applied', error = null,
+             meta = jsonb_set(coalesce(meta, '{}'::jsonb), '{applied}', $3::jsonb, true),
+             updated_at = now()
+         where id = $1 and user_id = $2`,
+        [id, userId, JSON.stringify({ kind: 'diary', items: items.length })],
+      );
+
       return { ok: true };
     }
 
@@ -94,5 +136,36 @@ export class ImportsService {
       [id, userId],
     );
     return { ok: true };
+  }
+}
+
+const ImportDiaryJsonSchema = z.object({
+  items: z
+    .array(
+      z
+        .object({
+          tmdbId: z.number().int().positive().optional().nullable(),
+          title: z.string().trim().min(1).max(200),
+          watchedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          location: z.enum(['cinema', 'streaming', 'home']),
+          providerKey: z.string().trim().max(80).optional().nullable(),
+          rating: z.number().min(0).max(10).optional().nullable(),
+          tags: z
+            .array(z.string().trim().min(1).max(40))
+            .max(30)
+            .optional()
+            .nullable(),
+          note: z.string().max(2000).optional().nullable(),
+        })
+        .strict(),
+    )
+    .max(500),
+});
+
+function safeJsonParse(s: string): unknown {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
   }
 }

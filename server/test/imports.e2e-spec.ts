@@ -83,6 +83,50 @@ describe('Imports (e2e)', () => {
     expect(got.body).toMatchObject({ id, status: 'applied' });
   });
 
+  it('diary json import applies items into /api/diary (MVP)', async () => {
+    const token = await registerAndGetToken(app);
+
+    const created = await request(app.getHttpServer())
+      .post('/api/imports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        kind: 'diary',
+        format: 'json',
+        payload: JSON.stringify({
+          items: [
+            {
+              tmdbId: 550,
+              title: 'Fight Club',
+              watchedAt: '2026-01-10',
+              location: 'home',
+              rating: 9,
+              tags: ['classic'],
+              note: null,
+            },
+          ],
+        }),
+      })
+      .expect(201);
+    const id = (created.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/apply`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
+
+    const list = await request(app.getHttpServer())
+      .get('/api/diary')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const items = (list.body as { items: unknown[] }).items as {
+      tmdbId?: number;
+      title?: string;
+    }[];
+    expect(
+      items.some((x) => x.tmdbId === 550 && x.title === 'Fight Club'),
+    ).toBe(true);
+  });
+
   afterEach(async () => {
     await app.close();
   });
