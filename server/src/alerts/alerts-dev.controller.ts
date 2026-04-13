@@ -3,8 +3,14 @@ import { Controller, Post, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, type AuthedUser } from '../auth/current-user.decorator';
-import { NotificationsService } from './notifications.service';
+import { PushDeliveryService } from '../push/push-delivery.service';
 import { truthy } from '../config/env.schema';
+import { AlertRulesService } from './alert-rules.service';
+import {
+  NotificationsService,
+  SAMPLE_ALERT_BODY,
+  SAMPLE_ALERT_TITLE,
+} from './notifications.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('alerts')
@@ -12,6 +18,8 @@ export class AlertsDevController {
   constructor(
     private readonly notifications: NotificationsService,
     private readonly config: ConfigService,
+    private readonly rules: AlertRulesService,
+    private readonly pushDelivery: PushDeliveryService,
   ) {}
 
   @Post('run')
@@ -21,6 +29,16 @@ export class AlertsDevController {
       return { ok: false, error: 'Disabled' };
     }
     await this.notifications.insertSample(u.id);
+    if (
+      this.pushDelivery.vapidConfigured() &&
+      (await this.rules.userHasEnabledWebPush(u.id))
+    ) {
+      await this.pushDelivery.sendToUser(
+        u.id,
+        SAMPLE_ALERT_TITLE,
+        SAMPLE_ALERT_BODY,
+      );
+    }
     return { ok: true };
   }
 }

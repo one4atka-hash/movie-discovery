@@ -113,4 +113,18 @@ export class AlertRulesService {
     }
     return out;
   }
+
+  /** True if the user has at least one enabled rule with `channels.webPush`. */
+  async userHasEnabledWebPush(userId: string): Promise<boolean> {
+    const rows = await this.db.query<{ ok: boolean }>(
+      `select exists(
+         select 1 from alert_rules
+         where user_id = $1
+           and enabled = true
+           and coalesce((channels->>'webPush')::boolean, false) = true
+       ) as ok`,
+      [userId],
+    );
+    return Boolean(rows[0]?.ok);
+  }
 }

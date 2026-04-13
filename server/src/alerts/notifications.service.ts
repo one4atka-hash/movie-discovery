@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 
 import { DbService } from '../db/db.service';
 
+/** Shared with dev alert run + optional Web Push payload. */
+export const SAMPLE_ALERT_TITLE = 'Sample alert';
+export const SAMPLE_ALERT_BODY = 'Dev-only sample notification';
+
 export type NotificationRow = {
   id: string;
   type: 'info' | 'release' | 'availability' | 'digest';
@@ -53,8 +57,8 @@ export class NotificationsService {
   async insertSample(userId: string): Promise<void> {
     await this.db.exec(
       `insert into notifications(user_id, type, title, body, payload)
-       values ($1, 'info', 'Sample alert', 'Dev-only sample notification', '{"why":"manual run"}'::jsonb)`,
-      [userId],
+       values ($1, 'info', $2, $3, '{"why":"manual run"}'::jsonb)`,
+      [userId, SAMPLE_ALERT_TITLE, SAMPLE_ALERT_BODY],
     );
   }
 
