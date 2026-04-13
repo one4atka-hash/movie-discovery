@@ -48,7 +48,7 @@ Then:
   - `GET/POST/DELETE /api/subscriptions`
   - `GET/POST /api/feedback`
   - Push: `GET /api/push/vapid-public` (VAPID public key, optional); JWT: `POST /api/push/subscribe`, `GET /api/push/subscriptions`, `DELETE /api/push/subscriptions/:id`; dev (JWT + `DEV_PUSH_SEND_ENABLED`): `POST /api/push/dev/send-self`; outbound Web Push via `web-push` when `VAPID_*` is set — from **release-reminders** cron (`channels.webPush`) and dev **`POST /api/alerts/run`** if an enabled alert rule has `channels.webPush`
-  - Email (SMTP): set `SMTP_HOST` (and optional `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`); dev (JWT + `DEV_EMAIL_SEND_ENABLED`): `POST /api/email/dev/send-test` — plain-text smoke to the JWT user’s email (release/digest email from cron/outbox is still backlog)
+  - Email (SMTP): set `SMTP_HOST` (and optional `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`); dev (JWT + `DEV_EMAIL_SEND_ENABLED`): `POST /api/email/dev/send-test` — plain-text smoke to the JWT user’s email; **release-reminders** cron also sends plain-text email when a reminder has `channels.email` (digest/outbox for alert rules — still backlog)
 - `GET /api/recommendations` (MVP stub payload)
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.

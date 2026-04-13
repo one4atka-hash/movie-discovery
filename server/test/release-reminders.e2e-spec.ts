@@ -278,6 +278,55 @@ describe('Release reminders (e2e)', () => {
     fetchSpy.mockRestore();
   });
 
+  it('dev tick enqueues nothing when only email channel and SMTP not configured', async () => {
+    const token = await registerAndGetToken(app);
+    const tmdbId = 7_300_000 + Math.floor(Math.random() * 99_000);
+
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            id: tmdbId,
+            results: [
+              {
+                iso_3166_1: 'US',
+                release_dates: [{ type: 3, release_date: '2026-04-20' }],
+              },
+            ],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    );
+
+    await request(app.getHttpServer())
+      .get(`/api/movies/${tmdbId}/releases`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/release-reminders')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        tmdbId,
+        mediaType: 'movie',
+        reminderType: 'theatrical',
+        window: { daysBefore: 7 },
+        channels: { inApp: false, email: true },
+      })
+      .expect(201);
+
+    const tick = await request(app.getHttpServer())
+      .post('/api/release-reminders/dev/tick')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ todayYmd: '2026-04-13' })
+      .expect(200);
+
+    expect((tick.body as { enqueued: number }).enqueued).toBe(0);
+
+    fetchSpy.mockRestore();
+  });
+
   afterEach(async () => {
     await app.close();
   });

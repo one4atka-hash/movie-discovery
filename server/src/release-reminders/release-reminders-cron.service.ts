@@ -12,6 +12,7 @@ import { isInQuietHours } from '../alerts/alerts-matcher';
 import { NotificationsService } from '../alerts/notifications.service';
 import { truthy } from '../config/env.schema';
 import { DbService } from '../db/db.service';
+import { EmailSmtpService } from '../email/email-smtp.service';
 import { PushDeliveryService } from '../push/push-delivery.service';
 
 import { releaseDateYmdFromSnapshot } from './release-dates-from-snapshot.util';
@@ -48,6 +49,7 @@ export class ReleaseRemindersCronService
     private readonly notifications: NotificationsService,
     private readonly alertRules: AlertRulesService,
     private readonly pushDelivery: PushDeliveryService,
+    private readonly emailSmtp: EmailSmtpService,
   ) {}
 
   onModuleInit(): void {
@@ -68,7 +70,8 @@ export class ReleaseRemindersCronService
   }
 
   /**
-   * Evaluates all reminders against cached TMDB snapshots and enqueues in-app notifications.
+   * Evaluates reminders against cached TMDB snapshots: in-app notifications, optional Web Push,
+   * optional email (when `SMTP_HOST` is set and `channels.email`).
    * @param todayYmdOverride for tests / dev tick (UTC YYYY-MM-DD).
    */
   async tick(
@@ -94,6 +97,17 @@ export class ReleaseRemindersCronService
     const quietByUser =
       await this.alertRules.getEffectiveQuietHoursForUsers(userIds);
 
+    const emailByUser = new Map<string, string>();
+    if (userIds.length) {
+      const emailRows = await this.db.query<{ id: string; email: string }>(
+        `select id, email from users where id = any($1::uuid[])`,
+        [userIds],
+      );
+      for (const e of emailRows) {
+        emailByUser.set(e.id, e.email);
+      }
+    }
+
     let enqueued = 0;
     for (const row of rows) {
       const win = WindowShape.safeParse(row.reminder_window);
@@ -102,7 +116,8 @@ export class ReleaseRemindersCronService
       const ch = row.channels ?? {};
       const wantsInApp = Boolean(ch.inApp);
       const wantsWebPush = Boolean(ch.webPush);
-      if (!wantsInApp && !wantsWebPush) continue;
+      const wantsEmail = Boolean(ch.email);
+      if (!wantsInApp && !wantsWebPush && !wantsEmail) continue;
 
       if (!row.payload) continue;
 
@@ -137,7 +152,12 @@ export class ReleaseRemindersCronService
         continue;
       }
 
-      if (!wantsInApp && wantsWebPush && !this.pushDelivery.vapidConfigured()) {
+      const canPush = wantsWebPush && this.pushDelivery.vapidConfigured();
+      const toEmail = emailByUser.get(row.user_id)?.trim() ?? '';
+      const canEmail =
+        wantsEmail && this.emailSmtp.isConfigured() && Boolean(toEmail);
+
+      if (!wantsInApp && !canPush && !canEmail) {
         continue;
       }
 
@@ -172,7 +192,7 @@ export class ReleaseRemindersCronService
         );
       }
 
-      if (wantsWebPush && this.pushDelivery.vapidConfigured()) {
+      if (canPush) {
         const out = await this.pushDelivery.sendToUser(
           row.user_id,
           title,
@@ -181,6 +201,21 @@ export class ReleaseRemindersCronService
         if (out.errors.length) {
           this.log.warn(
             `Web Push for user ${row.user_id} reminder ${row.id}: ${out.errors.join('; ')}`,
+          );
+        }
+      }
+
+      if (canEmail) {
+        try {
+          await this.emailSmtp.sendMail({
+            to: toEmail,
+            subject: title,
+            text: body,
+          });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          this.log.warn(
+            `Email for user ${row.user_id} reminder ${row.id}: ${msg}`,
           );
         }
       }

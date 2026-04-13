@@ -138,7 +138,7 @@
             <li>Backend: Web Push — <code>GET /api/push/vapid-public</code>, хранение подписок (<code>POST /api/push/subscribe</code>, <code>GET/DELETE …/push/subscriptions</code>)</li>
             <li>Frontend: при Server JWT + VAPID на API — синхронизация Push-подписки с бэкендом при сохранении локального напоминания о релизе с каналом web push (<code>public/sw.js</code> + <code>ServerPushSyncService</code>); SW обрабатывает <code>push</code> (показ уведомления из JSON)</li>
             <li>Backend: исходящий Web Push через <code>web-push</code> — dev <code>POST /api/push/dev/send-self</code>, cron release reminders и dev <code>POST /api/alerts/run</code> (если enabled-правило с web push) при VAPID</li>
-            <li>Backend: минимальный SMTP (<code>nodemailer</code>, <code>SMTP_*</code>) — dev <code>POST /api/email/dev/send-test</code> (JWT, <code>DEV_EMAIL_SEND_ENABLED</code>); digest/outbox по email — backlog</li>
+            <li>Backend: SMTP (<code>nodemailer</code>, <code>SMTP_*</code>) — dev <code>POST /api/email/dev/send-test</code> (JWT, <code>DEV_EMAIL_SEND_ENABLED</code>); cron release reminders — письмо при <code>channels.email</code>; digest/outbox по правилам — backlog</li>
             <li>Backend: Movie editions (GET /api/movies/:tmdbId/editions) — эвристика по TMDB release types + таблица movie_editions для ручных меток</li>
             <li>Frontend: Movie details Timeline (server release_dates) + server release reminders (in-app + optional Web Push channel); Inbox lists server reminders</li>
             <li>Backend: Public profiles (GET/PUT /api/me/public-profile, GET /api/u/:slug, privacy sections)</li>
