@@ -463,7 +463,7 @@ Component tests:
   - [ ] API: `GET /api/exports?kind=...&format=csv|json` (diary/watchlist/ratings).
   - [ ] FE: “Export my data” в профиле + shareable ссылки на файлы (если нужно).
 - [ ] **Тесты**:
-  - [ ] Unit: парсеры CSV (generic + 1 популярный формат).
+  - [x] Unit: парсеры CSV (generic + 1 популярный формат).
   - [x] e2e (server): upload → apply → данные появились в diary.
   - [x] e2e (server): upload → apply → данные появились в watch-state.
   - [x] e2e (server): upload → apply → данные появились в favorites.
