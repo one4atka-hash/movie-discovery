@@ -38,6 +38,17 @@ export const EnvSchema = z.object({
     .transform((v) => (v ?? '').toLowerCase())
     .pipe(z.enum(['', '0', '1', 'false', 'true', 'no', 'yes', 'off', 'on']))
     .default(''),
+
+  /**
+   * Dev-only endpoint to trigger alerts generation for current user.
+   * Keep disabled by default.
+   */
+  DEV_ALERTS_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').toLowerCase())
+    .pipe(z.enum(['', '0', '1', 'false', 'true', 'no', 'yes', 'off', 'on']))
+    .default(''),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

@@ -365,13 +365,13 @@ Component tests:
 
 #### 5.2 Smart Alerts 2.0 (умные уведомления с правилами)
 - [ ] **Backend/API (M1: rules + inbox feed)**:
-  - [ ] CRUD: `GET/POST/PUT/DELETE /api/alert-rules`.
-  - [ ] Inbox: `GET /api/notifications`, `POST /api/notifications/:id/read`.
-  - [ ] (dev-only) `POST /api/alerts/run` (прогон правил вручную для разработки).
-  - [ ] DTO минимально: `filters{minRating, genres, maxRuntime, languages, providerKeys}`, `channels{inApp, webPush, email, calendar}`, `quietHours{start,end,tz}`.
+  - [x] CRUD: `GET/POST/DELETE /api/alert-rules`. (PUT via POST upsert)
+  - [x] Inbox: `GET /api/notifications`, `POST /api/notifications/:id/read`.
+  - [x] (dev-only) `POST /api/alerts/run` (вкл. через `DEV_ALERTS_ENABLED`).
+  - [x] DTO минимально: `filters{minRating, genres, maxRuntime, languages, providerKeys}`, `channels{inApp, webPush, email, calendar}`, `quietHours{start,end,tz}`.
 - [ ] **DB (M1)**:
-  - [ ] `alert_rules(... filters jsonb, channels jsonb, quiet_hours jsonb ...)`.
-  - [ ] `notifications(... payload jsonb, read_at, rule_id ...)`.
+  - [x] `alert_rules(... filters jsonb, channels jsonb, quiet_hours jsonb ...)`.
+  - [x] `notifications(... payload jsonb, read_at, rule_id ...)`.
 - [ ] **Frontend (M1)**:
   - [x] `/inbox`: feed + Rules CRUD (frontend MVP, local storage).
   - [x] “Why this?” панель у нотификации (frontend MVP, local).

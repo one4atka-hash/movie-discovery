@@ -15,6 +15,7 @@ import { FavoritesModule } from './favorites/favorites.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
+import { AlertsModule } from './alerts/alerts.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
     FeedbackModule,
     SubscriptionsModule,
     RecommendationsModule,
+    AlertsModule,
   ],
   controllers: [AppController],
   providers: [
