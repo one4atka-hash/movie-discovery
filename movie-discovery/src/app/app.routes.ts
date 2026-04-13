@@ -39,6 +39,11 @@ export const routes: Routes = [
       import('./features/auth/account-page.component').then((c) => c.AccountPageComponent),
   },
   {
+    path: 'import',
+    loadComponent: () =>
+      import('./features/import/import-page.component').then((c) => c.ImportPageComponent),
+  },
+  {
     path: 'search',
     pathMatch: 'full',
     redirectTo: '',
