@@ -12,11 +12,22 @@ import { I18nService } from '@shared/i18n/i18n.service';
 import { tmdbImg } from '@core/tmdb-images';
 import { StreamingPrefsService } from '@features/streaming/streaming-prefs.service';
 import { BadgeComponent } from '@shared/ui/badge/badge.component';
+import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.component';
+import { ChipComponent } from '@shared/ui/chip/chip.component';
+import { StreamingCatalogService } from '@features/streaming/streaming-catalog.service';
 
 @Component({
   selector: 'app-account-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MovieCardComponent, BadgeComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    MovieCardComponent,
+    BadgeComponent,
+    BottomSheetComponent,
+    ChipComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -161,6 +172,7 @@ import { BadgeComponent } from '@shared/ui/badge/badge.component';
               <button class="btn btn--primary" type="button" (click)="addProvider()">
                 Добавить
               </button>
+              <button class="btn" type="button" (click)="openCatalog()">Каталог</button>
             </div>
           </div>
 
@@ -182,6 +194,42 @@ import { BadgeComponent } from '@shared/ui/badge/badge.component';
           </p>
         </div>
       </section>
+
+      <app-bottom-sheet
+        [open]="catalogOpen()"
+        title="Каталог провайдеров"
+        ariaLabel="Streaming providers catalog"
+        (closed)="catalogOpen.set(false)"
+      >
+        <p class="muted">
+          Поиск по каталогу TMDB для региона <strong>{{ myRegion() }}</strong
+          >. Если сервер не настроен (TMDB key), можно добавить вручную.
+        </p>
+
+        <div class="actions">
+          <input
+            class="input"
+            [formControl]="catalogQuery"
+            placeholder="Поиск (например, Netflix)"
+            aria-label="Provider search"
+          />
+          <button class="btn" type="button" (click)="reloadCatalog()">Обновить</button>
+        </div>
+
+        <p class="muted" *ngIf="catalogError()">{{ catalogError() }}</p>
+
+        <div class="catalog" *ngIf="catalogVisible().length">
+          <app-chip
+            *ngFor="let p of catalogVisible(); trackBy: trackByProviderId"
+            [selected]="isProviderSelected(p.name)"
+            (clicked)="toggleProviderFromCatalog(p.name)"
+          >
+            {{ p.name }}
+          </app-chip>
+        </div>
+
+        <p class="muted" *ngIf="!catalogError() && !catalogVisible().length">Ничего не найдено.</p>
+      </app-bottom-sheet>
 
       <section class="account-block" id="account-favorites" aria-labelledby="account-fav-title">
         <h2 class="account-block__title" id="account-fav-title">
@@ -288,6 +336,12 @@ import { BadgeComponent } from '@shared/ui/badge/badge.component';
         flex-wrap: wrap;
         gap: 0.6rem;
         margin-top: 0.9rem;
+      }
+      .catalog {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-top: 0.75rem;
       }
       .btn {
         border-radius: 9999px;
@@ -434,6 +488,7 @@ export class AccountPageComponent {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly streamingPrefs = inject(StreamingPrefsService);
+  private readonly streamingCatalog = inject(StreamingCatalogService);
   private readonly router = inject(Router);
   private readonly subsSvc = inject(ReleaseSubscriptionsService);
   private readonly fav = inject(FavoritesService);
@@ -479,8 +534,39 @@ export class AccountPageComponent {
   readonly myProviders = computed(() => this.streamingPrefs.providers());
   readonly providerName = new FormControl('', { nonNullable: true });
 
+  readonly catalogOpen = signal(false);
+  readonly catalogQuery = new FormControl('', { nonNullable: true });
+  readonly catalogItems = signal<readonly { id: number; name: string }[]>([]);
+  readonly catalogError = signal<string | null>(null);
+
+  readonly catalogVisible = computed(() => {
+    const q = this.catalogQuery.value.trim().toLowerCase();
+    const items = this.catalogItems();
+    if (!q) return items.slice(0, 40);
+    return items.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 40);
+  });
+
   setMyRegion(v: string): void {
     this.streamingPrefs.setRegion(v);
+  }
+
+  openCatalog(): void {
+    this.catalogOpen.set(true);
+    if (this.catalogItems().length) return;
+    this.reloadCatalog();
+  }
+
+  reloadCatalog(): void {
+    this.catalogError.set(null);
+    this.streamingCatalog.listProviders(this.myRegion()).subscribe({
+      next: (items) => {
+        this.catalogItems.set(items.map((p) => ({ id: p.id, name: p.name })));
+      },
+      error: () => {
+        this.catalogError.set('Каталог недоступен. Проверьте настройки сервера (TMDB key).');
+        this.catalogItems.set([]);
+      },
+    });
   }
 
   addProvider(): void {
@@ -490,8 +576,27 @@ export class AccountPageComponent {
     this.providerName.setValue('');
   }
 
+  isProviderSelected(name: string): boolean {
+    const n = name.trim().toLowerCase();
+    return this.myProviders()
+      .map((p) => p.trim().toLowerCase())
+      .some((p) => p === n);
+  }
+
+  toggleProviderFromCatalog(name: string): void {
+    if (this.isProviderSelected(name)) {
+      this.removeProvider(name);
+      return;
+    }
+    this.streamingPrefs.addProvider(name);
+  }
+
   removeProvider(name: string): void {
     this.streamingPrefs.removeProvider(name);
+  }
+
+  trackByProviderId(_: number, p: { id: number; name: string }): number {
+    return p.id;
   }
 
   async doLogin(): Promise<void> {

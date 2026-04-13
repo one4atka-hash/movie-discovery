@@ -350,6 +350,7 @@ Component tests:
 - [ ] **Frontend (M1)**:
   - [x] UX: “Мои сервисы” в `/account` (frontend MVP, local storage).
   - [x] `StreamingPrefsService` (signals): region + providers list (frontend MVP).
+  - [x] Provider picker: catalog search via `GET /api/streaming/providers?region=...` (best-effort).
   - [x] Movie details: подсветка провайдеров “My” + предпочтительный регион по умолчанию.
 - [x] Discover/Search: фильтр “Только на моих сервисах” + отображение provider chips на карточках. (local)
 - [ ] **Backend/API (M2: availability events)**:
