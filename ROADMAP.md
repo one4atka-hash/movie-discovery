@@ -456,7 +456,7 @@ Component tests:
   - [x] API: `POST /api/imports` (upload), `GET /api/imports/:id` (progress).
   - [x] API: `POST /api/imports/:id/apply`.
   - [x] DB: `import_jobs`.
-  - [ ] DB: `import_job_rows` + `import_conflicts`.
+  - [x] DB: `import_job_rows` + `import_conflicts`.
   - [ ] Worker: parse → map → resolve TMDB ids (rate-limited) → preview.
   - [ ] FE: `/import` wizard + preview table + conflict resolver.
 - [ ] **Export (M2)**:
