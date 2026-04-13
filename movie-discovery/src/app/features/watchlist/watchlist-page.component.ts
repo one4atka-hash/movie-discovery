@@ -57,7 +57,7 @@ type WatchTab = 'all' | WatchStatus;
         <app-button variant="secondary" routerLink="/">Открыть поиск</app-button>
       </app-empty-state>
 
-      <div class="list" *ngIf="filtered().length">
+      <div class="list" *ngIf="filtered().length" data-testid="watchlist-list">
         <app-card *ngFor="let it of filtered(); trackBy: trackById" [title]="it.movie.title">
           <div class="row">
             <div class="thumb" [class.thumb--empty]="!it.movie.poster_path">

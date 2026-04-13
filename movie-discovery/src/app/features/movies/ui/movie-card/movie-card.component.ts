@@ -19,7 +19,7 @@ import { WatchStateService } from '@features/watchlist/watch-state.service';
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <article class="card">
+    <article class="card" [attr.data-tmdb-id]="movie().id" data-testid="movie-card">
       <div class="card__poster" [class.card__poster--empty]="!movie().poster_path">
         <img
           *ngIf="movie().poster_path as p"
@@ -111,6 +111,7 @@ import { WatchStateService } from '@features/watchlist/watch-state.service';
               <button
                 class="chip"
                 type="button"
+                data-testid="movie-card-watch-cycle"
                 [class.chip--active]="!!watchStatus()"
                 [attr.aria-pressed]="!!watchStatus()"
                 (click)="onCycleStatus($event)"

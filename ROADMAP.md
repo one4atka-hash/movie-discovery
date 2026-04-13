@@ -417,7 +417,7 @@ Component tests:
   - [ ] `POST /api/watch-state/bulk` + UI массового “hide/want”.
 - [ ] **Тесты**:
   - [x] Unit: переходы статусов и merge.
-  - [ ] e2e: действие на карточке отражается на `/watchlist` и в details.
+  - [x] e2e: действие на карточке отражается на `/watchlist` и в details.
   - [x] Server e2e: CRUD watch-state (auth + validation).
 
 #### 5.5 Decision Mode (“Что смотреть сегодня?”) — уникальный UX

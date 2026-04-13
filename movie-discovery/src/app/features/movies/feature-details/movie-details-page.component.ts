@@ -49,6 +49,8 @@ import {
   ReleaseSubscriptionsService,
   type NotificationChannel,
 } from '@features/notifications/release-subscriptions.service';
+import { WatchStateService } from '@features/watchlist/watch-state.service';
+import type { WatchStatus } from '@features/watchlist/watch-state.model';
 
 @Component({
   selector: 'app-movie-details-page',
@@ -94,6 +96,9 @@ import {
               <div class="genres" *ngIf="genreLabels(m).length">
                 <span class="genre" *ngFor="let label of genreLabels(m)">{{ label }}</span>
               </div>
+              <p class="muted details-watch" data-testid="details-watch-status">
+                Watchlist: {{ detailsWatchlistLabel() }}
+              </p>
 
               <section class="facts" [attr.aria-label]="i18n.t('details.facts.aria')">
                 <div class="facts__grid">
@@ -480,6 +485,10 @@ import {
         background: rgba(255, 255, 255, 0.04);
         color: var(--text-muted);
         font-size: 0.85rem;
+      }
+      .details-watch {
+        margin: 0 0 0.65rem;
+        font-size: 0.92rem;
       }
 
       .actions {
@@ -870,6 +879,7 @@ export class MovieDetailsPageComponent {
   private readonly auth = inject(AuthService);
   private readonly streamingPrefs = inject(StreamingPrefsService);
   private readonly subsSvc = inject(ReleaseSubscriptionsService);
+  private readonly watchState = inject(WatchStateService);
 
   readonly isAuthed = computed(() => this.auth.isAuthenticated());
 
@@ -936,6 +946,22 @@ export class MovieDetailsPageComponent {
   readonly hasMovie = computed(() => {
     const m = this.movie();
     return m !== undefined && m !== null;
+  });
+
+  readonly detailsWatchlistLabel = computed(() => {
+    const m = this.movie();
+    this.watchState.sorted();
+    if (m === undefined || m === null) return '—';
+    const s = this.watchState.getStatus(m.id);
+    if (!s) return '—';
+    const labels: Record<WatchStatus, string> = {
+      want: 'Want',
+      watching: 'Watching',
+      watched: 'Watched',
+      dropped: 'Dropped',
+      hidden: 'Hidden',
+    };
+    return labels[s];
   });
 
   readonly videos = toSignal(
