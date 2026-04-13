@@ -215,24 +215,24 @@ Component tests:
 
 ---
 
-### Идеи для следующих итераций (не обязательно для первого релиза)
-- [ ] **Аутентификация и профили пользователей** (Firebase/Auth0).
-- [ ] **Списки «хочу посмотреть» / истории просмотра**.
-- [ ] **Реальный плеер** с интеграцией с легальными источниками/твоим NAS.
-- [ ] **Монетизация**:
-  - [ ] Нативный промо‑блок с рекомендацией контента/подборок.
-  - [ ] Партнёрские ссылки (например, на покупку подписки в другом сервисе).
-  - [ ] Блок донатов (Stripe/Boosty/Patreon).
+### Идеи для следующих итераций (исторический блок — часть закрыта реализацией)
+- [x] **Аутентификация и профили** — в продукте: NestJS JWT + `/account` (Firebase/Auth0 в этом репозитории не целевой MVP).
+- [x] **Списки «хочу посмотреть» / прогресс** — watchlist + watch-state, избранное, дневник; чистая «история как у VOD» — backlog.
+- [x] **Плеер** — трейлеры (YouTube) + `/free` (легальный просмотр); интеграция с NAS — backlog.
+- [x] **Монетизация (минимум)** — донаты/promo в shell; расширения — backlog:
+  - [ ] Нативный промо‑блок с рекомендацией контента/подборок (расширение).
+  - [ ] Партнёрские ссылки (например, на покупку подписки в другом сервисе) (расширение).
+  - [x] Блок донатов / поддержка проекта (виджет в shell).
 
 ---
 
 ### Итерация 2 (backlog по запросу)
 - [x] **Монетизация**: добавить виджет донатов в shell (`promo`).
 - [x] **Плеер**: добавить «реальный» плеер для трейлеров (TMDB videos → YouTube embed).
-- [ ] **Аутентификация**: login/logout + профиль пользователя (MVP, локально).
-- [ ] **Персональные списки**:
-  - [ ] «Хочу посмотреть»
-  - [ ] «История просмотра»
+- [x] **Аутентификация**: login/logout + профиль — NestJS JWT, Account, server sync.
+- [x] **Персональные списки**:
+  - [x] «Хочу посмотреть» / статусы — watchlist + watch-state (API + локально).
+  - [x] «История просмотра» — diary + watched в watch-state; расширенный таймлайн — backlog.
 
 ---
 
@@ -258,8 +258,7 @@ Component tests:
 - [x] **Extra**: язык в селекте локалей — отображать подписи языков на выбранной локали (Intl.DisplayNames).
 - [x] **Extra**: все запросы к TMDB возвращают данные на выбранном языке (`language`) + перезагрузка страниц при смене локали.
 - [x] **Extra**: избранное и подписки обновляют title/overview при смене локали TMDB (синхронизация локальных снапшотов).
-- [ ] **Extra**: починить DNS/hosts для TMDB — сейчас `api.themoviedb.org` резолвится в localhost (`::1`), из‑за этого прокси `/tmdb` падает (500/ECONNREFUSED).
-- [x] **Extra**: починка DNS для TMDB выполнена (Quad9) — поиск снова работает.
+- [x] **Extra**: починка DNS для TMDB (в т.ч. если `api.themoviedb.org` указывал на localhost) — зафиксировано; при проблемах — Quad9 / проверка hosts.
 - [x] **Extra**: диагностика изображений TMDB (если не грузятся постеры) — проверить доступ к `image.tmdb.org` и блокировки браузера.
 - [x] **Extra**: исправить загрузку постеров TMDB при 403 (CloudFront) — проксировать картинки через same-origin `/imgtmdb/*` (dev: `proxy.conf.json`, prod: `vercel.json`/`netlify.toml`) и заменить `https://image.tmdb.org/...` на `/imgtmdb/...` (важно: не использовать префикс `/tmdb*`, иначе матчится API-прокси).
 - [x] **Extra**: усилить сохранение избранного (defensive persist/restore), чтобы лайки стабильно сохранялись между перезапусками.
@@ -274,9 +273,9 @@ Component tests:
 - [x] **Extra**: трейлеры — не передавать `language` в `/movie/{id}/videos`, чтобы не получать пустой список видео на некоторых локалях.
 - [x] **Extra**: Alerts UX — сделать интуитивно: постер в списке/форме, понятные действия (календарь через .ics).
 - [x] **Extra**: Web notifications UX — убрать отдельный “тест”, отправлять пробное уведомление сразу после сохранения подписки (если выбран канал).
-- [ ] **Extra**: Email notifications — подключить реальный сервис отправки (backend + провайдер) для уведомлений в день релиза.
+- [ ] **Extra**: Email notifications — реальный SMTP/провайдер для релизов (**backlog**, in-app уже есть).
 - [x] **Extra**: убрать строку «Каталог на данных TMDB · неофициальное приложение» из футера.
-- [ ] **Extra**: «Сервер + AI для просмотра» (легально) — вариант для личной медиатеки: Jellyfin/Plex + локальные файлы, AI-рекомендации через Ollama; добавить интеграцию как опциональный режим.
+- [ ] **Extra**: «Сервер + AI для просмотра» (Jellyfin/Plex + Ollama) — **backlog**, не в текущем scope репозитория.
 
 ---
 
@@ -292,12 +291,12 @@ Component tests:
   - [x] Subscriptions (CRUD + каналы)
   - [x] Feedback: `like/dislike/hide/neutral` (+ reason)
 - [x] **Recommendations API (MVP)**: эндпоинт с устойчивым форматом ответа (под будущий ANN/rerank).
-- [ ] **Embeddings pipeline**: кэш фич фильма из TMDB → эмбеддинг → запись в `movie_features.embedding`.
-- [ ] **ANN recommendations**: pgvector поиск похожих фильмов по профилю пользователя + фильтрация `dislike/hide` + диверсификация.
-- [ ] **Rerank (опционально)**: нейро‑ре‑ранжирование top‑K кандидатов + объяснения «почему рекомендовано».
-- [ ] **Notifications**:
+- [ ] **Embeddings pipeline** (backlog / v2): кэш фич фильма из TMDB → эмбеддинг → запись в `movie_features.embedding`.
+- [ ] **ANN recommendations** (backlog / v2): pgvector по профилю пользователя + фильтрация `dislike/hide` + диверсификация.
+- [ ] **Rerank (опционально, backlog / v2)**: нейро‑ре‑ранжирование top‑K + объяснения.
+- [ ] **Notifications (backlog / v2)**:
   - [ ] Email провайдер + scheduled job в день релиза.
-  - [ ] WebPush (VAPID) через backend (если уйдём от client-only).
+  - [ ] WebPush (VAPID) через backend (сейчас клиентские web push в MVP отдельно от правил сервера).
 
 #### Итерация 4 — Workstreams (можно делать параллельно)
 
@@ -309,15 +308,15 @@ Component tests:
 - [x] Миграции: advisory lock, checksum/immutability, устойчивый путь до папки `migrations/`.
 - [x] Привести API к единому контракту ответов (`{ ok, data, error }` или аналог) + убрать DELETE body (сделать `DELETE /favorites/:tmdbId`, `DELETE /subscriptions/:id`).
 
-**B. Recommendations pipeline (pgvector)**
+**B. Recommendations pipeline (pgvector) — backlog / v2**
 - [ ] TMDB feature cache: endpoints/jobs для загрузки cast/crew/keywords + нормализация в `movie_features`.
 - [ ] Embeddings: сервис генерации эмбеддингов + запись `movie_features.embedding` + ретраи/кэш.
 - [ ] ANN: pgvector query (cosine) по профилю пользователя (like/favorites) + фильтрация `dislike/hide` + диверсификация.
-- [ ] Explanations: «почему рекомендовано» (связать с жанром/актером/похожестью/seed).
+- [ ] Explanations: «почему рекомендовано» (связать с жанром/актером/похожестью/seed) — частично покрыто explain в API рекомендаций (MVP).
 - [ ] Тесты рекомендаций: блок-лист, уникальность, холодный старт, детерминированность времени.
 
 **C. DevOps / безопасность (репозиторий)**
-- [ ] Секреты: убедиться, что `movie-discovery/public/env.js` не попал в git; **ротировать TMDB ключ** при необходимости.
+- [x] Секреты: `movie-discovery/public/env.js` в `.gitignore`; ключ TMDB только локально/`env` — **ротация ключа** при компрометации вручную.
 - [x] Compose reliability: healthchecks (`db` + `api`), `depends_on: service_healthy`, restart policy, env_file.
 - [x] Docker hardening: non-root, `npm ci --omit=dev` для runtime, healthcheck.
 - [x] CI: workflow на `movie-discovery/` и `server/` (lint/test/build) + `docker build` + secret scanning (gitleaks/trufflehog).
@@ -330,10 +329,10 @@ Component tests:
 - [x] Общий билдер TMDB image URLs (`/imgtmdb/*`) + единый `srcset/sizes`.
 - [x] Дотянуть i18n: заменить хардкод строк в шаблонах на `i18n.t()` (details/card) + добавить ключи.
 
-**E. Тестирование (можно параллельно с A–D)**
-- [ ] Server e2e: тестировать `/api/*` (учесть global prefix) + happy path по всем контроллерам.
-- [ ] Server: тесты 400 для невалидных payloads (Zod/DTO контракты), auth edge-cases (duplicate email, invalid login).
-- [ ] Frontend: усилить тесты (не только “creates component”), добавить e2e harness (Playwright/Cypress) smoke-flow.
+**E. Тестирование**
+- [x] Server e2e: покрытие по доменам (`server/test/*.e2e-spec.ts`): auth, imports, alerts, movies, diary, …; полный matrix всех эндпоинтов — backlog.
+- [x] Server: валидация Zod/DTO — точечно в e2e и unit; расширение negative cases — backlog.
+- [x] Frontend: Vitest unit + Playwright e2e (`movie-discovery/e2e`); расширение smoke — backlog.
 
 ---
 
