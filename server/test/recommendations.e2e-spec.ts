@@ -54,6 +54,44 @@ describe('Recommendations (e2e)', () => {
       .expect({ ok: true });
   });
 
+  it('hide feedback removes item from next recommendations call (MVP)', async () => {
+    const token = await registerAndGetToken(app);
+
+    // Seed recommendations via favorites.
+    await request(app.getHttpServer())
+      .post('/api/favorites')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ tmdbId: 550 })
+      .expect(201)
+      .expect({ ok: true });
+
+    const recs1 = await request(app.getHttpServer())
+      .get('/api/recommendations')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const ids1 = (recs1.body as { items: unknown[] }).items.map(
+      (x) => (x as { tmdbId?: number }).tmdbId,
+    );
+    expect(ids1).toContain(550);
+
+    await request(app.getHttpServer())
+      .post('/api/recommendations/feedback')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ tmdbId: 550, action: 'hide' })
+      .expect(201);
+
+    const recs2 = await request(app.getHttpServer())
+      .get('/api/recommendations')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const ids2 = (recs2.body as { items: unknown[] }).items.map(
+      (x) => (x as { tmdbId?: number }).tmdbId,
+    );
+    expect(ids2).not.toContain(550);
+  });
+
   afterEach(async () => {
     await app.close();
   });
