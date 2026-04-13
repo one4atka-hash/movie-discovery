@@ -17,6 +17,7 @@ import {
   distinctUntilChanged,
   filter,
   forkJoin,
+  map,
   of,
   switchMap,
   tap,
@@ -41,6 +42,9 @@ import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.compo
 import { ButtonComponent } from '@shared/ui/button/button.component';
 import { MovieReactionsService } from '../data-access/services/movie-reactions.service';
 import { RecommendationsFeedbackService } from '../data-access/services/recommendations-feedback.service';
+import { StreamingPrefsService } from '@features/streaming/streaming-prefs.service';
+import { ChipComponent } from '@shared/ui/chip/chip.component';
+import { mergeWatchProviderRows } from '@core/streaming/streaming-links';
 
 @Component({
   selector: 'app-movie-search-page',
@@ -55,6 +59,7 @@ import { RecommendationsFeedbackService } from '../data-access/services/recommen
     InfiniteScrollDirective,
     BottomSheetComponent,
     ButtonComponent,
+    ChipComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -76,6 +81,13 @@ import { RecommendationsFeedbackService } from '../data-access/services/recommen
           autocomplete="off"
           aria-label="Поиск фильма"
         />
+      </div>
+
+      <div class="filters" *ngIf="hasMyServices()">
+        <app-chip [selected]="onlyMyServices()" (clicked)="toggleOnlyMyServices()">
+          Только на моих сервисах
+        </app-chip>
+        <a class="filters__link" routerLink="/account" fragment="account-streaming">Настроить</a>
       </div>
 
       <div class="dashboard" *ngIf="showHero()">
@@ -237,7 +249,7 @@ import { RecommendationsFeedbackService } from '../data-access/services/recommen
               <div class="grid grid--random" *ngIf="!recsLoading() && recsVisible().length">
                 <div class="grid__item" *ngFor="let m of recsVisible(); trackBy: trackById">
                   <a class="grid__link" [routerLink]="['/movie', m.id]">
-                    <app-movie-card [movie]="m" />
+                    <app-movie-card [movie]="m" [providers]="myProvidersFor(m.id)" />
                   </a>
                   <button class="whyBtn" type="button" (click)="openWhy(m)" aria-label="Why this?">
                     Why?
@@ -266,13 +278,13 @@ import { RecommendationsFeedbackService } from '../data-access/services/recommen
                   *ngFor="let _ of randomSkeletonSlots; trackBy: trackByIndex"
                 ></div>
               </div>
-              <div class="grid grid--random" *ngIf="!randomLoading() && randomMovies().length">
+              <div class="grid grid--random" *ngIf="!randomLoading() && randomVisible().length">
                 <a
                   class="grid__item"
-                  *ngFor="let m of randomMovies(); trackBy: trackById"
+                  *ngFor="let m of randomVisible(); trackBy: trackById"
                   [routerLink]="['/movie', m.id]"
                 >
-                  <app-movie-card [movie]="m" />
+                  <app-movie-card [movie]="m" [providers]="myProvidersFor(m.id)" />
                 </a>
               </div>
               <p class="muted" *ngIf="!randomLoading() && randomError()" role="status">
@@ -299,13 +311,13 @@ import { RecommendationsFeedbackService } from '../data-access/services/recommen
         subtitle="Попробуйте другой запрос."
       />
 
-      <div class="grid" *ngIf="!showHero() && !loading() && !error() && movies().length">
+      <div class="grid" *ngIf="!showHero() && !loading() && !error() && moviesVisible().length">
         <a
           class="grid__item"
-          *ngFor="let m of movies(); trackBy: trackById"
+          *ngFor="let m of moviesVisible(); trackBy: trackById"
           [routerLink]="['/movie', m.id]"
         >
-          <app-movie-card [movie]="m" />
+          <app-movie-card [movie]="m" [providers]="myProvidersFor(m.id)" />
         </a>
       </div>
 
@@ -402,6 +414,24 @@ import { RecommendationsFeedbackService } from '../data-access/services/recommen
       }
       .searchBar__input:focus-visible {
         outline: none;
+      }
+
+      .filters {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: -0.35rem 0 0.75rem;
+      }
+
+      .filters__link {
+        color: var(--muted);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        font-size: 0.95rem;
+      }
+
+      .filters__link:hover {
+        color: var(--text);
       }
 
       .dashboard {
@@ -904,6 +934,7 @@ export class MovieSearchPageComponent {
   private readonly fav = inject(FavoritesService);
   private readonly reactions = inject(MovieReactionsService);
   private readonly recsFeedback = inject(RecommendationsFeedbackService);
+  private readonly prefs = inject(StreamingPrefsService);
   readonly i18n = inject(I18nService);
 
   /** Есть ли ключ для запросов к TMDB (env / window.__env). */
@@ -940,6 +971,7 @@ export class MovieSearchPageComponent {
   private readonly _recsLoading = signal(true);
   private readonly _recsError = signal<string | null>(null);
   private readonly _recsSeeds = signal<Movie[]>([]);
+  private readonly _myProviders = signal<Record<string, readonly string[]>>({});
 
   readonly movies = computed(() => this._movies());
   readonly loading = computed(() => this._loading());
@@ -963,6 +995,29 @@ export class MovieSearchPageComponent {
 
   readonly whyOpen = signal(false);
   readonly whyMovie = signal<Movie | null>(null);
+
+  readonly onlyMyServices = signal(false);
+  readonly hasMyServices = computed(() => (this.prefs.providers() ?? []).length > 0);
+
+  readonly moviesVisible = computed(() => {
+    const list = this._movies();
+    if (!this.onlyMyServices()) return list;
+    return list.filter((m) => (this._myProviders()[String(m.id)] ?? []).length > 0);
+  });
+
+  readonly randomVisible = computed(() => {
+    const list = this._randomMovies();
+    if (!this.onlyMyServices()) return list;
+    return list.filter((m) => (this._myProviders()[String(m.id)] ?? []).length > 0);
+  });
+
+  myProvidersFor(tmdbId: number): readonly string[] {
+    return this._myProviders()[String(tmdbId)] ?? [];
+  }
+
+  toggleOnlyMyServices(): void {
+    this.onlyMyServices.set(!this.onlyMyServices());
+  }
   private readonly _subsAll = computed(() => this.subsSvc.mySubscriptions());
   private readonly _favAll = computed(() => this.fav.favorites());
   readonly subsCount = computed(() => this._subsAll().length);
@@ -992,6 +1047,20 @@ export class MovieSearchPageComponent {
     this.loadNowPlaying();
     this.loadRecommendations();
     this.loadRandomStrip();
+    effect(() => {
+      // Refetch “my providers” matches when prefs change.
+      const region = this.prefs.region();
+      const providersKey = (this.prefs.providers() ?? [])
+        .map((x) => x.trim().toLowerCase())
+        .sort()
+        .join('|');
+      void region;
+      void providersKey;
+      untracked(() => {
+        this._myProviders.set({});
+        this.ensureProvidersForCurrentLists();
+      });
+    });
     effect(() => {
       this.i18n.tmdbLocale();
       if (this.localeHeroN++ === 0) return;
@@ -1029,6 +1098,7 @@ export class MovieSearchPageComponent {
           this._page.set(res.page ?? 1);
           this._totalPages.set(res.total_pages ?? 1);
           this._loading.set(false);
+          this.ensureProvidersForIds((res.results ?? []).map((m) => m.id));
         },
       });
   }
@@ -1062,6 +1132,7 @@ export class MovieSearchPageComponent {
           this._page.set(res.page ?? nextPage);
           this._totalPages.set(res.total_pages ?? this._totalPages());
           this._loadingMore.set(false);
+          this.ensureProvidersForIds((res.results ?? []).map((m) => m.id));
         },
       });
   }
@@ -1123,6 +1194,7 @@ export class MovieSearchPageComponent {
           this._page.set(res.page ?? 1);
           this._totalPages.set(res.total_pages ?? 1);
           this._loading.set(false);
+          this.ensureProvidersForIds((res.results ?? []).map((m) => m.id));
         },
       });
   }
@@ -1173,6 +1245,7 @@ export class MovieSearchPageComponent {
         shuffleInPlace(list);
         this._randomMovies.set(list.slice(0, 8));
         this._randomLoading.set(false);
+        this.ensureProvidersForIds(list.slice(0, 8).map((m) => m.id));
       });
   }
 
@@ -1229,7 +1302,48 @@ export class MovieSearchPageComponent {
         shuffleInPlace(pool);
         this._recs.set(pool.slice(0, 8));
         this._recsLoading.set(false);
+        this.ensureProvidersForIds(pool.slice(0, 8).map((m) => m.id));
       });
+  }
+
+  private ensureProvidersForCurrentLists(): void {
+    const ids = [
+      ...this._movies().map((m) => m.id),
+      ...this._recs().map((m) => m.id),
+      ...this._randomMovies().map((m) => m.id),
+    ];
+    this.ensureProvidersForIds(ids);
+  }
+
+  private ensureProvidersForIds(ids: readonly number[]): void {
+    if (!this.hasMyServices()) return;
+    const region = this.prefs.region();
+    const next = { ...this._myProviders() };
+
+    for (const id of ids) {
+      if (!id || !Number.isFinite(id) || id <= 0) continue;
+      const key = String(id);
+      if (key in next) continue;
+
+      // Mark as requested to avoid spamming.
+      next[key] = [];
+      this.api
+        .getMovieWatchProviders(id)
+        .pipe(
+          map((res) => res.results?.[region] ?? null),
+          map((country) => mergeWatchProviderRows(country)),
+          map((rows) => rows.map((r) => r.provider.provider_name)),
+          map((names) => names.filter((n) => this.prefs.isMyProvider(n)).slice(0, 3)),
+          catchError(() => of([] as string[])),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe((chips) => {
+          const cur = this._myProviders();
+          this._myProviders.set({ ...cur, [key]: chips });
+        });
+    }
+
+    this._myProviders.set(next);
   }
 
   openWhy(m: Movie): void {

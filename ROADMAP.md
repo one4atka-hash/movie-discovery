@@ -351,7 +351,7 @@ Component tests:
   - [x] UX: “Мои сервисы” в `/account` (frontend MVP, local storage).
   - [x] `StreamingPrefsService` (signals): region + providers list (frontend MVP).
   - [x] Movie details: подсветка провайдеров “My” + предпочтительный регион по умолчанию.
-  - [ ] Discover/Search: фильтр “Только на моих сервисах” + отображение provider chips на карточках.
+- [x] Discover/Search: фильтр “Только на моих сервисах” + отображение provider chips на карточках. (local)
 - [ ] **Backend/API (M2: availability events)**:
   - [ ] `GET /api/availability/events?since=...` + (опц.) `POST /api/availability/track` (что отслеживать).
 - [ ] **DB + Jobs (M2)**:

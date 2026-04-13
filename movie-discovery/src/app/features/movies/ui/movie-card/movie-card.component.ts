@@ -42,6 +42,11 @@ import { WatchStateService } from '@features/watchlist/watch-state.service';
               <span class="card__muted">{{ movie().release_date || '—' }}</span>
               <span class="card__rating">{{ movie().vote_average | number: '1.1-1' }}</span>
             </div>
+            <div class="card__providers" *ngIf="providersShort().length">
+              <span class="prov" *ngFor="let p of providersShort(); trackBy: trackByText">{{
+                p
+              }}</span>
+            </div>
             <div class="card__overview" *ngIf="movie().overview">
               {{ movie().overview }}
             </div>
@@ -321,6 +326,29 @@ import { WatchStateService } from '@features/watchlist/watch-state.service';
           transform var(--card-dur) var(--card-ease);
       }
 
+      .card__providers {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        opacity: 0;
+        transform: translateY(10px);
+        transition:
+          opacity var(--card-dur) var(--card-ease),
+          transform var(--card-dur) var(--card-ease);
+      }
+
+      .prov {
+        font-size: 12px;
+        line-height: 1;
+        padding: 0.28rem 0.5rem;
+        border-radius: var(--radius-full);
+        border: 1px solid color-mix(in srgb, var(--border-strong) 70%, transparent);
+        background: color-mix(in srgb, #000 48%, transparent);
+        color: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(6px);
+        white-space: nowrap;
+      }
+
       .card__muted {
         color: rgba(255, 255, 255, 0.72);
         font-size: 0.9rem;
@@ -374,6 +402,8 @@ import { WatchStateService } from '@features/watchlist/watch-state.service';
 
       .card:hover .card__meta,
       .card:focus-within .card__meta,
+      .card:hover .card__providers,
+      .card:focus-within .card__providers,
       .card:hover .card__overview,
       .card:focus-within .card__overview {
         opacity: 1;
@@ -409,9 +439,12 @@ export class MovieCardComponent {
   private readonly auth = inject(AuthService);
   private readonly watchState = inject(WatchStateService);
   readonly movie = input.required<Movie>();
+  /** Optional “my services” providers (already matched by caller). */
+  readonly providers = input<readonly string[] | null>(null);
 
   readonly reaction = computed(() => this.reactions.reactionFor(this.movie().id)());
   readonly watchStatus = computed(() => this.watchState.getStatus(this.movie().id));
+  readonly providersShort = computed(() => (this.providers() ?? []).slice(0, 3));
 
   isLiked(): boolean {
     return this.favorites.has(this.movie().id) || this.reaction() === 'like';
@@ -510,6 +543,10 @@ export class MovieCardComponent {
     if (s === 'dropped') return 'Статус: брошено (нажмите для следующего)';
     return 'Статус: скрыто (нажмите для следующего)';
   });
+
+  trackByText(_: number, s: string): string {
+    return s;
+  }
 
   onCycleStatus(event: MouseEvent): void {
     event.preventDefault();
