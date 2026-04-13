@@ -39,6 +39,13 @@ export const routes: Routes = [
       import('./features/auth/account-page.component').then((c) => c.AccountPageComponent),
   },
   {
+    path: 'u/:slug',
+    loadComponent: () =>
+      import('./features/public-profile/public-profile-page.component').then(
+        (c) => c.PublicProfilePageComponent,
+      ),
+  },
+  {
     path: 'import',
     loadComponent: () =>
       import('./features/import/import-page.component').then((c) => c.ImportPageComponent),

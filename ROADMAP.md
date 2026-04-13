@@ -521,10 +521,10 @@ Component tests:
   - [x] e2e (server): `dev/tick` + `todayYmd` → уведомление в `GET /notifications` (без повтора в тот же день).
 
 #### 5.10 Shareables (рост и «собирательность»)
-- [ ] **Public profile (M1)**:
-  - [ ] API: `GET/PUT /api/me/public-profile` + public `GET /api/u/:slug` (privacy-filtered).
-  - [ ] DB: `public_profiles(slug, enabled, visibility, sections jsonb)`.
-  - [ ] FE: `/u/:slug` + настройки приватности в профиле.
+- [x] **Public profile (M1)**:
+  - [x] API: `GET/PUT /api/me/public-profile` + public `GET /api/u/:slug` (privacy-filtered: только `enabled` + `visibility` в `unlisted|public`; секции из `sections`).
+  - [x] DB: `public_profiles` (миграция `015_public_profiles.sql`: slug, enabled, visibility, sections jsonb).
+  - [x] FE: маршрут `/u/:slug` + блок настроек в Account (Server JWT): slug, enabled, visibility, секции favorites/diary/watchlist.
 - [ ] **Share cards (M1)**:
   - [ ] FE renderer (HTML/CSS) + “Export to image” (client-only first).
   - [ ] Templates: top-10, month recap (diary), tonight shortlist.
@@ -532,13 +532,14 @@ Component tests:
   - [ ] FE: `/me` (единый хаб): watchlist + diary + alerts + recs + quick add.
   - [ ] Общий “movie actions” bottom sheet для всех поверхностей.
 - [ ] **Тесты**:
-  - [ ] e2e: public profile скрывает выключенные секции; unlisted доступен по ссылке.
+  - [x] e2e (server): публичный `GET /u/:slug` при unlisted + секции; `private` → 404; конфликт slug → 409.
   - [ ] snapshot: share card layout детерминирован (без прыжков).
 
 #### 5.X Дизайн/UX (единая “Movie OS” стилистика для Итерации 5)
 - [ ] **IA/Навигация (mobile-first, 5 вкладок максимум)**:
   - [x] `Discover` (поиск/лента), `Tonight` (Decision Mode), `Diary`, `Lists`, `Inbox` — навигация/роуты добавлены.
-  - [ ] В профиле: My Services, Import/Export, Privacy/Share, Language/Region.
+  - [ ] В профиле: My Services, Import/Export, Language/Region.
+  - [x] В профиле: Privacy/Share — публичный профиль (server) + `/u/:slug` (MVP).
 - [ ] **Единые интеракции (везде одинаково)**:
   - [ ] Quick actions (один набор): Status cycle + Like/Dislike + Alert + Log.
   - [ ] Bottom sheet / drawer для “More…” и “Why this?” (без разнобоя).

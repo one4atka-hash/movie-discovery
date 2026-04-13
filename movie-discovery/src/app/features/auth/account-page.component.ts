@@ -16,6 +16,7 @@ import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.compo
 import { ChipComponent } from '@shared/ui/chip/chip.component';
 import { StreamingCatalogService } from '@features/streaming/streaming-catalog.service';
 import { StorageService } from '@core/storage.service';
+import { ServerCinemaApiService, type MePublicProfile } from '@core/server-cinema-api.service';
 import {
   ExportsApiService,
   type ExportFormat,
@@ -103,6 +104,62 @@ import {
             </div>
 
             <p class="err" *ngIf="exportError()">{{ exportError() }}</p>
+          </div>
+        </section>
+
+        <section class="account-block" id="account-public" aria-labelledby="account-public-title">
+          <h2 class="account-block__title" id="account-public-title">
+            {{ i18n.t('account.publicProfile.title') }}
+          </h2>
+          <p class="muted">{{ i18n.t('account.publicProfile.hint') }}</p>
+          <div class="card">
+            <div class="actions" style="margin-bottom: 0.65rem">
+              <button class="btn" type="button" (click)="loadServerPublicProfile()">
+                {{ i18n.t('account.publicProfile.load') }}
+              </button>
+              <button class="btn btn--primary" type="button" (click)="saveServerPublicProfile()">
+                {{ i18n.t('account.publicProfile.save') }}
+              </button>
+              <a
+                *ngIf="ppSlug.value.trim()"
+                class="btn"
+                [routerLink]="['/u', ppSlug.value.trim()]"
+                >{{ i18n.t('account.publicProfile.preview') }}</a
+              >
+            </div>
+            <label class="field">
+              <span>slug</span>
+              <input class="input" [formControl]="ppSlug" placeholder="my-handle" />
+            </label>
+            <label class="field chk">
+              <input type="checkbox" [formControl]="ppEnabled" />
+              <span>{{ i18n.t('account.publicProfile.enabled') }}</span>
+            </label>
+            <label class="field">
+              <span>{{ i18n.t('account.publicProfile.visibility') }}</span>
+              <select class="input" [formControl]="ppVisibility">
+                <option value="private">private</option>
+                <option value="unlisted">unlisted</option>
+                <option value="public">public</option>
+              </select>
+            </label>
+            <p class="muted" style="margin: 0 0 0.35rem">
+              {{ i18n.t('account.publicProfile.sections') }}
+            </p>
+            <label class="field chk">
+              <input type="checkbox" [formControl]="ppSecFavorites" />
+              <span>favorites</span>
+            </label>
+            <label class="field chk">
+              <input type="checkbox" [formControl]="ppSecDiary" />
+              <span>diary</span>
+            </label>
+            <label class="field chk">
+              <input type="checkbox" [formControl]="ppSecWatchlist" />
+              <span>watchlist</span>
+            </label>
+            <p class="err" *ngIf="ppErr()">{{ ppErr() }}</p>
+            <p class="ok" *ngIf="ppOk()">{{ ppOk() }}</p>
           </div>
         </section>
 
@@ -387,6 +444,20 @@ import {
         font-size: 0.92rem;
         line-height: 1.4;
       }
+      .ok {
+        margin: 0 0 0.7rem;
+        color: var(--accent-secondary, #86efac);
+        font-size: 0.92rem;
+      }
+      .field.chk {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .field.chk span {
+        margin: 0;
+      }
 
       .actions {
         display: flex;
@@ -551,6 +622,7 @@ export class AccountPageComponent {
   private readonly fav = inject(FavoritesService);
   private readonly storage = inject(StorageService);
   private readonly exportsApi = inject(ExportsApiService);
+  private readonly cinemaApi = inject(ServerCinemaApiService);
   readonly i18n = inject(I18nService);
 
   readonly user = this.auth.user;
@@ -567,6 +639,17 @@ export class AccountPageComponent {
   readonly exportFormat = new FormControl<ExportFormat>('csv', { nonNullable: true });
   readonly exportError = signal<string | null>(null);
 
+  readonly ppSlug = new FormControl('', { nonNullable: true });
+  readonly ppEnabled = new FormControl(false, { nonNullable: true });
+  readonly ppVisibility = new FormControl<'private' | 'unlisted' | 'public'>('private', {
+    nonNullable: true,
+  });
+  readonly ppSecFavorites = new FormControl(false, { nonNullable: true });
+  readonly ppSecDiary = new FormControl(false, { nonNullable: true });
+  readonly ppSecWatchlist = new FormControl(false, { nonNullable: true });
+  readonly ppErr = signal<string | null>(null);
+  readonly ppOk = signal<string | null>(null);
+
   private readonly _busy = signal(false);
   readonly busy = computed(() => this._busy());
 
@@ -575,6 +658,63 @@ export class AccountPageComponent {
 
   readonly subsSorted = computed(() => sortSubscriptionsByRelease(this.subsSvc.mySubscriptions()));
   readonly favorites = computed(() => this.fav.favorites());
+
+  loadServerPublicProfile(): void {
+    this.ppErr.set(null);
+    this.ppOk.set(null);
+    const token = this.serverJwt.value.trim();
+    if (!token) {
+      this.ppErr.set(this.i18n.t('account.publicProfile.needJwt'));
+      return;
+    }
+    this.storage.set('server.jwt.token.v1', token);
+    this.cinemaApi.getMePublicProfile().subscribe({
+      next: (p) => {
+        if (!p) {
+          this.ppErr.set(this.i18n.t('account.publicProfile.loadFailed'));
+          return;
+        }
+        this.ppSlug.setValue(p.slug ?? '');
+        this.ppEnabled.setValue(p.enabled);
+        this.ppVisibility.setValue(p.visibility);
+        this.ppSecFavorites.setValue(p.sections.favorites);
+        this.ppSecDiary.setValue(p.sections.diary);
+        this.ppSecWatchlist.setValue(p.sections.watchlist);
+      },
+    });
+  }
+
+  saveServerPublicProfile(): void {
+    this.ppErr.set(null);
+    this.ppOk.set(null);
+    const token = this.serverJwt.value.trim();
+    if (!token) {
+      this.ppErr.set(this.i18n.t('account.publicProfile.needJwt'));
+      return;
+    }
+    this.storage.set('server.jwt.token.v1', token);
+    const slugRaw = this.ppSlug.value.trim().toLowerCase();
+    const slug = slugRaw.length ? slugRaw : null;
+    const body: MePublicProfile = {
+      slug,
+      enabled: this.ppEnabled.value,
+      visibility: this.ppVisibility.value,
+      sections: {
+        favorites: this.ppSecFavorites.value,
+        diary: this.ppSecDiary.value,
+        watchlist: this.ppSecWatchlist.value,
+      },
+    };
+    this.cinemaApi.putMePublicProfile(body).subscribe({
+      next: (r) => {
+        if (!r?.ok) {
+          this.ppErr.set(this.i18n.t('account.publicProfile.saveFailed'));
+          return;
+        }
+        this.ppOk.set(this.i18n.t('account.publicProfile.saved'));
+      },
+    });
+  }
 
   downloadExport(): void {
     this.exportError.set(null);

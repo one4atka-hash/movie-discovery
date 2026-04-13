@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, of } from 'rxjs';
 
@@ -23,6 +23,17 @@ export interface MovieReleasesResponse {
   readonly fetchedAt: string;
   readonly region: string | null;
   readonly results: { readonly iso31661: string; readonly releaseDates: unknown[] }[];
+}
+
+export interface MePublicProfile {
+  readonly slug: string | null;
+  readonly enabled: boolean;
+  readonly visibility: 'private' | 'unlisted' | 'public';
+  readonly sections: {
+    readonly favorites: boolean;
+    readonly diary: boolean;
+    readonly watchlist: boolean;
+  };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -85,5 +96,30 @@ export class ServerCinemaApiService {
     return this.http
       .delete<{ ok: boolean }>(`/api/release-reminders/${id}`, { headers: h })
       .pipe(catchError(() => of(null)));
+  }
+
+  getMePublicProfile(): Observable<MePublicProfile | null> {
+    const h = this.authHeaders();
+    if (!h) return of(null);
+    return this.http
+      .get<MePublicProfile>('/api/me/public-profile', { headers: h })
+      .pipe(catchError(() => of(null)));
+  }
+
+  putMePublicProfile(body: MePublicProfile): Observable<{ ok: boolean } | null> {
+    const h = this.authHeaders();
+    if (!h) return of(null);
+    return this.http
+      .put<{ ok: boolean }>('/api/me/public-profile', body, { headers: h })
+      .pipe(catchError(() => of(null)));
+  }
+
+  getPublicUserBySlug(slug: string): Observable<Record<string, unknown> | null> {
+    return this.http.get<Record<string, unknown>>(`/api/u/${encodeURIComponent(slug)}`).pipe(
+      catchError((e: unknown) => {
+        if (e instanceof HttpErrorResponse && e.status === 404) return of(null);
+        return of(null);
+      }),
+    );
   }
 }
