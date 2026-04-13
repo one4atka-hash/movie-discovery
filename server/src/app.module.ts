@@ -19,6 +19,7 @@ import { AlertsModule } from './alerts/alerts.module';
 import { MeModule } from './me/me.module';
 import { WatchStateModule } from './watch-state/watch-state.module';
 import { DiaryModule } from './diary/diary.module';
+import { CollectionsModule } from './collections/collections.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { DiaryModule } from './diary/diary.module';
     MeModule,
     WatchStateModule,
     DiaryModule,
+    CollectionsModule,
   ],
   controllers: [AppController],
   providers: [
