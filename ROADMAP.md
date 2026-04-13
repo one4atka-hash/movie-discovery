@@ -359,7 +359,7 @@ Component tests:
   - [ ] events: `availability_events(... type added/leaving/changed ...)`.
   - [ ] cron: обновление watch-providers по списку отслеживания, diff → events.
 - [ ] **Тесты**:
-  - [ ] Server e2e: prefs GET/PUT auth + validation.
+  - [x] Server e2e: prefs GET/PUT auth + validation.
   - [ ] Unit: diff алгоритм snapshots→events (детерминизм).
   - [ ] FE: фильтр по моим сервисам (predicate + UI).
 
