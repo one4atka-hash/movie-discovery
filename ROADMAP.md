@@ -470,7 +470,7 @@ Component tests:
   - [x] FE: conflict quick actions (Use server / Use incoming) for faster resolving.
   - [x] FE: conflict quick actions do one-click resolve (no JSON editing).
   - [x] FE: conflicts UI shows server/incoming/resolution payloads (debuggable).
-  - [x] FE: hide resolved conflicts toggle (cleaner triage).
+  - [x] FE: hide resolved conflicts toggle + persisted preference (cleaner triage).
 - [ ] **Export (M2)**:
   - [x] API: `GET /api/exports?kind=diary|watch_state|favorites&format=csv|json` (MVP).
   - [x] FE: “Export my data” в профиле (MVP: JWT token input + download CSV/JSON).

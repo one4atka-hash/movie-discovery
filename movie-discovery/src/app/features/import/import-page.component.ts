@@ -12,6 +12,7 @@ import { SectionComponent } from '@shared/ui/section/section.component';
 import { ImportApiService, type ImportFormat, type ImportKind } from './import-api.service';
 
 const TOKEN_KEY = 'server.jwt.token.v1';
+const HIDE_RESOLVED_KEY = 'import.hideResolved.v1';
 
 @Component({
   selector: 'app-import-page',
@@ -150,7 +151,7 @@ const TOKEN_KEY = 'server.jwt.token.v1';
           >Refresh</app-button
         >
         <app-button variant="ghost" [disabled]="busy()" (click)="toggleShowResolved()">
-          {{ showResolved() ? 'Show all' : 'Hide resolved' }}
+          {{ hideResolved() ? 'Show resolved' : 'Hide resolved' }}
         </app-button>
       </div>
 
@@ -450,10 +451,12 @@ export class ImportPageComponent {
     }[]
   >([]);
   readonly conflicts = this._conflicts.asReadonly();
-  private readonly _showResolved = signal(false);
-  readonly showResolved = this._showResolved.asReadonly();
+  private readonly _hideResolved = signal<boolean>(
+    this.storage.get<boolean>(HIDE_RESOLVED_KEY, true) ?? true,
+  );
+  readonly hideResolved = this._hideResolved.asReadonly();
   readonly visibleConflicts = computed(() =>
-    this._showResolved() ? this._conflicts() : this._conflicts().filter((c) => !c.resolution),
+    this._hideResolved() ? this._conflicts().filter((c) => !c.resolution) : this._conflicts(),
   );
   private readonly _conflictsTotal = signal(0);
   readonly conflictsTotal = this._conflictsTotal.asReadonly();
@@ -593,7 +596,9 @@ export class ImportPageComponent {
   }
 
   toggleShowResolved(): void {
-    this._showResolved.set(!this._showResolved());
+    const next = !this._hideResolved();
+    this._hideResolved.set(next);
+    this.storage.set(HIDE_RESOLVED_KEY, next);
   }
 
   quickResolve(rowN: number | null, mapped: unknown): void {
