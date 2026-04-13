@@ -47,6 +47,7 @@ Then:
   - `GET/POST/DELETE /api/favorites`
   - `GET/POST/DELETE /api/subscriptions`
   - `GET/POST /api/feedback`
+  - Push (JWT): `POST /api/push/subscribe`, `GET /api/push/subscriptions`, `DELETE /api/push/subscriptions/:id`
 - `GET /api/recommendations` (MVP stub payload)
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.

@@ -135,6 +135,7 @@
             <li>Backend: Release reminders API (POST/GET/DELETE /api/release-reminders, type + window + channels)</li>
             <li>Backend: Release reminders cron → in-app notifications (optional; dev tick with fixed date for tests)</li>
             <li>Backend: Release reminders cron respects alert_rules quiet hours (effective rule per user; dev/tick optional nowIso)</li>
+            <li>Backend: Web Push — хранение подписок (<code>POST /api/push/subscribe</code>, <code>GET/DELETE …/push/subscriptions</code>)</li>
             <li>Backend: Movie editions (GET /api/movies/:tmdbId/editions) — эвристика по TMDB release types + таблица movie_editions для ручных меток</li>
             <li>Frontend: Movie details Timeline (server release_dates) + server release reminders; Inbox lists server reminders</li>
             <li>Backend: Public profiles (GET/PUT /api/me/public-profile, GET /api/u/:slug, privacy sections)</li>
@@ -208,7 +209,7 @@
             <li>Linting/formatting</li>
             <li>Build configuration</li>
             <li>Performance-aware UI</li>
-            <li>ROADMAP: единая сводка — все пункты отмечены; отложенное (ML/pgvector v2, SMTP, server WebPush/email/delivery) зафиксировано как не в текущем milestone</li>
+            <li>ROADMAP: единая сводка — все пункты отмечены; отложенное (ML/pgvector v2, SMTP, отправка WebPush/email из воркера) зафиксировано как не в текущем milestone; хранение Web Push подписок — server API</li>
             <li>Pre-commit discipline: Angular + Nest — build, ESLint, unit tests (команды в сводке <code>ROADMAP.md</code>); из корня: <code>scripts/verify-all.ps1</code> (Windows) или <code>sh scripts/verify-all.sh</code> (Unix/CI)</li>
           </ul>
         </article>

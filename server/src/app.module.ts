@@ -28,6 +28,7 @@ import { TasteModule } from './taste/taste.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { MoviesModule } from './movies/movies.module';
 import { ReleaseRemindersModule } from './release-reminders/release-reminders.module';
+import { PushModule } from './push/push.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { ReleaseRemindersModule } from './release-reminders/release-reminders.mo
     AvailabilityModule,
     MoviesModule,
     ReleaseRemindersModule,
+    PushModule,
   ],
   controllers: [AppController],
   providers: [
