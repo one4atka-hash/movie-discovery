@@ -468,8 +468,8 @@ Component tests:
 - [ ] **DB**:
   - [ ] (минимум) переиспользовать `feedback`; (опц.) `recommendation_feedback` для “more/less”.
 - [ ] **Frontend (M1)**:
-  - [ ] Drawer “Why this?” на карточке/в списке.
-  - [ ] Кнопки “More like this / Less like this / Hide” + мгновенная реакция UI.
+  - [x] “Why this?” панель для рекомендаций (frontend MVP).
+  - [x] “Less like this / Hide” (frontend MVP, local).
 - [ ] **Метрики (M2)**:
   - [ ] `GET /api/recommendations/metrics` (diversity/novelty/coverage) для отладки качества.
 - [ ] **Тесты**:

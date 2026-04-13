@@ -37,6 +37,10 @@ import { MovieCardComponent } from '../ui/movie-card/movie-card.component';
 import { InfiniteScrollDirective } from '@shared/directives/infinite-scroll.directive';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
+import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.component';
+import { ButtonComponent } from '@shared/ui/button/button.component';
+import { MovieReactionsService } from '../data-access/services/movie-reactions.service';
+import { RecommendationsFeedbackService } from '../data-access/services/recommendations-feedback.service';
 
 @Component({
   selector: 'app-movie-search-page',
@@ -49,6 +53,8 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
     EmptyStateComponent,
     MovieCardComponent,
     InfiniteScrollDirective,
+    BottomSheetComponent,
+    ButtonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -228,18 +234,19 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
                   *ngFor="let _ of randomSkeletonSlots; trackBy: trackByIndex"
                 ></div>
               </div>
-              <div class="grid grid--random" *ngIf="!recsLoading() && recs().length">
-                <a
-                  class="grid__item"
-                  *ngFor="let m of recs(); trackBy: trackById"
-                  [routerLink]="['/movie', m.id]"
-                >
-                  <app-movie-card [movie]="m" />
-                </a>
+              <div class="grid grid--random" *ngIf="!recsLoading() && recsVisible().length">
+                <div class="grid__item" *ngFor="let m of recsVisible(); trackBy: trackById">
+                  <a class="grid__link" [routerLink]="['/movie', m.id]">
+                    <app-movie-card [movie]="m" />
+                  </a>
+                  <button class="whyBtn" type="button" (click)="openWhy(m)" aria-label="Why this?">
+                    Why?
+                  </button>
+                </div>
               </div>
               <p
                 class="muted"
-                *ngIf="!recsLoading() && !recs().length && !recsError()"
+                *ngIf="!recsLoading() && !recsVisible().length && !recsError()"
                 role="status"
               >
                 {{ i18n.t('home.recommendationsEmpty') }}
@@ -312,6 +319,30 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
         [disabled]="!canLoadMore()"
         (reached)="loadNextPage()"
       ></div>
+
+      <app-bottom-sheet
+        [open]="whyOpen()"
+        title="Why this?"
+        ariaLabel="Recommendation explanation"
+        (closed)="closeWhy()"
+      >
+        @if (whyMovie(); as m) {
+          <p class="muted">
+            Рекомендация построена на TMDB recommendations и ваших сигналах (избранное/реакции).
+          </p>
+          @if (recsSeeds().length) {
+            <p class="muted">
+              Seeds из избранного:
+              <strong>{{ recsSeeds().map((x) => x.title).join(', ') }}</strong>
+            </p>
+          }
+          <div class="whyActions">
+            <app-button variant="secondary" [routerLink]="['/movie', m.id]">Открыть</app-button>
+            <app-button variant="ghost" (click)="lessLikeThis(m.id)">Less like this</app-button>
+            <app-button variant="danger" (click)="hideRec(m.id)">Hide</app-button>
+          </div>
+        }
+      </app-bottom-sheet>
     </section>
   `,
   styles: [
@@ -790,6 +821,42 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
         transition: transform 0.18s ease;
       }
 
+      .grid__item {
+        position: relative;
+      }
+
+      .grid__link {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .whyBtn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        border-radius: var(--radius-full);
+        border: 1px solid color-mix(in srgb, var(--border-strong) 80%, transparent);
+        background: color-mix(in srgb, #000 52%, transparent);
+        color: rgba(255, 255, 255, 0.92);
+        cursor: pointer;
+        font-size: 12px;
+        padding: 0.35rem 0.55rem;
+        backdrop-filter: blur(6px);
+      }
+
+      .whyBtn:hover {
+        border-color: var(--border-strong);
+        background: color-mix(in srgb, #000 62%, transparent);
+      }
+
+      .whyActions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-top: 0.9rem;
+      }
+
       .skeleton-grid {
         margin-top: 1rem;
         display: grid;
@@ -835,6 +902,8 @@ export class MovieSearchPageComponent {
   private readonly auth = inject(AuthService);
   private readonly subsSvc = inject(ReleaseSubscriptionsService);
   private readonly fav = inject(FavoritesService);
+  private readonly reactions = inject(MovieReactionsService);
+  private readonly recsFeedback = inject(RecommendationsFeedbackService);
   readonly i18n = inject(I18nService);
 
   /** Есть ли ключ для запросов к TMDB (env / window.__env). */
@@ -870,6 +939,7 @@ export class MovieSearchPageComponent {
   private readonly _recs = signal<Movie[]>([]);
   private readonly _recsLoading = signal(true);
   private readonly _recsError = signal<string | null>(null);
+  private readonly _recsSeeds = signal<Movie[]>([]);
 
   readonly movies = computed(() => this._movies());
   readonly loading = computed(() => this._loading());
@@ -884,6 +954,15 @@ export class MovieSearchPageComponent {
   readonly recs = computed(() => this._recs());
   readonly recsLoading = computed(() => this._recsLoading());
   readonly recsError = computed(() => this._recsError());
+  readonly recsSeeds = computed(() => this._recsSeeds());
+  readonly recsVisible = computed(() =>
+    this._recs().filter(
+      (m) => !this.recsFeedback.isHidden(m.id) && this.reactions.reactionFor(m.id)() !== 'dislike',
+    ),
+  );
+
+  readonly whyOpen = signal(false);
+  readonly whyMovie = signal<Movie | null>(null);
   private readonly _subsAll = computed(() => this.subsSvc.mySubscriptions());
   private readonly _favAll = computed(() => this.fav.favorites());
   readonly subsCount = computed(() => this._subsAll().length);
@@ -1104,6 +1183,7 @@ export class MovieSearchPageComponent {
     const favorites = this._favAll();
     if (!favorites.length) {
       this._recs.set([]);
+      this._recsSeeds.set([]);
       this._recsLoading.set(false);
       return;
     }
@@ -1112,9 +1192,11 @@ export class MovieSearchPageComponent {
       .map((m) => m.id)
       .filter((id) => Number.isFinite(id) && id > 0)
       .slice(0, 3);
+    this._recsSeeds.set(favorites.filter((m) => seedIds.includes(m.id)));
 
     if (!seedIds.length) {
       this._recs.set([]);
+      this._recsSeeds.set([]);
       this._recsLoading.set(false);
       return;
     }
@@ -1148,6 +1230,26 @@ export class MovieSearchPageComponent {
         this._recs.set(pool.slice(0, 8));
         this._recsLoading.set(false);
       });
+  }
+
+  openWhy(m: Movie): void {
+    this.whyMovie.set(m);
+    this.whyOpen.set(true);
+  }
+
+  closeWhy(): void {
+    this.whyOpen.set(false);
+    this.whyMovie.set(null);
+  }
+
+  hideRec(id: number): void {
+    this.recsFeedback.hide(id);
+    this.closeWhy();
+  }
+
+  lessLikeThis(id: number): void {
+    this.reactions.toggle(id, 'dislike');
+    this.closeWhy();
   }
 }
 
