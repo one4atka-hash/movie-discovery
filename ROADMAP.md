@@ -467,6 +467,7 @@ Component tests:
   - [x] e2e (server): upload → apply → данные появились в diary.
   - [x] e2e (server): upload → apply → данные появились в watch-state.
   - [x] e2e (server): upload → apply → данные появились в favorites.
+  - [x] e2e (server): upload → apply → diary CSV (Letterboxd) импортируется.
   - [ ] e2e: upload → preview → apply → данные появились в diary/watchlist.
 
 #### 5.8 Explainable Recommendations (объяснимые рекомендации — доверие)

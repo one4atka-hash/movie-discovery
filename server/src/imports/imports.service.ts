@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { z } from 'zod';
 
 import { DbService } from '../db/db.service';
+import { parseLetterboxdDiaryCsv } from './csv/letterboxd-diary.util';
 
 type ImportJobRow = {
   id: string;
@@ -124,6 +125,47 @@ export class ImportsService {
              updated_at = now()
          where id = $1 and user_id = $2`,
         [id, userId, JSON.stringify({ kind: 'diary', items: items.length })],
+      );
+
+      return { ok: true };
+    }
+
+    if (r.kind === 'diary' && r.format === 'csv') {
+      const rows = parseLetterboxdDiaryCsv(r.payload);
+      if (rows.length === 0) {
+        await this.db.exec(
+          `update import_jobs set status = 'failed', error = 'Unsupported diary CSV', updated_at = now()
+           where id = $1 and user_id = $2`,
+          [id, userId],
+        );
+        return { ok: true };
+      }
+
+      for (const it of rows) {
+        await this.db.exec(
+          `insert into diary_entries(user_id, tmdb_id, title, watched_at, location, provider_key, rating, tags, note)
+           values ($1, $2, $3, $4::date, $5, $6, $7, $8::jsonb, $9)`,
+          [
+            userId,
+            null,
+            it.title,
+            it.watchedAt,
+            'home',
+            null,
+            it.rating10,
+            it.tags.length ? JSON.stringify(it.tags) : null,
+            null,
+          ],
+        );
+      }
+
+      await this.db.exec(
+        `update import_jobs
+         set status = 'applied', error = null,
+             meta = jsonb_set(coalesce(meta, '{}'::jsonb), '{applied}', $3::jsonb, true),
+             updated_at = now()
+         where id = $1 and user_id = $2`,
+        [id, userId, JSON.stringify({ kind: 'diary_csv', items: rows.length })],
       );
 
       return { ok: true };

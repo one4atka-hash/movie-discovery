@@ -195,6 +195,49 @@ describe('Imports (e2e)', () => {
     expect(items.some((x) => x.tmdbId === 500)).toBe(true);
   });
 
+  it('diary csv import applies items into /api/diary (Letterboxd MVP)', async () => {
+    const token = await registerAndGetToken(app);
+
+    const csv = [
+      'Date,Name,Year,Rating,Tags',
+      '2026-01-10,Fight Club,1999,4.5,"classic, rewatch"',
+    ].join('\n');
+
+    const created = await request(app.getHttpServer())
+      .post('/api/imports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        kind: 'diary',
+        format: 'csv',
+        payload: csv,
+      })
+      .expect(201);
+    const id = (created.body as { id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/api/imports/${id}/apply`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
+
+    const list = await request(app.getHttpServer())
+      .get('/api/diary?from=2026-01-10&to=2026-01-10')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const items = (list.body as { items: unknown[] }).items as {
+      title?: string;
+      watchedAt?: string;
+      rating?: unknown;
+    }[];
+    expect(
+      items.some(
+        (x) =>
+          x.title === 'Fight Club' &&
+          x.watchedAt === '2026-01-10' &&
+          (x.rating === 9 || Number(x.rating) === 9),
+      ),
+    ).toBe(true);
+  });
+
   afterEach(async () => {
     await app.close();
   });
