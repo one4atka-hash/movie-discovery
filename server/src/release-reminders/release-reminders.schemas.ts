@@ -38,3 +38,14 @@ export const CreateReleaseReminderSchema = zodSchema(
 export const ReleaseReminderIdParamSchema = zodSchema(
   z.object({ id: z.string().uuid() }).strict(),
 );
+
+export const DevTickSchema = zodSchema(
+  z
+    .object({
+      todayYmd: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
+    })
+    .strict(),
+);

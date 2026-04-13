@@ -79,6 +79,23 @@ export const EnvSchema = z.object({
     .int()
     .positive()
     .default(86_400_000),
+
+  /** Optional cron: enqueue release reminder notifications from movie_release_snapshots. */
+  RELEASE_REMINDERS_CRON_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').toLowerCase())
+    .pipe(z.enum(['', '0', '1', 'false', 'true', 'no', 'yes', 'off', 'on']))
+    .default(''),
+
+  RELEASE_REMINDERS_CRON_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(86_400_000),
+
+  /** ISO region used when resolving dates from cached TMDB release_dates. */
+  RELEASE_REMINDERS_REGION: z.string().optional().default('US'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

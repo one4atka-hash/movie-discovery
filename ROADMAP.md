@@ -501,22 +501,24 @@ Component tests:
   - [x] Server e2e: “Less/Hide” меняет выдачу на следующем запросе.
 
 #### 5.9 Edition-aware + Releases Timeline (точность релизов/версий)
-- [ ] **Release timeline (M1)**:
+- [x] **Release timeline (M1)**:
   - [x] API: `GET /api/movies/:tmdbId/releases?region=...` (snapshot/cached, Postgres `movie_release_snapshots` + TTL `MOVIE_RELEASES_CACHE_TTL_MS`).
   - [x] Reminders: `POST/GET/DELETE /api/release-reminders` (type + window + channels; Postgres `release_reminders`).
-  - [ ] FE: секция “Timeline” в details + список upcoming reminders в Inbox/Notifications.
+  - [x] FE: секция “Timeline” на movie details + форма server reminders; в Inbox — блок «Release reminders (server)» при Load server feed (нужен Server JWT).
 - [ ] **DB + Jobs**:
   - [x] Postgres: `movie_release_snapshots` (кэш TMDB `release_dates`).
   - [x] Postgres: `release_reminders` (правила: `reminder_type` + `window` + `channels`; `last_notified_at` для будущего cron).
-  - [ ] Cron: daily check → enqueue notifications (respect rules/quiet hours).
+  - [x] Cron: периодическая проверка → `notifications` (тип `release`) из кэша `movie_release_snapshots` + `RELEASE_REMINDERS_REGION`; опц. `RELEASE_REMINDERS_CRON_ENABLED` / `RELEASE_REMINDERS_CRON_INTERVAL_MS`. Dev: `POST /api/release-reminders/dev/tick` (+ `todayYmd` при `DEV_ALERTS_ENABLED`).
+  - [ ] Quiet hours / согласование с `alert_rules` (M2).
 - [ ] **Edition-aware (M2)**:
   - [ ] API: `GET /api/movies/:tmdbId/editions` (пока эвристика/ручные метки).
   - [ ] DB: `movie_editions` + связь diary/watch_state с `edition_key` (если нужно).
-- [ ] **Тесты**:
+- [x] **Тесты**:
   - [x] Unit: window / avoid double notify (same calendar day) — `release-reminders-window.util`.
+  - [x] Unit: парсинг даты релиза из snapshot — `release-dates-from-snapshot.util`.
   - [x] e2e (server): `GET /movies/:id/releases` (auth + cache hit; 503 без TMDB key).
   - [x] e2e (server): `POST/GET/DELETE /release-reminders` (auth + validation).
-  - [ ] e2e: создать reminder → появляется в inbox (через time-travel/mock clock / cron).
+  - [x] e2e (server): `dev/tick` + `todayYmd` → уведомление в `GET /notifications` (без повтора в тот же день).
 
 #### 5.10 Shareables (рост и «собирательность»)
 - [ ] **Public profile (M1)**:

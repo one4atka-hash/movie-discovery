@@ -109,6 +109,73 @@ describe('Release reminders (e2e)', () => {
       .expect(400);
   });
 
+  it('dev tick enqueues release notification on trigger day', async () => {
+    const token = await registerAndGetToken(app);
+    const tmdbId = 7_100_000 + Math.floor(Math.random() * 99_000);
+
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            id: tmdbId,
+            results: [
+              {
+                iso_3166_1: 'US',
+                release_dates: [{ type: 3, release_date: '2026-04-20' }],
+              },
+            ],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    );
+
+    await request(app.getHttpServer())
+      .get(`/api/movies/${tmdbId}/releases`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/release-reminders')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        tmdbId,
+        mediaType: 'movie',
+        reminderType: 'theatrical',
+        window: { daysBefore: 7 },
+        channels: { inApp: true },
+      })
+      .expect(201);
+
+    const tick1 = await request(app.getHttpServer())
+      .post('/api/release-reminders/dev/tick')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ todayYmd: '2026-04-13' })
+      .expect(200);
+
+    expect((tick1.body as { ok: boolean; enqueued: number }).ok).toBe(true);
+    expect(
+      (tick1.body as { enqueued: number }).enqueued,
+    ).toBeGreaterThanOrEqual(1);
+
+    const tick2 = await request(app.getHttpServer())
+      .post('/api/release-reminders/dev/tick')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ todayYmd: '2026-04-13' })
+      .expect(200);
+    expect((tick2.body as { enqueued: number }).enqueued).toBe(0);
+
+    const feed = await request(app.getHttpServer())
+      .get('/api/notifications?limit=20')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const items = (feed.body as { items: { type: string }[] }).items;
+    expect(items.some((x) => x.type === 'release')).toBe(true);
+
+    fetchSpy.mockRestore();
+  });
+
   afterEach(async () => {
     await app.close();
   });

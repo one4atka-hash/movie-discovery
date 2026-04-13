@@ -28,6 +28,12 @@ import { TMDB_GENRE_LABELS } from '../data-access/tmdb-genres';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
 import { LoaderComponent } from '@shared/ui/loader/loader.component';
 import { BadgeComponent } from '@shared/ui/badge/badge.component';
+import {
+  ServerCinemaApiService,
+  type MovieReleasesResponse,
+  type ServerReleaseReminderItem,
+} from '@core/server-cinema-api.service';
+import { StorageService } from '@core/storage.service';
 import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
 import { FavoritesService } from '../data-access/services/favorites.service';
 import { MovieService } from '../data-access/services/movie.service';
@@ -247,6 +253,92 @@ import type { WatchStatus } from '@features/watchlist/watch-state.model';
               }
             </div>
           </div>
+
+          @if (serverJwtPresent()) {
+            <section class="timeline" aria-labelledby="timeline-title">
+              <div class="timeline__head">
+                <h2 class="timeline__title" id="timeline-title">
+                  {{ i18n.t('details.timeline.title') }}
+                </h2>
+                <p class="muted timeline__hint">{{ i18n.t('details.timeline.hint') }}</p>
+              </div>
+              @if (movieReleases() === undefined) {
+                <p class="muted">{{ i18n.t('details.timeline.loading') }}</p>
+              } @else if (movieReleases() === null) {
+                <p class="muted">
+                  {{ movieReleasesErr() || i18n.t('details.timeline.unavailable') }}
+                </p>
+              } @else if (movieReleases(); as rel) {
+                <p class="muted">
+                  {{ i18n.t('details.timeline.region') }}: {{ rel.region || effectiveRegion() }} ·
+                  cached:
+                  {{ rel.cached }}
+                </p>
+                <ul class="timeline__list">
+                  @for (row of rel.results; track row.iso31661) {
+                    <li>
+                      <strong>{{ row.iso31661 }}</strong> — {{ row.releaseDates.length }}
+                      {{ i18n.t('details.timeline.entries') }}
+                    </li>
+                  }
+                </ul>
+              }
+
+              <h3 class="timeline__sub">{{ i18n.t('details.timeline.remindersTitle') }}</h3>
+              <div class="timeline__form">
+                <label class="timeline__lbl">
+                  {{ i18n.t('details.timeline.reminderType') }}
+                  <select
+                    class="timeline__select"
+                    [value]="serverReminderType()"
+                    (change)="setServerReminderType($event)"
+                  >
+                    <option value="any">any</option>
+                    <option value="theatrical">theatrical</option>
+                    <option value="digital">digital</option>
+                    <option value="physical">physical</option>
+                  </select>
+                </label>
+                <label class="timeline__lbl">
+                  {{ i18n.t('details.timeline.daysBefore') }}
+                  <input
+                    class="timeline__input"
+                    type="number"
+                    min="0"
+                    max="365"
+                    [value]="serverReminderDaysBefore()"
+                    (input)="setServerReminderDays($any($event.target).valueAsNumber)"
+                  />
+                </label>
+                <label class="timeline__lbl chk">
+                  <input
+                    type="checkbox"
+                    [checked]="serverReminderInApp()"
+                    (change)="serverReminderInApp.set($any($event.target).checked)"
+                  />
+                  {{ i18n.t('details.timeline.inApp') }}
+                </label>
+                <button class="btn btn--primary" type="button" (click)="saveServerReminder(m)">
+                  {{ i18n.t('details.timeline.save') }}
+                </button>
+              </div>
+
+              @if (serverRemindersForMovie().length === 0) {
+                <p class="muted">{{ i18n.t('details.timeline.none') }}</p>
+              } @else {
+                <ul class="timeline__reminders">
+                  @for (r of serverRemindersForMovie(); track r.id) {
+                    <li class="timeline__reminder-row">
+                      <span>{{ r.reminderType }} · {{ r.window.daysBefore }}d</span>
+                      <button class="btn" type="button" (click)="deleteServerReminder(r.id)">
+                        Remove
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
+          }
 
           <section class="hubs" aria-labelledby="streaming-hubs-title">
             <div class="hubs__head">
@@ -676,6 +768,86 @@ import type { WatchStatus } from '@features/watchlist/watch-state.model';
         transform: translateY(-1px);
       }
 
+      .timeline {
+        margin-top: 1.1rem;
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        background: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
+        padding: 1rem 1.1rem 1.15rem;
+        display: grid;
+        gap: 0.75rem;
+      }
+      .timeline__head {
+        display: grid;
+        gap: 0.35rem;
+      }
+      .timeline__title {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+      }
+      .timeline__hint {
+        margin: 0;
+        font-size: 0.88rem;
+        line-height: 1.45;
+      }
+      .timeline__sub {
+        margin: 0.35rem 0 0;
+        font-size: 0.98rem;
+        font-weight: 600;
+      }
+      .timeline__list {
+        margin: 0;
+        padding-left: 1.2rem;
+        color: var(--text-muted);
+        line-height: 1.45;
+      }
+      .timeline__form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        align-items: flex-end;
+      }
+      .timeline__lbl {
+        display: grid;
+        gap: 0.25rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+      .timeline__lbl.chk {
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      .timeline__select,
+      .timeline__input {
+        font: inherit;
+        padding: 0.35rem 0.5rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-subtle);
+        background: color-mix(in srgb, var(--bg-muted) 40%, transparent);
+        color: var(--text);
+      }
+      .timeline__reminders {
+        margin: 0;
+        padding-left: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.45rem;
+      }
+      .timeline__reminder-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.5rem;
+        align-items: center;
+        padding: 0.45rem 0.55rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-subtle);
+        background: rgba(0, 0, 0, 0.12);
+      }
+
       .watch {
         margin-top: 1rem;
         border: 1px solid var(--border-subtle);
@@ -880,6 +1052,8 @@ export class MovieDetailsPageComponent {
   private readonly streamingPrefs = inject(StreamingPrefsService);
   private readonly subsSvc = inject(ReleaseSubscriptionsService);
   private readonly watchState = inject(WatchStateService);
+  private readonly storage = inject(StorageService);
+  private readonly cinemaApi = inject(ServerCinemaApiService);
 
   readonly isAuthed = computed(() => this.auth.isAuthenticated());
 
@@ -1012,6 +1186,55 @@ export class MovieDetailsPageComponent {
     return pickDefaultRegionCode(this.providers(), this.i18n.lang());
   });
 
+  readonly serverJwtPresent = computed(() =>
+    Boolean(this.storage.get<string>('server.jwt.token.v1', '')?.trim()),
+  );
+
+  readonly movieReleases = signal<MovieReleasesResponse | null | undefined>(undefined);
+  readonly movieReleasesErr = signal<string | null>(null);
+  readonly serverRemindersAll = signal<ServerReleaseReminderItem[] | undefined>(undefined);
+  readonly serverReminderType = signal<'theatrical' | 'digital' | 'physical' | 'any'>('any');
+  readonly serverReminderDaysBefore = signal(7);
+  readonly serverReminderInApp = signal(true);
+
+  readonly serverRemindersForMovie = computed(() => {
+    const m = this.movie();
+    const list = this.serverRemindersAll();
+    if (m === undefined || m === null || !list) return [];
+    return list.filter((r) => r.tmdbId === m.id);
+  });
+
+  private readonly syncServerSide = effect(() => {
+    const m = this.movie();
+    const tok = this.storage.get<string>('server.jwt.token.v1', '')?.trim();
+    const region = this.effectiveRegion();
+    if (m === undefined || m === null || !tok) {
+      untracked(() => {
+        this.movieReleases.set(undefined);
+        this.serverRemindersAll.set(undefined);
+        this.movieReleasesErr.set(null);
+      });
+      return;
+    }
+    untracked(() => {
+      this.movieReleases.set(undefined);
+      this.movieReleasesErr.set(null);
+      this.cinemaApi.getMovieReleases(m.id, region).subscribe({
+        next: (r) => {
+          this.movieReleases.set(r);
+        },
+        error: () => {
+          this.movieReleases.set(null);
+          this.movieReleasesErr.set('failed');
+        },
+      });
+      this.cinemaApi.listReleaseReminders().subscribe({
+        next: (r) => this.serverRemindersAll.set(r?.items ?? []),
+        error: () => this.serverRemindersAll.set([]),
+      });
+    });
+  });
+
   readonly countryPacket = computed(() => this.providers()[this.effectiveRegion()]);
 
   readonly watchLinkActive = computed(() => this.countryPacket()?.link ?? null);
@@ -1127,6 +1350,55 @@ export class MovieDetailsPageComponent {
     } catch (e) {
       this.releaseSubscribeError.set(e instanceof Error ? e.message : '—');
     }
+  }
+
+  setServerReminderType(ev: Event): void {
+    const v = (ev.target as HTMLSelectElement).value;
+    if (v === 'any' || v === 'theatrical' || v === 'digital' || v === 'physical') {
+      this.serverReminderType.set(v);
+    }
+  }
+
+  setServerReminderDays(v: number): void {
+    this.serverReminderDaysBefore.set(this.clampInt(v, 0, 365));
+  }
+
+  clampInt(v: number, min: number, max: number): number {
+    if (!Number.isFinite(v)) return min;
+    return Math.min(max, Math.max(min, Math.trunc(v)));
+  }
+
+  saveServerReminder(m: Movie): void {
+    this.cinemaApi
+      .createReleaseReminder({
+        tmdbId: m.id,
+        mediaType: 'movie',
+        reminderType: this.serverReminderType(),
+        window: { daysBefore: this.serverReminderDaysBefore() },
+        channels: {
+          inApp: this.serverReminderInApp(),
+          webPush: false,
+          email: false,
+          calendar: false,
+        },
+      })
+      .subscribe((r) => {
+        if (r?.ok) {
+          this.cinemaApi.listReleaseReminders().subscribe({
+            next: (x) => this.serverRemindersAll.set(x?.items ?? []),
+          });
+        }
+      });
+  }
+
+  deleteServerReminder(id: string): void {
+    this.cinemaApi.deleteReleaseReminder(id).subscribe((r) => {
+      if (r?.ok) {
+        this.cinemaApi.listReleaseReminders().subscribe({
+          next: (x) => this.serverRemindersAll.set(x?.items ?? []),
+        });
+      }
+    });
   }
 
   downloadReleaseIcs(m: Movie): void {

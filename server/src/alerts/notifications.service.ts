@@ -57,4 +57,26 @@ export class NotificationsService {
       [userId],
     );
   }
+
+  async insertReleaseReminderNotification(
+    userId: string,
+    input: {
+      tmdbId: number;
+      title: string;
+      body: string | null;
+      payload: Record<string, unknown>;
+    },
+  ): Promise<void> {
+    await this.db.exec(
+      `insert into notifications(user_id, type, title, body, tmdb_id, payload)
+       values ($1, 'release', $2, $3, $4, $5::jsonb)`,
+      [
+        userId,
+        input.title,
+        input.body,
+        input.tmdbId,
+        JSON.stringify(input.payload),
+      ],
+    );
+  }
 }

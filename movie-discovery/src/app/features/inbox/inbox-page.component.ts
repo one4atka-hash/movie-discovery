@@ -18,7 +18,11 @@ import { ToastService } from '@shared/ui/toast/toast.service';
 import type { AlertRule, InboxItem } from './inbox.model';
 import { InboxService } from './inbox.service';
 import { AlertsApiService, type ServerNotificationItem } from './alerts-api.service';
-import { firstValueFrom } from 'rxjs';
+import {
+  ServerCinemaApiService,
+  type ServerReleaseReminderItem,
+} from '@core/server-cinema-api.service';
+import { firstValueFrom, forkJoin } from 'rxjs';
 import { MovieService } from '@features/movies/data-access/services/movie.service';
 import type { Movie } from '@features/movies/data-access/models/movie.model';
 
@@ -111,13 +115,38 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
         </app-card>
 
         <app-empty-state
-          *ngIf="tab() === 'feed' && !items().length && !serverRows().length"
+          *ngIf="
+            tab() === 'feed' && !items().length && !serverRows().length && !reminderRows().length
+          "
           title="Нет событий"
           subtitle="Итерация 5.2: Inbox + Rules. Пока это локальный MVP. Добавьте sample или создайте rule."
         >
           <app-button variant="secondary" (click)="svc.addSample()">Add sample</app-button>
           <app-button variant="ghost" routerLink="/notifications">Релиз‑уведомления</app-button>
         </app-empty-state>
+
+        <div class="list" *ngIf="tab() === 'feed' && reminderRows().length">
+          <p class="muted" style="margin: 0 0 0.5rem">
+            {{ i18n.t('inbox.serverReminders.title') }}
+          </p>
+          <app-card
+            *ngFor="let it of reminderRows(); trackBy: trackByReminderId"
+            [title]="'TMDB ' + it.tmdbId + ' · ' + it.reminderType"
+            class="inbox-server-row"
+          >
+            <p class="muted">
+              {{ it.window.daysBefore }}d before · inApp={{ it.channels['inApp'] ? 'on' : 'off' }}
+            </p>
+            <p class="muted">
+              <small>{{ it.createdAt }}</small>
+            </p>
+            <div class="actions">
+              <app-button variant="ghost" [routerLink]="['/movie', it.tmdbId]"
+                >Open movie</app-button
+              >
+            </div>
+          </app-card>
+        </div>
 
         <div class="list" *ngIf="tab() === 'feed' && serverRows().length">
           <p class="muted" style="margin: 0 0 0.5rem">Server inbox</p>
@@ -458,10 +487,13 @@ export class InboxPageComponent {
   private readonly movies = inject(MovieService);
   private readonly storage = inject(StorageService);
   private readonly alertsApi = inject(AlertsApiService);
+  private readonly cinemaApi = inject(ServerCinemaApiService);
 
   serverToken = this.storage.get<string>(SERVER_JWT_KEY, '') ?? '';
   private readonly _serverRows = signal<ServerNotificationItem[]>([]);
   readonly serverRows = this._serverRows.asReadonly();
+  private readonly _reminderRows = signal<ServerReleaseReminderItem[]>([]);
+  readonly reminderRows = this._reminderRows.asReadonly();
   private readonly _serverBusy = signal(false);
   readonly serverBusy = this._serverBusy.asReadonly();
   private readonly _serverErr = signal<string | null>(null);
@@ -482,9 +514,13 @@ export class InboxPageComponent {
     this.storage.set(SERVER_JWT_KEY, t);
     this._serverErr.set(null);
     this._serverBusy.set(true);
-    this.alertsApi.listNotifications(t).subscribe({
-      next: (r) => {
-        this._serverRows.set(r.items);
+    forkJoin({
+      notifications: this.alertsApi.listNotifications(t),
+      reminders: this.cinemaApi.listReleaseReminders(),
+    }).subscribe({
+      next: ({ notifications, reminders }) => {
+        this._serverRows.set(notifications.items);
+        this._reminderRows.set(reminders?.items ?? []);
         this._serverBusy.set(false);
       },
       error: (e) => this.handleServerErr(e),
@@ -550,6 +586,10 @@ export class InboxPageComponent {
   }
 
   trackByServerId(_: number, it: ServerNotificationItem): string {
+    return it.id;
+  }
+
+  trackByReminderId(_: number, it: ServerReleaseReminderItem): string {
     return it.id;
   }
 

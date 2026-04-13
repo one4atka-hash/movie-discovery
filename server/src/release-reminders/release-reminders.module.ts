@@ -1,10 +1,14 @@
 import { Module } from '@nestjs/common';
 
+import { AlertsModule } from '../alerts/alerts.module';
+
+import { ReleaseRemindersCronService } from './release-reminders-cron.service';
 import { ReleaseRemindersController } from './release-reminders.controller';
 import { ReleaseRemindersService } from './release-reminders.service';
 
 @Module({
+  imports: [AlertsModule],
   controllers: [ReleaseRemindersController],
-  providers: [ReleaseRemindersService],
+  providers: [ReleaseRemindersService, ReleaseRemindersCronService],
 })
 export class ReleaseRemindersModule {}
