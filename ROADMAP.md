@@ -431,12 +431,12 @@ Component tests:
   - [x] `GET /api/decision-sessions/:id`, `POST /api/decision-sessions/:id/pick`.
 - [ ] **DB (M1)**:
   - [x] `decision_sessions`, `decision_candidates`, `decision_picks`.
-- [ ] **Group voting (M2)**:
-  - [ ] `POST /api/decision-sessions/:id/share` → share link.
-  - [ ] Public view + anonymous votes (rate-limited) + “reveal winner”.
-- [ ] **Тесты**:
+- [x] **Group voting (M2)**:
+  - [x] `POST /api/decision-sessions/:id/share` → share link.
+  - [x] Public view + anonymous votes (rate-limited) + “reveal winner”.
+- [x] **Тесты**:
   - [x] FE e2e: constraints → winner → open movie.
-  - [ ] API e2e: share link + voting flow.
+  - [x] API e2e: share link + voting flow.
 
 #### 5.6 Collections & Taste Graph (списки как контент + граф вкуса)
 - [ ] **Collections (M1: CRUD)**:

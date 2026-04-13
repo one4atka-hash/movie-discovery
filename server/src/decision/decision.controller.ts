@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { z } from 'zod';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -26,6 +34,16 @@ export class DecisionController {
       mode: body.mode ?? 'top5',
       constraints: body.constraints ?? {},
     });
+  }
+
+  @Post(':id/share')
+  @HttpCode(201)
+  async share(
+    @CurrentUser() u: AuthedUser,
+    @Param(new ZodBodyPipe(DecisionSessionIdParamSchema))
+    p: z.infer<typeof DecisionSessionIdParamSchema>,
+  ) {
+    return await this.svc.createShareLink(u.id, p.id);
   }
 
   @Get(':id')

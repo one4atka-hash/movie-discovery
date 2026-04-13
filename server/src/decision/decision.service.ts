@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import * as crypto from 'node:crypto';
+
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { DbService } from '../db/db.service';
 
@@ -145,5 +151,160 @@ export class DecisionService {
     );
 
     return { ok: true };
+  }
+
+  async createShareLink(
+    userId: string,
+    sessionId: string,
+  ): Promise<{
+    token: string;
+    sharePath: string;
+  }> {
+    const found = await this.db.query<{
+      id: string;
+      share_token: string | null;
+    }>(
+      `select id, share_token from decision_sessions where id = $1 and user_id = $2`,
+      [sessionId, userId],
+    );
+    if (!found[0]) throw new NotFoundException('Decision session not found');
+
+    if (found[0].share_token) {
+      const token = found[0].share_token;
+      return {
+        token,
+        sharePath: `/api/public/decision-sessions/${token}`,
+      };
+    }
+
+    const token = crypto.randomBytes(24).toString('hex');
+    await this.db.exec(
+      `update decision_sessions set share_token = $1 where id = $2 and user_id = $3`,
+      [token, sessionId, userId],
+    );
+    return {
+      token,
+      sharePath: `/api/public/decision-sessions/${token}`,
+    };
+  }
+
+  async getPublicSession(shareToken: string): Promise<{
+    id: string;
+    mode: 'top5' | 'roulette';
+    constraints: Record<string, unknown>;
+    createdAt: string;
+    candidates: {
+      tmdbId: number;
+      score: number;
+      explain: unknown[];
+    }[];
+  }> {
+    const s = await this.db.query<SessionRow>(
+      `select id, user_id, mode, constraints, created_at
+       from decision_sessions
+       where share_token = $1`,
+      [shareToken],
+    );
+    if (!s[0]) throw new NotFoundException('Session not found');
+
+    return this.loadSessionForPublic(s[0].id, s[0]);
+  }
+
+  async votePublic(
+    shareToken: string,
+    voterKey: string,
+    tmdbId: number,
+  ): Promise<void> {
+    const s = await this.db.query<{ id: string }>(
+      `select id from decision_sessions where share_token = $1`,
+      [shareToken],
+    );
+    if (!s[0]) throw new NotFoundException('Session not found');
+    const sessionId = s[0].id;
+
+    const cand = await this.db.query<{ ok: string }>(
+      `select 1::text as ok
+       from decision_candidates
+       where session_id = $1 and tmdb_id = $2`,
+      [sessionId, tmdbId],
+    );
+    if (!cand[0]) {
+      throw new BadRequestException('tmdbId is not a candidate');
+    }
+
+    await this.db.exec(
+      `insert into decision_session_votes(session_id, tmdb_id, voter_key)
+       values ($1, $2, $3)
+       on conflict (session_id, voter_key)
+       do update set tmdb_id = excluded.tmdb_id, created_at = now()`,
+      [sessionId, tmdbId, voterKey],
+    );
+  }
+
+  async getPublicResults(shareToken: string): Promise<{
+    tallies: { tmdbId: number; votes: number }[];
+    winner: { tmdbId: number; votes: number } | null;
+  }> {
+    const s = await this.db.query<{ id: string }>(
+      `select id from decision_sessions where share_token = $1`,
+      [shareToken],
+    );
+    if (!s[0]) throw new NotFoundException('Session not found');
+    const sessionId = s[0].id;
+
+    const rows = await this.db.query<{ tmdb_id: number; votes: string }>(
+      `select tmdb_id, count(*)::text as votes
+       from decision_session_votes
+       where session_id = $1
+       group by tmdb_id
+       order by count(*) desc, tmdb_id asc`,
+      [sessionId],
+    );
+
+    const tallies = rows.map((r) => ({
+      tmdbId: r.tmdb_id,
+      votes: Number(r.votes),
+    }));
+    const winner =
+      tallies[0] && tallies[0].votes > 0
+        ? { tmdbId: tallies[0].tmdbId, votes: tallies[0].votes }
+        : null;
+
+    return { tallies, winner };
+  }
+
+  private async loadSessionForPublic(
+    id: string,
+    row: SessionRow,
+  ): Promise<{
+    id: string;
+    mode: 'top5' | 'roulette';
+    constraints: Record<string, unknown>;
+    createdAt: string;
+    candidates: {
+      tmdbId: number;
+      score: number;
+      explain: unknown[];
+    }[];
+  }> {
+    const cs = await this.db.query<CandidateRow>(
+      `select session_id, tmdb_id, score, explain
+       from decision_candidates
+       where session_id = $1
+       order by score desc, tmdb_id desc`,
+      [id],
+    );
+
+    return {
+      id: row.id,
+      mode: row.mode,
+      constraints: (row.constraints ?? {}) as Record<string, unknown>,
+      createdAt: row.created_at,
+      candidates: cs.map((r) => ({
+        tmdbId: r.tmdb_id,
+        score: r.score,
+        explain: (r.explain ?? []) as unknown[],
+      })),
+    };
   }
 }
