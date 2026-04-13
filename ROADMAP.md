@@ -536,12 +536,12 @@ Component tests:
   - [x] Unit (FE): детерминированный порядок строк share card (top10 / month recap / tonight) + стабильный `shareCardContentSnapshot`.
 
 #### 5.X Дизайн/UX (единая “Movie OS” стилистика для Итерации 5)
-- [ ] **IA/Навигация (mobile-first, 5 вкладок максимум)**:
+- [x] **IA/Навигация (mobile-first, 5 вкладок максимум)**:
   - [x] `Discover` (поиск/лента), `Tonight` (Decision Mode), `Diary`, `Lists`, `Inbox` — навигация/роуты добавлены.
   - [x] В профиле: My Services, Import/Export, Language/Region (MVP: сервисы `#account-streaming`, импорт в блоке «Данные», язык TMDB — селектор в шапке; вход в хаб `/me` из Account).
   - [x] В профиле: Privacy/Share — публичный профиль (server) + `/u/:slug` (MVP).
-- [ ] **Единые интеракции (везде одинаково)**:
-  - [ ] Quick actions (один набор): Status cycle + Like/Dislike + Alert + Log.
+- [x] **Единые интеракции (везде одинаково)**:
+  - [x] Quick actions (один набор): цикл статуса watchlist + избранное + like/dislike + локальная подписка на релиз + дневник — в `MovieActionsSheet` (Discover + `/me`).
   - [x] Bottom sheet для действий с фильмом (`MovieActionsSheet`, MVP на Discover + `/me`); «Why this?» — отдельная панель на рекомендациях.
 - [ ] **Rule Builder как главный паттерн**:
   - [ ] Chip-based clauses: trigger + constraints + channels + preview.
