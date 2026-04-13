@@ -13,6 +13,7 @@ import { I18nService } from '@shared/i18n/i18n.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import { DecisionService } from './decision.service';
 import type { Movie } from '@features/movies/data-access/models/movie.model';
+import { saveDecisionCandidatesForShare } from '@features/share-cards/decision-shortlist-share.storage';
 import { pickWinner, type DecisionConstraints, type DecisionMode } from './decision.util';
 import { MovieCardComponent } from '@features/movies/ui/movie-card/movie-card.component';
 import { StreamingPrefsService } from '@features/streaming/streaming-prefs.service';
@@ -364,6 +365,7 @@ export class DecisionPageComponent {
     this.decision.buildCandidates(this.constraints()).subscribe({
       next: (arr) => {
         this.candidates.set(arr);
+        saveDecisionCandidatesForShare(arr);
         if (!arr.length) {
           this.toast.show(
             'warning',

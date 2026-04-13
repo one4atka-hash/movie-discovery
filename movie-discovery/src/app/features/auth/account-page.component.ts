@@ -45,6 +45,18 @@ import {
         <p class="sub">{{ i18n.t('account.subtitle') }}</p>
       </header>
 
+      <section
+        class="account-block"
+        id="account-share-cards"
+        aria-labelledby="account-share-cards-title"
+      >
+        <h2 class="account-block__title" id="account-share-cards-title">
+          {{ i18n.t('account.shareCards.title') }}
+        </h2>
+        <p class="muted">{{ i18n.t('account.shareCards.hint') }}</p>
+        <a class="btn btn--primary" routerLink="/share">{{ i18n.t('account.shareCards.open') }}</a>
+      </section>
+
       <ng-container *ngIf="user() as u; else authTpl">
         <div class="card card--who">
           <p class="muted">{{ i18n.t('account.loggedInAs') }}</p>

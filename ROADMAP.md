@@ -525,15 +525,15 @@ Component tests:
   - [x] API: `GET/PUT /api/me/public-profile` + public `GET /api/u/:slug` (privacy-filtered: только `enabled` + `visibility` в `unlisted|public`; секции из `sections`).
   - [x] DB: `public_profiles` (миграция `015_public_profiles.sql`: slug, enabled, visibility, sections jsonb).
   - [x] FE: маршрут `/u/:slug` + блок настроек в Account (Server JWT): slug, enabled, visibility, секции favorites/diary/watchlist.
-- [ ] **Share cards (M1)**:
-  - [ ] FE renderer (HTML/CSS) + “Export to image” (client-only first).
-  - [ ] Templates: top-10, month recap (diary), tonight shortlist.
+- [x] **Share cards (M1)**:
+  - [x] FE renderer (HTML/CSS) + “Export to image” (client-only first, html2canvas → PNG).
+  - [x] Templates: top-10, month recap (diary), tonight shortlist (кандидаты из сессии после «Собрать shortlist» на Tonight).
 - [ ] **Synthesis hub (M2)**:
   - [ ] FE: `/me` (единый хаб): watchlist + diary + alerts + recs + quick add.
   - [ ] Общий “movie actions” bottom sheet для всех поверхностей.
 - [ ] **Тесты**:
   - [x] e2e (server): публичный `GET /u/:slug` при unlisted + секции; `private` → 404; конфликт slug → 409.
-  - [ ] snapshot: share card layout детерминирован (без прыжков).
+  - [x] Unit (FE): детерминированный порядок строк share card (top10 / month recap / tonight) + стабильный `shareCardContentSnapshot`.
 
 #### 5.X Дизайн/UX (единая “Movie OS” стилистика для Итерации 5)
 - [ ] **IA/Навигация (mobile-first, 5 вкладок максимум)**:

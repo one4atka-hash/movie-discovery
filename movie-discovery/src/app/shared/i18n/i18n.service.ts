@@ -90,6 +90,33 @@ const RU: Dict = {
   'publicProfile.entries': 'Записей',
   'publicProfile.watchlist': 'Смотреть позже',
 
+  'share.title': 'Карточки для соцсетей',
+  'share.subtitle':
+    'Шаблоны с фиксированной вёрсткой (720×900): топ избранного, дневник за месяц, shortlist «Сегодня». Экспорт PNG в браузере (html2canvas).',
+  'share.backAccount': 'Аккаунт',
+  'share.templateTop10': 'Топ‑10',
+  'share.templateMonth': 'Месяц',
+  'share.templateTonight': 'Сегодня',
+  'share.monthLabel': 'Месяц',
+  'share.headTop10': 'Топ избранного',
+  'share.headMonth': 'Дневник за месяц',
+  'share.headTonight': 'Shortlist «Сегодня»',
+  'share.cardFooter': 'Сгенерировано в Movie Discovery',
+  'share.exportPng': 'Скачать PNG',
+  'share.emptyTop10': 'Добавьте фильмы в избранное — тогда появится превью.',
+  'share.emptyMonth':
+    'В этом месяце нет записей дневника. Выберите другой месяц или добавьте просмотры.',
+  'share.emptyTonight':
+    'Сначала откройте «Сегодня» и нажмите «Собрать shortlist» — мы сохраним кандидатов для этой карточки (сессия браузера).',
+  'share.exportOkTitle': 'Готово',
+  'share.exportOkBody': 'PNG сохранён.',
+  'share.exportFailTitle': 'Не вышло',
+  'share.exportFailBody': 'Попробуйте ещё раз или отключите блокировку загрузок.',
+  'account.shareCards.title': 'Карточки для соцсетей',
+  'account.shareCards.hint':
+    'Экспорт картинки: избранное, дневник за месяц или shortlist с страницы «Сегодня».',
+  'account.shareCards.open': 'Открыть /share',
+
   'notifications.title': 'Уведомления о релизах',
   'notifications.subtitle': 'Отметьте фильм — и в день выхода мы напомним (канал выбираете вы).',
   'notifications.addFromSearch': 'Добавить из поиска',
@@ -268,6 +295,31 @@ const EN: Dict = {
   'publicProfile.diary': 'Diary',
   'publicProfile.entries': 'Entries',
   'publicProfile.watchlist': 'Watchlist',
+
+  'share.title': 'Share cards',
+  'share.subtitle':
+    'Fixed-layout templates (720×900): top favorites, diary month recap, Tonight shortlist. PNG export in the browser (html2canvas).',
+  'share.backAccount': 'Account',
+  'share.templateTop10': 'Top 10',
+  'share.templateMonth': 'Month',
+  'share.templateTonight': 'Tonight',
+  'share.monthLabel': 'Month',
+  'share.headTop10': 'Top favorites',
+  'share.headMonth': 'Diary month recap',
+  'share.headTonight': 'Tonight shortlist',
+  'share.cardFooter': 'Generated in Movie Discovery',
+  'share.exportPng': 'Download PNG',
+  'share.emptyTop10': 'Add some favorites to see a preview.',
+  'share.emptyMonth': 'No diary entries for this month. Pick another month or log watches.',
+  'share.emptyTonight':
+    'Open Tonight and tap “Build shortlist” first — we store candidates for this card for the browser session.',
+  'share.exportOkTitle': 'Done',
+  'share.exportOkBody': 'PNG saved.',
+  'share.exportFailTitle': 'Export failed',
+  'share.exportFailBody': 'Try again or check download permissions.',
+  'account.shareCards.title': 'Share cards',
+  'account.shareCards.hint': 'Image export: favorites, diary month, or Tonight shortlist.',
+  'account.shareCards.open': 'Open /share',
 
   'notifications.title': 'Release alerts',
   'notifications.subtitle':

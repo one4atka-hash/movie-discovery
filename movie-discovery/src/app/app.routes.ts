@@ -46,6 +46,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'share',
+    loadComponent: () =>
+      import('./features/share-cards/share-cards-page.component').then(
+        (c) => c.ShareCardsPageComponent,
+      ),
+  },
+  {
     path: 'import',
     loadComponent: () =>
       import('./features/import/import-page.component').then((c) => c.ImportPageComponent),
