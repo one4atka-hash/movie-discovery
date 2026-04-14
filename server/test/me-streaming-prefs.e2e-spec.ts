@@ -80,6 +80,30 @@ describe('Me streaming prefs (e2e)', () => {
       .expect(400);
   });
 
+  it('GET /api/me/movie-features/embeddings/seeds requires auth', async () => {
+    await request(app.getHttpServer())
+      .get('/api/me/movie-features/embeddings/seeds?limit=10')
+      .expect(401);
+  });
+
+  it('GET /api/me/movie-features/embeddings/seeds returns ids from favorites', async () => {
+    const token = await registerAndGetToken(app);
+    await request(app.getHttpServer())
+      .post('/api/favorites')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ tmdbId: 550 })
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .get('/api/me/movie-features/embeddings/seeds?limit=50')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const body = res.body as { ok: true; tmdbIds: number[] };
+    expect(body.ok).toBe(true);
+    expect(body.tmdbIds).toContain(550);
+  });
+
   afterEach(async () => {
     await app.close();
   });

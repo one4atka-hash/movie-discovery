@@ -238,8 +238,15 @@ import {
               <details *ngIf="seeds().length" class="why" style="margin-top: 0.65rem">
                 <summary class="why__sum">Seeds preview ({{ seeds().length }})</summary>
                 <ul class="why__list">
-                  <li *ngFor="let id of seeds()">TMDB {{ id }}</li>
+                  <li *ngFor="let id of seedsShown()">TMDB {{ id }}</li>
                 </ul>
+                <p
+                  class="muted"
+                  *ngIf="seeds().length > seedsShown().length"
+                  style="margin: 0.35rem 0 0"
+                >
+                  …и ещё {{ seeds().length - seedsShown().length }}
+                </p>
               </details>
               <div class="subs-grid" *ngIf="jobs().length" style="margin-top: 0.65rem">
                 <article class="subCard" *ngFor="let j of jobs(); trackBy: trackByJobId">
@@ -827,6 +834,7 @@ export class AccountPageComponent {
   readonly jobs = signal<readonly EmbeddingsJobItem[]>([]);
   readonly embeddingsLimit = new FormControl<number>(50, { nonNullable: true });
   readonly seeds = signal<readonly number[]>([]);
+  readonly seedsShown = computed(() => this.seeds().slice(0, 50));
   private jobsPollTimer: ReturnType<typeof setInterval> | null = null;
   private jobsPollEndsAt = 0;
   private readonly destroyRef = inject(DestroyRef);
