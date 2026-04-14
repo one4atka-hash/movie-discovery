@@ -270,9 +270,9 @@ import {
                       class="btn"
                       type="button"
                       (click)="runEmbeddingsJob(j.id)"
-                      [disabled]="jobsBusy()"
+                      [disabled]="jobsBusy() || j.status === 'running'"
                     >
-                      Run
+                      {{ j.status === 'running' ? 'Running…' : 'Run' }}
                     </button>
                   </div>
                 </article>
@@ -860,6 +860,11 @@ export class AccountPageComponent {
   readonly favorites = computed(() => this.fav.favorites());
 
   constructor() {
+    // If JWT is already persisted, pre-load jobs immediately.
+    if (this.serverJwt.value.trim()) {
+      this.loadEmbeddingsJobs({ silent: true });
+    }
+
     // Auto-load jobs when JWT becomes available/changes.
     this.serverJwt.valueChanges.pipe(debounceTime(250), distinctUntilChanged()).subscribe(() => {
       const token = this.serverJwt.value.trim();
