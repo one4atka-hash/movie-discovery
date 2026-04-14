@@ -705,6 +705,11 @@ Component tests:
 - [x] Продвинутые пояснения: native `<details>/<summary>` (уже используется в Inbox/import).
 - [x] i18n‑конвенция: `<feature>.<block>.purpose` + `<feature>.<block>.instruction` (+ `.emptyTitle/.emptyInstruction`).
 
+##### 6.6.4 Discover блоки (главная) — upcoming/скорые релизы
+- [x] Добавить блок **“Скоро выйдет”** (TMDB upcoming): все фильмы с датой релиза в будущем, сортировка по `release_date` ASC (ближайшие сверху).
+- [x] На главной: компактный вид (1–2 строки) + expand + переход на отдельную страницу `/upcoming`.
+- [x] На странице `/upcoming`: полный список (paging/infinite scroll), без “исчезания” элементов от лайков (снимок на момент загрузки).
+
 #### 6.7 Account UX (user‑friendly, без токенов) — **backlog**
 Цель: `/account` как “профиль + подключения + приватность + данные”, без ручной работы с JWT/секретами.
 
