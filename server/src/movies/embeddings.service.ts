@@ -14,11 +14,57 @@ type MovieFeatureSeed = {
 export class EmbeddingsService {
   constructor(private readonly config: ConfigService) {}
 
-  async embedMovieFeature(seed: MovieFeatureSeed): Promise<{
-    vector: number[];
-    provider: 'deterministic' | 'openai';
-    model?: string;
-  }> {
+  private buildInput(seed: MovieFeatureSeed): string {
+    return [
+      seed.title ?? '',
+      seed.overview ?? '',
+      seed.lang ? `lang:${seed.lang}` : '',
+      `tmdbId:${seed.tmdbId}`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  private async retryingFetch(
+    input: string,
+    init: RequestInit,
+    opts: { attempts: number; baseDelayMs: number },
+  ): Promise<Response> {
+    const attempts = Math.max(1, Math.trunc(opts.attempts));
+    const baseDelayMs = Math.max(0, Math.trunc(opts.baseDelayMs));
+
+    let last: Response | null = null;
+    for (let i = 0; i < attempts; i += 1) {
+      const res = await fetch(input, init);
+      last = res;
+      if (res.ok) return res;
+      if (res.status !== 429 && res.status < 500) return res;
+      if (i === attempts - 1) return res;
+
+      const waitMs = baseDelayMs * Math.pow(2, i);
+      if (waitMs > 0) {
+        await new Promise<void>((resolve) => {
+          setTimeout(() => resolve(), waitMs);
+        });
+      }
+    }
+    return last ?? (await fetch(input, init));
+  }
+
+  async embedMovieFeatures(seeds: readonly MovieFeatureSeed[]): Promise<
+    | {
+        tmdbId: number;
+        ok: true;
+        vector: number[];
+        provider: 'deterministic' | 'openai';
+        model?: string;
+      }[]
+    | {
+        ok: false;
+        provider: 'deterministic' | 'openai';
+        error: string;
+      }
+  > {
     const provider = (this.config.get<string>('EMBEDDINGS_PROVIDER') ?? '')
       .toLowerCase()
       .trim();
@@ -26,9 +72,11 @@ export class EmbeddingsService {
     if (provider === 'openai') {
       const apiKey = this.config.get<string>('OPENAI_API_KEY') ?? '';
       if (!apiKey) {
-        throw new Error(
-          'OPENAI_API_KEY is required for EMBEDDINGS_PROVIDER=openai',
-        );
+        return {
+          ok: false,
+          provider: 'openai',
+          error: 'OPENAI_API_KEY is required for EMBEDDINGS_PROVIDER=openai',
+        };
       }
       const model =
         this.config.get<string>('OPENAI_EMBEDDINGS_MODEL') ??
@@ -40,48 +88,100 @@ export class EmbeddingsService {
         ? baseUrl.slice(0, -1)
         : baseUrl;
 
-      const input = [
-        seed.title ?? '',
-        seed.overview ?? '',
-        seed.lang ? `lang:${seed.lang}` : '',
-        `tmdbId:${seed.tmdbId}`,
-      ]
-        .filter(Boolean)
-        .join('\n');
-
-      const res = await fetch(`${normBaseUrl}/embeddings`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'content-type': 'application/json',
+      const input = seeds.map((s) => this.buildInput(s));
+      const res = await this.retryingFetch(
+        `${normBaseUrl}/embeddings`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ model, input }),
         },
-        body: JSON.stringify({ model, input }),
-      });
+        { attempts: 3, baseDelayMs: 200 },
+      );
       if (!res.ok) {
         const text = await res.text().catch(() => '');
-        throw new Error(
-          `OpenAI embeddings failed: ${res.status} ${text}`.trim(),
-        );
+        return {
+          ok: false,
+          provider: 'openai',
+          error: `OpenAI embeddings failed: ${res.status} ${text}`.trim(),
+        };
       }
       const data = (await res.json().catch(() => null)) as {
-        data?: { embedding?: unknown }[];
+        data?: { embedding?: unknown; index?: number }[];
       } | null;
-      const vec = data?.data?.[0]?.embedding;
-      if (!Array.isArray(vec)) {
-        throw new Error('OpenAI embeddings response is invalid');
+      const items = Array.isArray(data?.data) ? (data?.data ?? []) : [];
+
+      const byIndex = new Map<number, unknown>();
+      for (let i = 0; i < items.length; i += 1) {
+        const it = items[i];
+        if (!it) continue;
+        const idx = typeof it.index === 'number' ? it.index : i;
+        if (idx >= 0) byIndex.set(idx, it.embedding);
       }
-      const out = vec
-        .map((x) => (typeof x === 'number' ? x : Number(x)))
-        .filter((n) => Number.isFinite(n));
-      return { vector: out, provider: 'openai', model };
+
+      const out: {
+        tmdbId: number;
+        ok: true;
+        vector: number[];
+        provider: 'openai';
+        model: string;
+      }[] = [];
+      for (let i = 0; i < seeds.length; i += 1) {
+        const emb = byIndex.get(i);
+        if (!Array.isArray(emb)) {
+          return {
+            ok: false,
+            provider: 'openai',
+            error: `OpenAI embeddings missing item index=${i}`,
+          };
+        }
+        const vec = emb
+          .map((x) => (typeof x === 'number' ? x : Number(x)))
+          .filter((n) => Number.isFinite(n));
+        out.push({
+          tmdbId: seeds[i]?.tmdbId ?? 0,
+          ok: true,
+          vector: vec,
+          provider: 'openai',
+          model,
+        });
+      }
+      return out;
     }
 
-    const vector = deterministicEmbedding({
-      tmdbId: seed.tmdbId,
-      title: seed.title,
-      overview: seed.overview,
-      lang: seed.lang,
-    });
-    return { vector, provider: 'deterministic' };
+    return seeds.map((s) => ({
+      tmdbId: s.tmdbId,
+      ok: true,
+      vector: deterministicEmbedding({
+        tmdbId: s.tmdbId,
+        title: s.title,
+        overview: s.overview,
+        lang: s.lang,
+      }),
+      provider: 'deterministic' as const,
+    }));
+  }
+
+  async embedMovieFeature(seed: MovieFeatureSeed): Promise<{
+    vector: number[];
+    provider: 'deterministic' | 'openai';
+    model?: string;
+  }> {
+    const batch = await this.embedMovieFeatures([seed]);
+    if (!Array.isArray(batch)) {
+      throw new Error(batch.error);
+    }
+    const item = batch[0];
+    if (!item) {
+      throw new Error('Embeddings provider returned no vector');
+    }
+    return {
+      vector: item.vector,
+      provider: item.provider,
+      model: item.model,
+    };
   }
 }

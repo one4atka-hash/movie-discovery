@@ -65,26 +65,57 @@ export class MovieFeatureJobsRunnerService {
     for (const r of rows) byId.set(r.tmdb_id, r);
 
     let missing = 0;
-    for (const id of tmdbIds) {
-      const r = byId.get(id);
-      if (!r) {
-        missing += 1;
+    let embedFailures = 0;
+
+    const seeds = tmdbIds
+      .map((id) => {
+        const r = byId.get(id);
+        if (!r) {
+          missing += 1;
+          return null;
+        }
+        return {
+          tmdbId: id,
+          title: r.title,
+          overview: r.overview,
+          lang: r.lang,
+        };
+      })
+      .filter(
+        (
+          x,
+        ): x is {
+          tmdbId: number;
+          title: string | null;
+          overview: string | null;
+          lang: string | null;
+        } => Boolean(x),
+      );
+
+    const chunkSize = 32;
+    for (let i = 0; i < seeds.length; i += chunkSize) {
+      const chunk = seeds.slice(i, i + chunkSize);
+      const res = await this.embeddings.embedMovieFeatures(chunk);
+      if (!Array.isArray(res)) {
+        embedFailures += chunk.length;
         continue;
       }
-      const embRes = await this.embeddings.embedMovieFeature({
-        tmdbId: id,
-        title: r.title,
-        overview: r.overview,
-        lang: r.lang,
-      });
-      const emb = embRes.vector;
-      const lit = toPgVectorLiteral(emb);
-      await this.db.exec(
-        `update movie_features
-         set embedding = $2::vector, updated_at = now()
-         where tmdb_id = $1`,
-        [id, lit],
-      );
+
+      const vecById = new Map(res.map((r) => [r.tmdbId, r.vector] as const));
+      for (const s of chunk) {
+        const emb = vecById.get(s.tmdbId);
+        if (!emb) {
+          embedFailures += 1;
+          continue;
+        }
+        const lit = toPgVectorLiteral(emb);
+        await this.db.exec(
+          `update movie_features
+           set embedding = $2::vector, updated_at = now()
+           where tmdb_id = $1`,
+          [s.tmdbId, lit],
+        );
+      }
     }
 
     if (missing) {
@@ -92,6 +123,15 @@ export class MovieFeatureJobsRunnerService {
         userId,
         jobId,
         `Missing movie_features rows for ${missing} tmdbId(s)`,
+      );
+      return { ok: true, status: 'failed' };
+    }
+
+    if (embedFailures) {
+      await this.jobs.markFailed(
+        userId,
+        jobId,
+        `Failed to embed ${embedFailures} tmdbId(s)`,
       );
       return { ok: true, status: 'failed' };
     }
