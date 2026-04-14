@@ -185,6 +185,15 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
               >
                 Прочитано
               </app-button>
+              @if (it.ruleId) {
+                <app-button
+                  variant="ghost"
+                  [disabled]="serverBusy() || !serverToken.trim()"
+                  (click)="downloadRuleCalendar(it.ruleId)"
+                >
+                  Calendar (.ics)
+                </app-button>
+              }
               @if (it.tmdbId != null) {
                 <app-button variant="ghost" [routerLink]="['/movie', it.tmdbId]"
                   >Открыть фильм</app-button
@@ -643,6 +652,27 @@ export class InboxPageComponent {
       next: () => this.loadServerFeed(),
       error: (e) => this.handleServerErr(e),
     });
+  }
+
+  async downloadRuleCalendar(ruleId: string): Promise<void> {
+    const t = this.serverToken.trim();
+    if (!t) return;
+    this._serverErr.set(null);
+    this._serverBusy.set(true);
+    try {
+      const blob = await firstValueFrom(this.alertsApi.downloadRuleCalendarIcs(t, ruleId, 100));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `alert-rule-${ruleId}.ics`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      this.handleServerErr(e);
+      return;
+    } finally {
+      this._serverBusy.set(false);
+    }
   }
 
   trackByServerId(_: number, it: ServerNotificationItem): string {

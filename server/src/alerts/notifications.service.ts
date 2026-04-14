@@ -45,6 +45,29 @@ export class NotificationsService {
     }));
   }
 
+  async listByRule(userId: string, ruleId: string, limit: number) {
+    const rows = await this.db.query<NotificationRow>(
+      `select id, type, title, body, tmdb_id, payload, created_at, read_at, rule_id
+       from notifications
+       where user_id = $1 and rule_id = $2
+       order by created_at desc
+       limit $3`,
+      [userId, ruleId, limit],
+    );
+
+    return rows.map((r) => ({
+      id: r.id,
+      type: r.type,
+      title: r.title,
+      body: r.body,
+      tmdbId: r.tmdb_id,
+      payload: r.payload ?? {},
+      createdAt: r.created_at,
+      readAt: r.read_at,
+      ruleId: r.rule_id,
+    }));
+  }
+
   async markRead(userId: string, id: string): Promise<void> {
     await this.db.exec(
       `update notifications

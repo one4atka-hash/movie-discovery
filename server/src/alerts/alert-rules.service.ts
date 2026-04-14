@@ -40,6 +40,28 @@ export class AlertRulesService {
     }));
   }
 
+  async get(userId: string, id: string) {
+    const rows = await this.db.query<AlertRuleRow>(
+      `select id, name, enabled, filters, channels, quiet_hours, created_at, updated_at
+       from alert_rules
+       where user_id = $1 and id = $2
+       limit 1`,
+      [userId, id],
+    );
+    const r = rows[0];
+    if (!r) return null;
+    return {
+      id: r.id,
+      name: r.name,
+      enabled: r.enabled,
+      filters: r.filters ?? {},
+      channels: r.channels ?? {},
+      quietHours: r.quiet_hours ?? null,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    };
+  }
+
   async upsert(
     userId: string,
     input: {

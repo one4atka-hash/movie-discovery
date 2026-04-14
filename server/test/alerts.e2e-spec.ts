@@ -4,6 +4,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 
 import { AppModule } from './../src/app.module';
+import { DbService } from './../src/db/db.service';
 
 async function registerAndGetToken(app: INestApplication<App>) {
   const email = `e2e_${Date.now()}_${Math.random().toString(16).slice(2)}@example.com`;
@@ -65,6 +66,36 @@ describe('Alerts (e2e)', () => {
     const items = (list.body as unknown[]) ?? [];
     expect(Array.isArray(items)).toBe(true);
     expect(items.some((r) => (r as { id?: string }).id === id)).toBe(true);
+
+    // .ics export (MVP): empty calendar is ok; when notifications are tied to rule_id, it includes VEVENT(s).
+    const me = await request(app.getHttpServer())
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const userId = (me.body as { id: string }).id;
+    expect(typeof userId).toBe('string');
+
+    // Insert one notification tied to this rule so calendar has a VEVENT.
+    const db = app.get(DbService);
+    await db.exec(
+      `insert into notifications(user_id, rule_id, type, title, body, payload)
+       values ($1::uuid, $2::uuid, 'info', 'Rule event', 'From e2e', '{}'::jsonb)`,
+      [userId, id],
+    );
+
+    const icsRes = await request(app.getHttpServer())
+      .get(`/api/alert-rules/${id}/calendar.ics?limit=10`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(String(icsRes.headers['content-type'] || '')).toContain(
+      'text/calendar',
+    );
+    expect(icsRes.text).toContain('BEGIN:VCALENDAR');
+    expect(icsRes.text).toContain('BEGIN:VEVENT');
+    expect(icsRes.text).toContain('SUMMARY:Rule event');
+    expect(icsRes.text).toContain('END:VCALENDAR');
 
     await request(app.getHttpServer())
       .delete(`/api/alert-rules/${id}`)

@@ -26,6 +26,15 @@ export class AlertsApiService {
     });
   }
 
+  downloadRuleCalendarIcs(token: string, ruleId: string, limit = 50): Observable<Blob> {
+    const params = new HttpParams().set('limit', String(limit));
+    return this.http.get(`/api/alert-rules/${encodeURIComponent(ruleId)}/calendar.ics`, {
+      params,
+      headers: this.auth(token),
+      responseType: 'blob',
+    });
+  }
+
   markRead(token: string, id: string): Observable<{ ok: true }> {
     return this.http.post<{ ok: true }>(`/api/notifications/${id}/read`, null, {
       headers: this.auth(token),
