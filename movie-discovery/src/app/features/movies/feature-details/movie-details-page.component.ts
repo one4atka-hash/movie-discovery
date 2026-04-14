@@ -482,8 +482,19 @@ import type { WatchStatus } from '@features/watchlist/watch-state.model';
           @if (trailer(); as t) {
             <div class="player">
               <div class="player__head">
-                <strong>{{ i18n.t('details.trailer.title') }}</strong>
-                <span class="muted">{{ t.name || '—' }}</span>
+                <div class="player__headLeft">
+                  <strong>{{ i18n.t('details.trailer.title') }}</strong>
+                  <span class="muted">{{ t.name || '—' }}</span>
+                </div>
+                <a
+                  *ngIf="externalTrailerUrl(t) as href"
+                  class="btn"
+                  [href]="href"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  {{ i18n.t('details.trailer.openSource') }}
+                </a>
               </div>
 
               <div class="player__frame">
@@ -730,6 +741,10 @@ import type { WatchStatus } from '@features/watchlist/watch-state.model';
         padding: 0.9rem 1rem;
         border-bottom: 1px solid var(--border-subtle);
         background: rgba(255, 255, 255, 0.03);
+      }
+      .player__headLeft {
+        display: grid;
+        gap: 0.15rem;
       }
 
       .player__frame {
