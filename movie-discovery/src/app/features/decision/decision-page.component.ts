@@ -80,58 +80,69 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
         </div>
 
         <div class="actions" cardActions>
-          <app-button variant="ghost" (click)="reset()">Сбросить</app-button>
-          <app-button variant="secondary" (click)="openMore.set(true)">Ещё…</app-button>
-          <app-button data-testid="decision-build-shortlist" [loading]="loading()" (click)="build()"
-            >Собрать список</app-button
+          <app-button variant="ghost" (click)="reset()">{{ i18n.t('common.reset') }}</app-button>
+          <app-button variant="secondary" (click)="openMore.set(true)">{{
+            i18n.t('decide.more.open')
+          }}</app-button>
+          <app-button
+            data-testid="decision-build-shortlist"
+            [loading]="loading()"
+            (click)="build()"
+            >{{ i18n.t('decide.build') }}</app-button
           >
         </div>
       </app-card>
 
       <app-bottom-sheet
         [open]="openMore()"
-        title="Ещё ограничения"
-        ariaLabel="More constraints"
+        [title]="i18n.t('decide.more.title')"
+        [ariaLabel]="i18n.t('decide.more.aria')"
         (closed)="openMore.set(false)"
       >
-        <p class="muted">Готовые сценарии — чтобы собрать список за пару секунд.</p>
+        <p class="muted">{{ i18n.t('decide.more.subtitle') }}</p>
 
         <div class="row">
           <app-chip [selected]="preset() === 'weeknight'" (clicked)="applyPreset('weeknight')">
-            Будний вечер
+            {{ i18n.t('decide.preset.weeknight') }}
           </app-chip>
           <app-chip [selected]="preset() === 'date'" (clicked)="applyPreset('date')">
-            Свидание
+            {{ i18n.t('decide.preset.date') }}
           </app-chip>
           <app-chip [selected]="preset() === 'family'" (clicked)="applyPreset('family')">
-            Семейный
+            {{ i18n.t('decide.preset.family') }}
           </app-chip>
         </div>
 
         <p class="muted" *ngIf="hasMyServices()">
-          В пресетах мы включаем «Только на моих сервисах» по умолчанию.
+          {{ i18n.t('decide.more.myServicesHint') }}
         </p>
         <div class="sheetActions">
           <app-button
             variant="secondary"
-            (click)="toast.show('info', 'Сохранено', 'Настройки применены')"
-            >Сохранить</app-button
+            (click)="toast.show('info', i18n.t('common.saved'), i18n.t('decide.more.saved'))"
+            >{{ i18n.t('common.save') }}</app-button
           >
-          <app-button variant="ghost" (click)="openMore.set(false)">Закрыть</app-button>
+          <app-button variant="ghost" (click)="openMore.set(false)">{{
+            i18n.t('common.close')
+          }}</app-button>
         </div>
       </app-bottom-sheet>
 
-      <app-section title="Shortlist" *ngIf="candidates().length" data-testid="decision-shortlist">
+      <app-section
+        [title]="i18n.t('decide.shortlist.title')"
+        *ngIf="candidates().length"
+        data-testid="decision-shortlist"
+      >
         <div sectionActions>
           <app-segmented
-            ariaLabel="Decision mode"
+            [ariaLabel]="i18n.t('decide.mode.aria')"
             [options]="modeOptions"
             [value]="mode()"
             (select)="mode.set($event)"
           />
-          <app-button data-testid="decision-pick-winner" variant="secondary" (click)="pick()"
-            >Выбрать</app-button
-          >
+          <app-button data-testid="decision-pick-winner" variant="secondary" (click)="pick()">{{
+            i18n.t('decide.pick')
+          }}</app-button>
         </div>
 
         <div class="grid">
@@ -145,7 +156,11 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
         </div>
       </app-section>
 
-      <app-card title="Победитель" *ngIf="winner() as w" data-testid="decision-winner-card">
+      <app-card
+        [title]="i18n.t('decide.winner.title')"
+        *ngIf="winner() as w"
+        data-testid="decision-winner-card"
+      >
         <div class="winner">
           <div class="winner__left">
             <strong class="winner__title">{{ w.title }}</strong>
@@ -156,19 +171,23 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
               data-testid="decision-winner-open"
               variant="secondary"
               [routerLink]="['/movie', w.id]"
-              >Открыть</app-button
+              >{{ i18n.t('common.open') }}</app-button
             >
-            <app-button variant="ghost" (click)="pick()">Перевыбрать</app-button>
+            <app-button variant="ghost" (click)="pick()">{{
+              i18n.t('decide.pickAgain')
+            }}</app-button>
           </div>
         </div>
       </app-card>
 
       <app-empty-state
         *ngIf="!candidates().length && !loading()"
-        title="Пока пусто"
-        subtitle="Нажмите “Собрать shortlist”. Чем больше избранного — тем точнее рекомендации."
+        [title]="i18n.t('decide.empty.title')"
+        [subtitle]="i18n.t('decide.empty.subtitle')"
       >
-        <app-button variant="secondary" [routerLink]="['/']">Открыть поиск</app-button>
+        <app-button variant="secondary" [routerLink]="['/']">{{
+          i18n.t('home.cta.search')
+        }}</app-button>
       </app-empty-state>
     </section>
   `,
@@ -331,7 +350,7 @@ export class DecisionPageComponent {
     this.preset.set(null);
     this.candidates.set([]);
     this.winner.set(null);
-    this.toast.show('info', 'Сброшено', 'Ограничения очищены');
+    this.toast.show('info', this.i18n.t('common.resetDone'), this.i18n.t('decide.toast.reset'));
   }
 
   toggleOnlyMyServices(): void {
@@ -369,15 +388,23 @@ export class DecisionPageComponent {
         if (!arr.length) {
           this.toast.show(
             'warning',
-            'Пусто',
-            'Попробуйте убрать ограничения или добавьте избранное',
+            this.i18n.t('common.empty'),
+            this.i18n.t('decide.toast.noCandidates'),
           );
         } else {
-          this.toast.show('success', 'Готово', `Кандидатов: ${arr.length}`);
+          this.toast.show(
+            'success',
+            this.i18n.t('common.done'),
+            this.i18n.t('decide.toast.candidates').replace('{{n}}', String(arr.length)),
+          );
         }
       },
       error: () => {
-        this.toast.show('error', 'Ошибка', 'Не удалось собрать кандидатов');
+        this.toast.show(
+          'error',
+          this.i18n.t('common.error'),
+          this.i18n.t('decide.toast.buildFailed'),
+        );
       },
       complete: () => {
         this.loading.set(false);
@@ -389,10 +416,14 @@ export class DecisionPageComponent {
     const w = pickWinner(this.shortlist(), this.mode());
     this.winner.set(w);
     if (!w) {
-      this.toast.show('warning', 'Некого выбирать', 'Сначала соберите shortlist');
+      this.toast.show(
+        'warning',
+        this.i18n.t('decide.toast.noWinnerTitle'),
+        this.i18n.t('decide.toast.noWinnerBody'),
+      );
       return;
     }
-    this.toast.show('success', 'Выбор сделан', w.title);
+    this.toast.show('success', this.i18n.t('decide.toast.winnerTitle'), w.title);
   }
 
   trackByMovieId(_: number, m: Movie): number {
