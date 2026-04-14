@@ -31,6 +31,45 @@ export type PublicProfilePayload = {
 export class MeService {
   constructor(private readonly db: DbService) {}
 
+  async listMyFeatureRefreshSeeds(
+    userId: string,
+    limit: number,
+  ): Promise<number[]> {
+    const rows = await this.db.query<{ tmdb_id: number }>(
+      `
+      with blocked as (
+        select tmdb_id
+        from feedback
+        where user_id = $1
+          and value in ('dislike','hide')
+      ),
+      liked as (
+        select tmdb_id, updated_at as ts
+        from feedback
+        where user_id = $1 and value = 'like'
+      ),
+      fav as (
+        select tmdb_id, created_at as ts
+        from favorites
+        where user_id = $1
+      ),
+      seeds as (
+        select tmdb_id, ts from liked
+        union all
+        select tmdb_id, ts from fav
+      )
+      select distinct on (s.tmdb_id) s.tmdb_id
+      from seeds s
+      left join blocked b on b.tmdb_id = s.tmdb_id
+      where b.tmdb_id is null
+      order by s.tmdb_id, s.ts desc
+      limit $2
+      `,
+      [userId, limit],
+    );
+    return rows.map((r) => r.tmdb_id);
+  }
+
   async getStreamingPrefs(
     userId: string,
   ): Promise<{ region: string; providers: string[] }> {
