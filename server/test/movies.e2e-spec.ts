@@ -296,6 +296,34 @@ describe('Movies releases (e2e)', () => {
     expect(body.job?.tmdbIds).toEqual([550, 551]);
   });
 
+  it('can run embeddings job (scaffold) and marks it failed when disabled', async () => {
+    const token = await registerAndGetToken(app);
+    const create = await request(app.getHttpServer())
+      .post('/api/movies/features/embeddings/jobs')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ tmdbIds: [550] })
+      .expect(201);
+
+    const id = (create.body as { ok: true; id: string }).id;
+
+    await request(app.getHttpServer())
+      .post(`/api/movies/features/embeddings/jobs/${id}/run`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
+
+    const get = await request(app.getHttpServer())
+      .get(`/api/movies/features/embeddings/jobs/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const body = get.body as {
+      ok: true;
+      job: { status: string; error: string | null } | null;
+    };
+    expect(body.job?.status).toBe('failed');
+    expect(body.job?.error).toContain('disabled');
+  });
+
   afterEach(async () => {
     await app.close();
   });

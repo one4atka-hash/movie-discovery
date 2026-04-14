@@ -21,6 +21,7 @@ import {
   RefreshFeaturesQuerySchema,
 } from './movies.schemas';
 import { MovieFeatureJobsService } from './movie-feature-jobs.service';
+import { MovieFeatureJobsRunnerService } from './movie-feature-jobs-runner.service';
 import { MoviesService } from './movies.service';
 
 @UseGuards(JwtAuthGuard)
@@ -29,6 +30,7 @@ export class MoviesController {
   constructor(
     private readonly svc: MoviesService,
     private readonly jobs: MovieFeatureJobsService,
+    private readonly runner: MovieFeatureJobsRunnerService,
   ) {}
 
   @Get(':tmdbId/features/refresh')
@@ -73,6 +75,15 @@ export class MoviesController {
   ) {
     const job = await this.jobs.getJob(u.id, p.id);
     return { ok: true, job };
+  }
+
+  @Post('features/embeddings/jobs/:id/run')
+  async runEmbeddingsJob(
+    @CurrentUser() u: AuthedUser,
+    @Param(new ZodBodyPipe(MovieFeatureJobIdParamSchema))
+    p: z.infer<typeof MovieFeatureJobIdParamSchema>,
+  ) {
+    return await this.runner.runEmbeddingsJob(u.id, p.id);
   }
 
   @Get(':tmdbId/editions')

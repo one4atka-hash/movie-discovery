@@ -92,6 +92,17 @@ export const EnvSchema = z.object({
   TMDB_BASE_URL: z.string().optional().default('https://api.themoviedb.org/3'),
 
   /**
+   * Embeddings pipeline scaffold toggle.
+   * When disabled, embeddings jobs can be created but will fail on run.
+   */
+  EMBEDDINGS_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').toLowerCase())
+    .pipe(z.enum(['', '0', '1', 'false', 'true', 'no', 'yes', 'off', 'on']))
+    .default(''),
+
+  /**
    * Periodically sync tracked movies with TMDB watch providers → availability_snapshots/events.
    */
   AVAILABILITY_CRON_ENABLED: z

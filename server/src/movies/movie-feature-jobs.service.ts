@@ -69,4 +69,24 @@ export class MovieFeatureJobsService {
       error: r.error,
     };
   }
+
+  async markRunning(userId: string, id: string): Promise<{ ok: boolean }> {
+    const rows = await this.db.query<{ ok: boolean }>(
+      `update movie_feature_jobs
+       set status = 'running', started_at = coalesce(started_at, now())
+       where user_id = $1 and id = $2 and status = 'queued'
+       returning true as ok`,
+      [userId, id],
+    );
+    return { ok: Boolean(rows[0]?.ok) };
+  }
+
+  async markFailed(userId: string, id: string, error: string): Promise<void> {
+    await this.db.exec(
+      `update movie_feature_jobs
+       set status = 'failed', finished_at = now(), error = $3
+       where user_id = $1 and id = $2`,
+      [userId, id, error],
+    );
+  }
 }
