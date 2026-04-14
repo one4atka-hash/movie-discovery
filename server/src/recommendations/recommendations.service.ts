@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { DbService } from '../db/db.service';
 import {
+  cosineSimilarity,
   meanNormalized,
   parsePgVectorLiteral,
   toPgVectorLiteral,
@@ -18,6 +19,49 @@ type FavoriteRow = { tmdb_id: number; created_at: string };
 @Injectable()
 export class RecommendationsService {
   constructor(private readonly db: DbService) {}
+
+  private mmrPick(
+    profile: readonly number[],
+    candidates: readonly { tmdbId: number; vec: number[]; baseScore: number }[],
+    opts: { k: number; lambda: number },
+  ): { tmdbId: number; score: number }[] {
+    const k = Math.max(0, Math.trunc(opts.k));
+    const lambda = Math.min(1, Math.max(0, opts.lambda));
+    if (!k || candidates.length === 0) return [];
+
+    const picked: { tmdbId: number; score: number; vec: number[] }[] = [];
+    const remaining = candidates.slice();
+
+    while (picked.length < k && remaining.length > 0) {
+      let bestIdx = 0;
+      let bestScore = -Infinity;
+
+      for (let i = 0; i < remaining.length; i += 1) {
+        const c = remaining[i] ?? {
+          tmdbId: -1,
+          vec: [],
+          baseScore: 0,
+        };
+        const simToProfile = cosineSimilarity(profile, c.vec);
+        let redundancy = 0;
+        for (const p of picked) {
+          redundancy = Math.max(redundancy, cosineSimilarity(p.vec, c.vec));
+        }
+        const mmr = lambda * simToProfile - (1 - lambda) * redundancy;
+        const score = mmr + c.baseScore * 0.0001; // stable tie-breaker
+        if (score > bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+
+      const [sel] = remaining.splice(bestIdx, 1);
+      if (!sel) break;
+      picked.push({ tmdbId: sel.tmdbId, score: bestScore, vec: sel.vec });
+    }
+
+    return picked.map((p) => ({ tmdbId: p.tmdbId, score: p.score }));
+  }
 
   private async loadSignals(userId: string): Promise<{
     fav: FavoriteRow[];
@@ -95,21 +139,47 @@ export class RecommendationsService {
     if (profile) {
       const profileLit = toPgVectorLiteral(profile);
       const blockedArr = [...blocked];
-      const rows = await this.db.query<{ tmdb_id: number; score: number }>(
+      const rows = await this.db.query<{
+        tmdb_id: number;
+        score: number;
+        embedding: string;
+      }>(
         `select tmdb_id,
-                (1 - (embedding <=> $1::vector)) as score
+                (1 - (embedding <=> $1::vector)) as score,
+                embedding::text as embedding
          from movie_features
          where embedding is not null
            and tmdb_id <> all($2::bigint[])
          order by embedding <=> $1::vector asc
-         limit 20`,
+         limit 100`,
         [profileLit, blockedArr],
       );
 
+      const candidates = rows
+        .map((r) => {
+          const vec = parsePgVectorLiteral(r.embedding);
+          if (!vec) return null;
+          return {
+            tmdbId: r.tmdb_id,
+            vec,
+            baseScore: Number(r.score ?? 0),
+          };
+        })
+        .filter(
+          (x): x is { tmdbId: number; vec: number[]; baseScore: number } =>
+            Boolean(x),
+        );
+
+      const picked = this.mmrPick(profile, candidates, { k: 20, lambda: 0.7 });
+      const scoreById = new Map(
+        picked.map((p) => [p.tmdbId, p.score] as const),
+      );
+
       return {
-        items: rows.map((r) => ({
-          tmdbId: r.tmdb_id,
-          score: Number(r.score ?? 0),
+        items: picked.map((r, i) => ({
+          tmdbId: r.tmdbId,
+          score:
+            Number(scoreById.get(r.tmdbId) ?? 0) + (picked.length - i) * 1e-9,
           explain: buildExplain(
             { seedCount: unique.length, mode: 'ann' },
             { maxItems: 4 },

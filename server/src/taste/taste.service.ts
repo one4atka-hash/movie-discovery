@@ -61,7 +61,7 @@ export class TasteService {
     const titleRows =
       wsIds.length > 0
         ? await this.db.query<{ tmdb_id: number; title: string | null }>(
-            `select tmdb_id, title from movie_features where tmdb_id = any($1::int[])`,
+            `select tmdb_id, title from movie_features where tmdb_id = any($1::bigint[])`,
             [wsIds],
           )
         : [];
