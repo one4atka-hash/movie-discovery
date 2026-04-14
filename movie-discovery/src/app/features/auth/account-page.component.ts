@@ -1,5 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
@@ -804,6 +811,9 @@ export class AccountPageComponent {
   readonly jobsErr = signal<string | null>(null);
   readonly jobs = signal<readonly EmbeddingsJobItem[]>([]);
   readonly embeddingsLimit = new FormControl<number>(50, { nonNullable: true });
+  private jobsPollTimer: ReturnType<typeof setInterval> | null = null;
+  private jobsPollEndsAt = 0;
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly ppSlug = new FormControl('', { nonNullable: true });
   readonly ppEnabled = new FormControl(false, { nonNullable: true });
@@ -980,29 +990,69 @@ export class AccountPageComponent {
     });
   }
 
-  loadEmbeddingsJobs(): void {
-    this.jobsErr.set(null);
+  private startJobsPolling(): void {
+    const now = Date.now();
+    this.jobsPollEndsAt = now + 45_000;
+    if (this.jobsPollTimer) return;
+
+    this.jobsPollTimer = setInterval(() => {
+      if (Date.now() > this.jobsPollEndsAt) {
+        this.stopJobsPolling();
+        return;
+      }
+      const hasRunning = this.jobs().some((j) => j.status === 'queued' || j.status === 'running');
+      if (!hasRunning) {
+        this.stopJobsPolling();
+        return;
+      }
+      this.loadEmbeddingsJobs({ silent: true });
+    }, 2000);
+
+    this.destroyRef.onDestroy(() => this.stopJobsPolling());
+  }
+
+  private stopJobsPolling(): void {
+    if (!this.jobsPollTimer) return;
+    clearInterval(this.jobsPollTimer);
+    this.jobsPollTimer = null;
+  }
+
+  loadEmbeddingsJobs(opts?: { silent?: boolean }): void {
+    if (!opts?.silent) {
+      this.jobsErr.set(null);
+    }
     const token = this.serverJwt.value.trim();
     if (!token) {
-      this.jobsErr.set(this.i18n.t('account.publicProfile.needJwt'));
+      if (!opts?.silent) {
+        this.jobsErr.set(this.i18n.t('account.publicProfile.needJwt'));
+      }
       return;
     }
     this.storage.set('server.jwt.token.v1', token);
-    this.jobsBusy.set(true);
+    if (!opts?.silent) {
+      this.jobsBusy.set(true);
+    }
     this.cinemaApi.listEmbeddingsJobs({ limit: 20, offset: 0 }).subscribe({
       next: (r) => {
-        this.jobsBusy.set(false);
+        if (!opts?.silent) {
+          this.jobsBusy.set(false);
+        }
         if (!r?.ok) {
-          this.jobsErr.set('Request failed');
-          this.jobs.set([]);
+          if (!opts?.silent) {
+            this.jobsErr.set('Request failed');
+            this.jobs.set([]);
+          }
           return;
         }
         this.jobs.set(r.items ?? []);
+        this.startJobsPolling();
       },
       error: () => {
-        this.jobsBusy.set(false);
-        this.jobsErr.set('Request failed');
-        this.jobs.set([]);
+        if (!opts?.silent) {
+          this.jobsBusy.set(false);
+          this.jobsErr.set('Request failed');
+          this.jobs.set([]);
+        }
       },
     });
   }
