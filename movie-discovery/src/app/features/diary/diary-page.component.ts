@@ -100,43 +100,46 @@ import { DiaryService } from './diary.service';
 
       <app-bottom-sheet
         [open]="sheetOpen()"
-        [title]="editing() ? 'Edit entry' : 'New entry'"
-        ariaLabel="Diary entry editor"
+        [title]="editing() ? i18n.t('diary.sheet.editTitle') : i18n.t('diary.sheet.newTitle')"
+        [ariaLabel]="i18n.t('diary.sheet.aria')"
         (closed)="closeSheet()"
       >
         <form class="form" (submit)="save($event)">
-          <app-form-field label="Title">
+          <app-form-field [label]="i18n.t('diary.field.title')">
             <input [(ngModel)]="draftTitle" name="title" required />
           </app-form-field>
 
-          <app-form-field label="Watched at" hint="Date in YYYY-MM-DD">
+          <app-form-field
+            [label]="i18n.t('diary.field.watchedAt')"
+            [hint]="i18n.t('diary.field.watchedAtHint')"
+          >
             <input [(ngModel)]="draftWatchedAt" name="watchedAt" type="date" required />
           </app-form-field>
 
-          <app-form-field label="Location">
+          <app-form-field [label]="i18n.t('diary.field.location')">
             <div class="chips">
               <app-chip
                 [selected]="draftLocation() === 'cinema'"
                 (clicked)="draftLocation.set('cinema')"
               >
-                Cinema
+                {{ i18n.t('diary.location.cinema') }}
               </app-chip>
               <app-chip
                 [selected]="draftLocation() === 'streaming'"
                 (clicked)="draftLocation.set('streaming')"
               >
-                Streaming
+                {{ i18n.t('diary.location.streaming') }}
               </app-chip>
               <app-chip
                 [selected]="draftLocation() === 'home'"
                 (clicked)="draftLocation.set('home')"
               >
-                Home
+                {{ i18n.t('diary.location.home') }}
               </app-chip>
             </div>
           </app-form-field>
 
-          <app-form-field label="Rating (0..10)">
+          <app-form-field [label]="i18n.t('diary.field.rating')">
             <input
               [(ngModel)]="draftRating"
               name="rating"
@@ -147,17 +150,22 @@ import { DiaryService } from './diary.service';
             />
           </app-form-field>
 
-          <app-form-field label="Tags" hint="Comma separated, e.g. thriller, rewatch">
+          <app-form-field
+            [label]="i18n.t('diary.field.tags')"
+            [hint]="i18n.t('diary.field.tagsHint')"
+          >
             <input [(ngModel)]="draftTags" name="tags" />
           </app-form-field>
 
-          <app-form-field label="Note">
+          <app-form-field [label]="i18n.t('diary.field.note')">
             <textarea [(ngModel)]="draftNote" name="note" rows="3"></textarea>
           </app-form-field>
 
           <div class="formActions">
-            <app-button variant="ghost" type="button" (click)="closeSheet()">Cancel</app-button>
-            <app-button type="submit">Save</app-button>
+            <app-button variant="ghost" type="button" (click)="closeSheet()">{{
+              i18n.t('common.cancel')
+            }}</app-button>
+            <app-button type="submit">{{ i18n.t('common.save') }}</app-button>
           </div>
         </form>
       </app-bottom-sheet>
@@ -321,22 +329,26 @@ export class DiaryPageComponent {
         tags,
         note: this.draftNote,
       });
-      this.toast.show('success', 'Saved', this.editing() ? 'Entry updated' : 'Entry created');
+      this.toast.show(
+        'success',
+        this.i18n.t('common.saved'),
+        this.editing() ? this.i18n.t('diary.toast.updated') : this.i18n.t('diary.toast.created'),
+      );
       this.sheetOpen.set(false);
     } catch {
-      this.toast.show('error', 'Error', 'Could not save entry');
+      this.toast.show('error', this.i18n.t('common.error'), this.i18n.t('diary.toast.saveFailed'));
     }
   }
 
   remove(e: DiaryEntry): void {
     this.diary.remove(e.id);
-    this.toast.show('info', 'Deleted', e.title);
+    this.toast.show('info', this.i18n.t('common.deleted'), e.title);
   }
 
   locationLabel(loc: DiaryLocation): string {
-    if (loc === 'cinema') return 'Cinema';
-    if (loc === 'streaming') return 'Streaming';
-    return 'Home';
+    if (loc === 'cinema') return this.i18n.t('diary.location.cinema');
+    if (loc === 'streaming') return this.i18n.t('diary.location.streaming');
+    return this.i18n.t('diary.location.home');
   }
 
   trackById(_: number, e: DiaryEntry): string {
