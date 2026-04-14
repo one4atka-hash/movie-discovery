@@ -647,6 +647,38 @@ Component tests:
   - [x] Unit: агрегация/фильтры, детерминизм.
   - [x] Server e2e: доступы участников, join token, запрет блокированных, read model.
 
+#### 6.5 Reviews & Ratings (оценки, отзывы, спойлеры, цитаты) — **backlog**
+Цель: дать пользователям возможность **оценивать** фильмы и писать **отзывы** (публичные/по друзьям), не ломая UX спойлерами.
+
+Текущее состояние:
+- [x] Diary entries уже имеют `rating` + `note` (server `diary_entries.rating/note` + local diary в FE), но это **не публичные отзывы** и без обсуждений.
+- [x] Есть `public_profiles` (slug/visibility/sections) и `notifications` (feed + read/unread) — можно расширять под social activity.
+- [x] В UI уже используется паттерн `<details><summary>…</summary>…</details>` — удобно для spoiler blocks.
+
+- [x] **DB (M1)**:
+  - [x] `movie_reviews(id, user_id, tmdb_id, rating smallint null, title text null, body text not null, visibility public|friends|private, has_spoilers boolean, created_at, updated_at)`
+  - [x] `review_quotes(id, review_id, quote text, source text null, is_spoiler boolean, sort_order int)` (цитаты как отдельные блоки)
+  - [x] `review_spoiler_blocks(id, review_id, title text null, body text, sort_order int)` (спойлерные секции отдельно от основного текста)
+  - [x] `review_likes(review_id, user_id, created_at)` (опц. M2, “полезно”)
+  - [x] `review_comments(id, review_id, user_id, body text, created_at)` (опц. M2)
+
+- [x] **API (M1)**:
+  - [x] `POST/PUT/DELETE /api/reviews/:id` (CRUD, JWT)
+  - [x] `GET /api/movies/:tmdbId/reviews?sort=recent|rating&visibility=public|friends` (пагинация)
+  - [x] `GET /api/users/:userId/reviews` (для профилей; доступ по visibility)
+  - [x] (M2) `POST /api/reviews/:id/like`, `POST /api/reviews/:id/comments`
+
+- [x] **Frontend (M1)**:
+  - [x] Movie details: секция “Отзывы” (list + compose/edit)
+  - [x] Композер отзыва: rating + текст + **спойлерные блоки** (collapsible `<details>`) + **цитаты** (отдельные блоки)
+  - [x] На рендере: body как plain text (без HTML), spoiler blocks скрыты до клика, quotes выделены стилем
+  - [x] На public profile: “Recent reviews” секция (включается в `sections`)
+
+- [x] **Anti-spoiler UX / безопасность (M1)**:
+  - [x] Без markdown/HTML в MVP: хранить и рендерить как plain text + структурированные blocks (spoiler/quote) → нет XSS
+  - [x] Rate limit на создание/комменты, длины текста, минимальные правила модерации (report — backlog)
+  - [x] Notifications: “new comment / like” → запись в `notifications` (M2)
+
 #### Portfolio (отдельный проект)
 - [x] Создать отдельную папку проекта: `portfolio-site/` (заготовка: `README.md`, `index.html`).
 - [x] Корневой `README.md` репозитория — оглавление монорепо (`movie-discovery/`, `server/`, Compose, `verify-all`); портфолио ссылается на него.
