@@ -26,6 +26,7 @@ import {
 import {
   ServerCinemaApiService,
   type ServerReleaseReminderItem,
+  type ServerAuthedUser,
 } from '@core/server-cinema-api.service';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { MovieService } from '@features/movies/data-access/services/movie.service';
@@ -80,15 +81,93 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
 
         <app-card>
           <app-form-field
-            label="Подключить синхронизацию (опционально)"
-            hint="Если у тебя есть серверная синхронизация — вставь код подключения. Мы сохраним его в этом браузере."
+            label="Подключение к серверу (опционально)"
+            hint="Войдите или зарегистрируйтесь, чтобы включить серверные уведомления/правила/напоминания."
           >
-            <textarea
-              [(ngModel)]="serverToken"
-              rows="2"
-              placeholder="eyJhbGciOi..."
-              data-testid="inbox-server-jwt"
-            ></textarea>
+            @if (serverMe(); as me) {
+              <p class="muted" style="margin: 0 0 0.5rem">
+                Connected as <b>{{ me.email }}</b>
+              </p>
+              <div class="actions" style="margin-top: 0.5rem">
+                <app-button
+                  variant="secondary"
+                  [loading]="serverAuthBusy()"
+                  [disabled]="serverAuthBusy()"
+                  (click)="disconnectServer()"
+                >
+                  Disconnect
+                </app-button>
+                <app-button
+                  variant="ghost"
+                  [loading]="serverAuthBusy()"
+                  [disabled]="serverAuthBusy()"
+                  (click)="refreshServerMe()"
+                >
+                  Refresh status
+                </app-button>
+                <app-button
+                  variant="ghost"
+                  [disabled]="serverAuthBusy()"
+                  (click)="showAdvancedServerToken.set(!showAdvancedServerToken())"
+                >
+                  {{ showAdvancedServerToken() ? 'Hide advanced' : 'Advanced' }}
+                </app-button>
+              </div>
+            } @else {
+              <div class="actions" style="align-items: flex-end">
+                <app-form-field label="Email">
+                  <input class="input" [(ngModel)]="serverEmail" autocomplete="email" />
+                </app-form-field>
+                <app-form-field label="Password">
+                  <input
+                    class="input"
+                    type="password"
+                    [(ngModel)]="serverPassword"
+                    autocomplete="current-password"
+                  />
+                </app-form-field>
+              </div>
+              <div class="actions" style="margin-top: 0.5rem">
+                <app-button
+                  variant="secondary"
+                  [loading]="serverAuthBusy()"
+                  [disabled]="serverAuthBusy()"
+                  (click)="connectServerLogin()"
+                >
+                  Connect (login)
+                </app-button>
+                <app-button
+                  variant="ghost"
+                  [loading]="serverAuthBusy()"
+                  [disabled]="serverAuthBusy()"
+                  (click)="connectServerRegister()"
+                >
+                  Create account
+                </app-button>
+                <app-button
+                  variant="ghost"
+                  [disabled]="serverAuthBusy()"
+                  (click)="showAdvancedServerToken.set(!showAdvancedServerToken())"
+                >
+                  {{ showAdvancedServerToken() ? 'Hide advanced' : 'Advanced' }}
+                </app-button>
+              </div>
+              @if (serverAuthErr(); as err) {
+                <p class="muted" role="alert" style="margin-top: 0.65rem">{{ err }}</p>
+              }
+            }
+
+            @if (showAdvancedServerToken()) {
+              <details style="margin-top: 0.65rem" open>
+                <summary>Advanced: raw server token</summary>
+                <textarea
+                  [(ngModel)]="serverToken"
+                  rows="2"
+                  placeholder="eyJhbGciOi..."
+                  data-testid="inbox-server-jwt"
+                ></textarea>
+              </details>
+            }
           </app-form-field>
           <div class="actions" style="margin-top: 0.5rem">
             <app-button
@@ -588,6 +667,12 @@ export class InboxPageComponent {
   private readonly alertsApi = inject(AlertsApiService);
   private readonly cinemaApi = inject(ServerCinemaApiService);
 
+  readonly showAdvancedServerToken = signal(false);
+  readonly serverAuthBusy = signal(false);
+  readonly serverAuthErr = signal<string | null>(null);
+  readonly serverMe = signal<ServerAuthedUser | null>(null);
+  serverEmail = '';
+  serverPassword = '';
   serverToken = this.storage.get<string>(SERVER_JWT_KEY, '') ?? '';
   private readonly _serverRows = signal<ServerNotificationItem[]>([]);
   readonly serverRows = this._serverRows.asReadonly();
@@ -609,14 +694,103 @@ export class InboxPageComponent {
   readonly items = computed(() => this.svc.itemsSorted());
   readonly rules = computed(() => this.svc.rulesSorted());
 
+  constructor() {
+    const t = this.serverToken.trim();
+    if (!t) return;
+    this.cinemaApi.setToken(t);
+    this.refreshServerMe({ silent: true });
+  }
+
   retryServerFeed(): void {
     this.loadServerFeed();
+  }
+
+  refreshServerMe(input?: { silent?: boolean }): void {
+    if (!input?.silent) this.serverAuthErr.set(null);
+    this.serverAuthBusy.set(true);
+    this.cinemaApi.authMe().subscribe({
+      next: (me) => {
+        this.serverMe.set(me);
+        if (!me && !input?.silent) {
+          this.serverAuthErr.set('Not connected (invalid token or server unavailable).');
+        }
+      },
+      error: () => {
+        this.serverMe.set(null);
+        if (!input?.silent) this.serverAuthErr.set('Failed to check server status.');
+      },
+      complete: () => this.serverAuthBusy.set(false),
+    });
+  }
+
+  connectServerLogin(): void {
+    this.serverAuthErr.set(null);
+    const email = this.serverEmail.trim();
+    const password = this.serverPassword;
+    if (!email || !password) {
+      this.serverAuthErr.set('Email and password are required.');
+      return;
+    }
+    this.serverAuthBusy.set(true);
+    this.cinemaApi.authLogin(email, password).subscribe({
+      next: (res) => {
+        if (!res?.token) {
+          this.serverAuthErr.set('Login failed.');
+          return;
+        }
+        this.serverToken = res.token;
+        this.storage.set(SERVER_JWT_KEY, res.token);
+        this.cinemaApi.setToken(res.token);
+        this.serverMe.set(res.user ?? null);
+        this.showAdvancedServerToken.set(false);
+      },
+      error: () => this.serverAuthErr.set('Login failed.'),
+      complete: () => this.serverAuthBusy.set(false),
+    });
+  }
+
+  connectServerRegister(): void {
+    this.serverAuthErr.set(null);
+    const email = this.serverEmail.trim();
+    const password = this.serverPassword;
+    if (!email || !password) {
+      this.serverAuthErr.set('Email and password are required.');
+      return;
+    }
+    this.serverAuthBusy.set(true);
+    this.cinemaApi.authRegister(email, password).subscribe({
+      next: (res) => {
+        if (!res?.token) {
+          this.serverAuthErr.set('Registration failed.');
+          return;
+        }
+        this.serverToken = res.token;
+        this.storage.set(SERVER_JWT_KEY, res.token);
+        this.cinemaApi.setToken(res.token);
+        this.serverMe.set(res.user ?? null);
+        this.showAdvancedServerToken.set(false);
+      },
+      error: () => this.serverAuthErr.set('Registration failed.'),
+      complete: () => this.serverAuthBusy.set(false),
+    });
+  }
+
+  disconnectServer(): void {
+    this.serverAuthErr.set(null);
+    this.serverMe.set(null);
+    this.serverToken = '';
+    this.storage.remove(SERVER_JWT_KEY);
+    this.cinemaApi.clearToken();
+    this._serverRows.set([]);
+    this._serverRules.set([]);
+    this._reminderRows.set([]);
   }
 
   loadServerFeed(): void {
     const t = this.serverToken.trim();
     if (!t) return;
     this.storage.set(SERVER_JWT_KEY, t);
+    this.cinemaApi.setToken(t);
     this._serverErr.set(null);
     this._serverBusy.set(true);
     forkJoin({
