@@ -1057,27 +1057,14 @@ export class MovieSearchPageComponent {
   readonly recsLoading = computed(() => this._recsLoading());
   readonly recsError = computed(() => this._recsError());
   readonly recsSeeds = computed(() => this._recsSeeds());
-  private readonly _subbedIds = computed(
-    () => new Set(this.subsSvc.mySubscriptions().map((s) => s.tmdbId)),
-  );
-  private readonly _likedIds = computed(() => {
-    const out = new Set<number>();
-    const map = this.reactions.all();
-    for (const [k, v] of Object.entries(map)) {
-      if (v !== 'like') continue;
-      const id = Number(k);
-      if (Number.isFinite(id) && id > 0) out.add(id);
-    }
-    return out;
-  });
-  private readonly _recsIds = computed(() => new Set(this.recsVisible().map((m) => m.id)));
+  /**
+   * Important UX: подборки на главной — "снимок".
+   * Фильтрация лайков/подписок применяется при загрузке списка, а не реактивно,
+   * чтобы нажатие "Like" не меняло уже показанную подборку.
+   */
   readonly recsVisible = computed(() =>
     this._recs().filter(
-      (m) =>
-        !this.recsFeedback.isHidden(m.id) &&
-        this.reactions.reactionFor(m.id)() !== 'dislike' &&
-        this.reactions.reactionFor(m.id)() !== 'like' &&
-        !this._subbedIds().has(m.id),
+      (m) => !this.recsFeedback.isHidden(m.id) && this.reactions.reactionFor(m.id)() !== 'dislike',
     ),
   );
 
@@ -1095,15 +1082,8 @@ export class MovieSearchPageComponent {
   });
 
   readonly randomVisible = computed(() => {
-    const base = filterOnlyMyServices(
-      this._randomMovies(),
-      this.onlyMyServices(),
-      this._myProviders(),
-    );
-    const liked = this._likedIds();
-    const subbed = this._subbedIds();
-    const recs = this._recsIds();
-    return base.filter((m) => !liked.has(m.id) && !subbed.has(m.id) && !recs.has(m.id));
+    // Do not filter likes/subscriptions here — lists are filtered at load time.
+    return filterOnlyMyServices(this._randomMovies(), this.onlyMyServices(), this._myProviders());
   });
 
   myProvidersFor(tmdbId: number): readonly string[] {
@@ -1347,9 +1327,18 @@ export class MovieSearchPageComponent {
       .subscribe((res) => {
         const list = [...(res.results ?? [])];
         shuffleInPlace(list);
+        const liked = new Set<number>(
+          Object.entries(this.reactions.all())
+            .filter(([, v]) => v === 'like')
+            .map(([k]) => Number(k))
+            .filter((x) => Number.isFinite(x) && x > 0),
+        );
+        const subbed = new Set<number>(this.subsSvc.mySubscriptions().map((s) => s.tmdbId));
+
         const withPoster = list.filter((m) => m.poster_path);
         const pool = withPoster.length >= 6 ? withPoster : list;
-        this._nowPlaying.set(pool.slice(0, 12));
+        const filtered = pool.filter((m) => m?.id && !liked.has(m.id) && !subbed.has(m.id));
+        this._nowPlaying.set(filtered.slice(0, 12));
         this._nowPlayingLoading.set(false);
       });
   }
@@ -1375,9 +1364,21 @@ export class MovieSearchPageComponent {
       .subscribe((res) => {
         const list = [...(res.results ?? [])];
         shuffleInPlace(list);
-        this._randomMovies.set(list.slice(0, 24));
+        const liked = new Set<number>(
+          Object.entries(this.reactions.all())
+            .filter(([, v]) => v === 'like')
+            .map(([k]) => Number(k))
+            .filter((x) => Number.isFinite(x) && x > 0),
+        );
+        const subbed = new Set<number>(this.subsSvc.mySubscriptions().map((s) => s.tmdbId));
+        const recsIds = new Set<number>(this._recs().map((m) => m.id));
+        const filtered = list.filter(
+          (m) => m?.id && !liked.has(m.id) && !subbed.has(m.id) && !recsIds.has(m.id),
+        );
+
+        this._randomMovies.set(filtered.slice(0, 24));
         this._randomLoading.set(false);
-        this.ensureProvidersForIds(list.slice(0, 24).map((m) => m.id));
+        this.ensureProvidersForIds(filtered.slice(0, 24).map((m) => m.id));
       });
   }
 
@@ -1420,11 +1421,19 @@ export class MovieSearchPageComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((responses) => {
         const banned = new Set(seedIds);
+        const liked = new Set<number>(
+          Object.entries(this.reactions.all())
+            .filter(([, v]) => v === 'like')
+            .map(([k]) => Number(k))
+            .filter((x) => Number.isFinite(x) && x > 0),
+        );
+        const subbed = new Set<number>(this.subsSvc.mySubscriptions().map((s) => s.tmdbId));
         const out: Movie[] = [];
         const seen = new Set<number>();
         for (const res of responses) {
           for (const m of res.results ?? []) {
             if (!m?.id || banned.has(m.id) || seen.has(m.id)) continue;
+            if (liked.has(m.id) || subbed.has(m.id)) continue;
             seen.add(m.id);
             out.push(m);
           }
