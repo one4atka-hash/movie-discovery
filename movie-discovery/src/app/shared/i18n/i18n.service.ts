@@ -59,6 +59,7 @@ const RU: Dict = {
 
   'home.title': 'Выбор фильма на вечер — быстро и без лишнего шума.',
   'home.subtitle': 'Поиск, избранное, трейлеры и ссылки на стриминги (подписка, аренда, покупка).',
+  'home.instruction': 'Начни с поиска — затем отметь «хочу/смотрю/смотрел» и добавляй в избранное.',
   'home.cta.search': 'Открыть поиск',
   'home.apiKeyNote':
     'Для запросов к TMDB нужен API key. Скопируйте public/env.example.js → public/env.js и задайте TMDB_API_KEY.',
@@ -98,6 +99,8 @@ const RU: Dict = {
 
   'account.title': 'Аккаунт',
   'account.subtitle': 'Нужен для синхронизации подписок и уведомлений о релизах.',
+  'account.instruction':
+    'Если хотите синхронизацию и уведомления — войдите в приложение и подключите сервер в разделе «Данные».',
   'account.loggedInAs': 'Вы вошли как',
   'account.myNotifications': 'Подписки на главной',
   'account.section.subscriptions': 'Подписки на релиз',
@@ -378,6 +381,7 @@ const EN: Dict = {
 
   'home.title': 'Pick a movie for tonight — fast and distraction-free.',
   'home.subtitle': 'Search, favorites, trailers, and links to streaming (subscription, rent, buy).',
+  'home.instruction': 'Start with Search — then mark watch status and add favorites.',
   'home.cta.search': 'Open search',
   'home.apiKeyNote':
     'TMDB API key is required. Copy public/env.example.js to public/env.js and set TMDB_API_KEY.',
@@ -413,6 +417,8 @@ const EN: Dict = {
 
   'account.title': 'Account',
   'account.subtitle': 'Required for syncing release alerts and reminders.',
+  'account.instruction':
+    'If you want sync and reminders, sign in and connect the server in the Data section.',
   'account.loggedInAs': 'Signed in as',
   'account.myNotifications': 'Subscriptions on home',
   'account.section.subscriptions': 'Release subscriptions',

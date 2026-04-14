@@ -27,6 +27,7 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
         <p class="hero__kicker">Movie Discovery</p>
         <h1 class="hero__title">{{ i18n.t('home.title') }}</h1>
         <p class="hero__subtitle">{{ i18n.t('home.subtitle') }}</p>
+        <p class="hero__subtitle hero__subtitle--muted">{{ i18n.t('home.instruction') }}</p>
 
         <div class="hero__actions">
           <a class="btn btn--primary" routerLink="/search">{{ i18n.t('home.cta.search') }}</a>
@@ -123,6 +124,11 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
         color: var(--text-muted);
         max-width: 60ch;
         line-height: 1.5;
+      }
+
+      .hero__subtitle--muted {
+        margin-top: -0.65rem;
+        color: var(--text-faint);
       }
       .hero__actions {
         display: flex;

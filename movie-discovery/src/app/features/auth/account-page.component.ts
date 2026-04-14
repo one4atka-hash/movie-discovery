@@ -24,6 +24,7 @@ import { ChipComponent } from '@shared/ui/chip/chip.component';
 import { ServerConnectComponent } from '@shared/ui/server-connect/server-connect.component';
 import { StreamingCatalogService } from '@features/streaming/streaming-catalog.service';
 import { StorageService } from '@core/storage.service';
+import { PageIntroComponent } from '@shared/ui/page-intro/page-intro.component';
 import {
   ServerCinemaApiService,
   type EmbeddingsJobItem,
@@ -48,16 +49,18 @@ import {
     BottomSheetComponent,
     ChipComponent,
     ServerConnectComponent,
+    PageIntroComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
       <a class="back" routerLink="/">← {{ i18n.t('nav.home') }}</a>
 
-      <header class="head">
-        <h1 class="title">{{ i18n.t('account.title') }}</h1>
-        <p class="sub">{{ i18n.t('account.subtitle') }}</p>
-      </header>
+      <app-page-intro
+        [title]="i18n.t('account.title')"
+        [purpose]="i18n.t('account.subtitle')"
+        [instruction]="i18n.t('account.instruction')"
+      />
 
       <section
         class="account-block"
