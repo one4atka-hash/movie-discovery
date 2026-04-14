@@ -560,6 +560,93 @@ Component tests:
   - [x] Фокус‑кольца глобально (`:focus-visible`); shell nav — явный `focus-visible` + touch targets ≥44px; chips — min-height 44px.
   - [x] Жесты только как enhancement: основной путь — кнопки/клавиатура (без обязательных swipe/long-press в MVP).
 
+---
+
+### Итерация 6 — Social (Friends + Chats + Совместные рекомендации) — **backlog / vNext**
+
+Цель: добавить “социальный слой” уровня Letterboxd/Trakt и “movie night” сценарии: **дружба**, **чаты**, **совместный выбор фильма** и **совместные рекомендации** для 2 пользователей и групп **5–10**.
+
+Текущее состояние (что уже есть как фундамент):
+- [x] **Users + JWT**: `users`, auth endpoints (`/api/auth/*`), `@CurrentUser()` (server).
+- [x] **Public profile**: `public_profiles` + `GET /api/u/:slug` (server) — база для social identity.
+- [x] **“Feed” паттерн**: `notifications` + list/read endpoints — можно переиспользовать под chat/mentions.
+- [x] **Share-token паттерн**: decision sessions имеют `share_token` + public read/vote endpoints — можно переиспользовать под invite links.
+- [x] **Push infra**: `push_subscriptions` + delivery service (опционально для “new message”).
+
+#### 6.1 Social graph (дружба / блокировки / приватность)
+- [x] **DB (M1)** — добавить таблицы:
+  - [x] `friend_requests(id, from_user_id, to_user_id, status, created_at, decided_at)` (status: pending/accepted/declined/cancelled).
+  - [x] `friendships(user_id_a, user_id_b, created_at)` (invariant: a<b, unique).
+  - [x] `user_blocks(blocker_user_id, blocked_user_id, created_at)` (hard deny).
+  - [x] (опц.) `user_privacy_settings(user_id, allow_dm_from, allow_invites_from, …)` (M2).
+- [x] **API (M1)**:
+  - [x] `POST /api/friends/requests` (по `toUserId` или `slug`).
+  - [x] `POST /api/friends/requests/:id/accept|decline|cancel`.
+  - [x] `GET /api/friends` (list).
+  - [x] `POST /api/blocks` / `DELETE /api/blocks/:userId`.
+- [x] **Frontend (M1)**:
+  - [x] Search/find users by `slug` (через `GET /api/u/:slug` + authed endpoint для “lookup user id”).
+  - [x] Friends list + requests inbox (минимальный UI).
+- [x] **Security**:
+  - [x] Rate limits на friend requests; защита от enumeration; запрет self‑requests; учитывать `user_blocks`.
+
+#### 6.2 Chats (DM + групповые чаты) — без WebSockets в MVP
+Пояснение: сейчас в сервере нет WebSockets/SSE, зато есть рабочие паттерны “events since …” и `notifications`. Для MVP быстрее и проще: **DB + polling**.
+
+- [x] **DB (M1)**:
+  - [x] `conversations(id, kind dm|group, title?, created_by, created_at)`
+  - [x] `conversation_members(conversation_id, user_id, role, joined_at, left_at?)`
+  - [x] `messages(id, conversation_id, sender_user_id, body, created_at)`
+  - [x] `conversation_reads(conversation_id, user_id, last_read_at)` (вместо per‑message receipts в MVP)
+- [x] **API (M1)**:
+  - [x] `POST /api/chat/conversations` (dm: by userId; group: title + memberIds).
+  - [x] `GET /api/chat/conversations` (список + unread count).
+  - [x] `GET /api/chat/messages?conversationId=...&since=...&limit=...` (инкрементальная загрузка)
+  - [x] `POST /api/chat/messages` (send)
+  - [x] `POST /api/chat/conversations/:id/read` (update `last_read_at`)
+  - [x] Invite links (опц. M2): `POST /api/chat/conversations/:id/invite` → `token`; public `POST /api/public/chat/invites/:token/join`
+- [x] **Delivery/notifications (M1)**:
+  - [x] На входящее сообщение: запись в `notifications` + (опц.) Web Push (если VAPID настроен).
+- [x] **Frontend (M1)**:
+  - [x] Страница “Chats”: список диалогов, экран сообщений, polling по `since`.
+  - [x] DM из public profile / friends list.
+- [x] **Модерация/абьюз (минимум)**:
+  - [x] Ограничение длины сообщения, throttling, блокировки (`user_blocks`), “report” — backlog.
+
+#### 6.3 Совместные рекомендации (2 пользователя) + “movie night” UX
+Цель: рекомендовать фильм, который **понравится обоим**, даже если вкусы разные.
+
+- [x] **Signals (M1)**:
+  - [x] Использовать `favorites` + `feedback` (like/dislike/hide) + исключать просмотренное (`watch_state=watched`, `diary_entries`).
+  - [x] “Hard no”: если кто-то поставил `hide/dislike` — исключать из совместной выдачи (MVP).
+- [x] **Candidate expansion (M1/M2)**:
+  - [x] MVP: TMDB‑based expansion (movie/{id}/recommendations по seeds каждого участника).
+  - [x] M2: embedding-based expansion через `taste/similar-to` (pgvector) — когда pipeline будет готов.
+- [x] **Aggregation strategies (M1)**:
+  - [x] Default: mean score + penalty “least misery” (не рекомендовать то, что одному сильно не зайдёт).
+  - [x] Explain payload: “почему это подходит вам обоим” (top signals per user, approvals count).
+- [x] **API (M1)**:
+  - [x] `POST /api/recommendations/joint` body `{ memberUserIds[], strategy?, constraints? }`
+  - [x] `POST /api/recommendations/joint/feedback` (опц.; либо reuse `/api/feedback` с `reason="group:..."`)
+- [x] **Frontend (M1)**:
+  - [x] Экран “Совместный выбор”: выбрать друга → получить список → “Why this?” на карточке.
+
+#### 6.4 Рекомендации для группы (5–10)
+Цель: “компания друзей” → список, который будет **достаточно хорош для всех**, без деградации качества.
+
+- [x] **Group model (M1/M2)**:
+  - [x] Ad‑hoc: одноразовый “run” по списку участников (по invite link).
+  - [x] Persistent: `groups` + `group_members` + сохранение run’ов — (M2).
+- [x] **Aggregation (M1)**:
+  - [x] Approval/Borda как базовый ранжирующий механизм (устойчив при 5–10).
+  - [x] Fairness: ограничение, чтобы в top‑N не было “вкуса одного человека” (простые квоты/ротация).
+- [x] **UX (M1)**:
+  - [x] Генерация shortlist + групповое голосование (можно переиспользовать decision sessions + public voting).
+  - [x] Режим “avoid disasters”: least‑misery threshold.
+- [x] **Тесты (MVP)**:
+  - [x] Unit: агрегация/фильтры, детерминизм.
+  - [x] Server e2e: доступы участников, join token, запрет блокированных, read model.
+
 #### Portfolio (отдельный проект)
 - [x] Создать отдельную папку проекта: `portfolio-site/` (заготовка: `README.md`, `index.html`).
 - [x] Корневой `README.md` репозитория — оглавление монорепо (`movie-discovery/`, `server/`, Compose, `verify-all`); портфолио ссылается на него.
