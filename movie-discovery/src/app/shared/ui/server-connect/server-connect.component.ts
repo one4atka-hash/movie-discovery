@@ -68,7 +68,7 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
             <app-button
               variant="secondary"
               [loading]="session.busy()"
-              [disabled]="session.busy()"
+              [disabled]="session.busy() || !email.trim() || !password"
               (click)="login()"
             >
               {{ i18n.t('serverConnect.connectLogin') }}
@@ -76,7 +76,7 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
             <app-button
               variant="ghost"
               [loading]="session.busy()"
-              [disabled]="session.busy()"
+              [disabled]="session.busy() || !email.trim() || !password"
               (click)="register()"
             >
               {{ i18n.t('serverConnect.connectRegister') }}
@@ -94,14 +94,18 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
             </app-button>
           </div>
           @if (session.err(); as err) {
-            <p class="muted" role="alert" style="margin-top: 0.65rem">{{ err }}</p>
+            <p class="muted" role="alert" aria-live="polite" style="margin-top: 0.65rem">
+              {{ err }}
+            </p>
           }
         }
 
         @if (showAdvanced()) {
-          <details style="margin-top: 0.65rem" open>
+          <details style="margin-top: 0.65rem">
             <summary>{{ i18n.t('serverConnect.advancedRawToken') }}</summary>
-            <textarea [(ngModel)]="tokenText" rows="2" placeholder="eyJhbGciOi..."></textarea>
+            <app-form-field [label]="'JWT'" [hint]="i18n.t('serverConnect.advancedRawToken')">
+              <textarea [(ngModel)]="tokenText" rows="2" placeholder="eyJhbGciOi..."></textarea>
+            </app-form-field>
             <div class="actions" style="margin-top: 0.5rem">
               <app-button
                 variant="secondary"
