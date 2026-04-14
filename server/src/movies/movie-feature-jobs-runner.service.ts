@@ -66,6 +66,7 @@ export class MovieFeatureJobsRunnerService {
 
     let missing = 0;
     let embedFailures = 0;
+    await this.jobs.setTotals(userId, jobId, tmdbIds.length);
 
     const seeds = tmdbIds
       .map((id) => {
@@ -98,14 +99,22 @@ export class MovieFeatureJobsRunnerService {
       const res = await this.embeddings.embedMovieFeatures(chunk);
       if (!Array.isArray(res)) {
         embedFailures += chunk.length;
+        await this.jobs.addProgress(userId, jobId, {
+          processed: chunk.length,
+          failed: chunk.length,
+        });
         continue;
       }
 
       const vecById = new Map(res.map((r) => [r.tmdbId, r.vector] as const));
+      let processed = 0;
+      let failed = 0;
       for (const s of chunk) {
         const emb = vecById.get(s.tmdbId);
         if (!emb) {
           embedFailures += 1;
+          processed += 1;
+          failed += 1;
           continue;
         }
         const lit = toPgVectorLiteral(emb);
@@ -115,7 +124,9 @@ export class MovieFeatureJobsRunnerService {
            where tmdb_id = $1`,
           [s.tmdbId, lit],
         );
+        processed += 1;
       }
+      await this.jobs.addProgress(userId, jobId, { processed, failed });
     }
 
     if (missing) {

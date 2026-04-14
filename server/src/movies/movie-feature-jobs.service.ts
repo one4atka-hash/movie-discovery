@@ -8,6 +8,9 @@ type JobRow = {
   kind: 'embeddings';
   status: 'queued' | 'running' | 'completed' | 'failed';
   tmdb_ids: unknown;
+  processed_count: number;
+  failed_count: number;
+  total_count: number;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -22,11 +25,14 @@ export class MovieFeatureJobsService {
     userId: string,
     input: { tmdbIds: readonly number[] },
   ): Promise<{ id: string }> {
+    const total = [...new Set(input.tmdbIds)].filter(
+      (n) => Number.isFinite(n) && n > 0,
+    ).length;
     const rows = await this.db.query<{ id: string }>(
-      `insert into movie_feature_jobs(user_id, kind, status, tmdb_ids)
-       values ($1, 'embeddings', 'queued', $2::jsonb)
+      `insert into movie_feature_jobs(user_id, kind, status, tmdb_ids, total_count)
+       values ($1, 'embeddings', 'queued', $2::jsonb, $3)
        returning id`,
-      [userId, JSON.stringify([...input.tmdbIds])],
+      [userId, JSON.stringify([...input.tmdbIds]), total],
     );
     return { id: rows[0]?.id ?? '' };
   }
@@ -39,13 +45,16 @@ export class MovieFeatureJobsService {
     kind: 'embeddings';
     status: JobRow['status'];
     tmdbIds: number[];
+    progress: { processed: number; failed: number; total: number };
     createdAt: string;
     startedAt: string | null;
     finishedAt: string | null;
     error: string | null;
   } | null> {
     const rows = await this.db.query<JobRow>(
-      `select id, user_id, kind, status, tmdb_ids, created_at, started_at, finished_at, error
+      `select id, user_id, kind, status, tmdb_ids,
+              processed_count, failed_count, total_count,
+              created_at, started_at, finished_at, error
        from movie_feature_jobs
        where user_id = $1 and id = $2
        limit 1`,
@@ -63,6 +72,11 @@ export class MovieFeatureJobsService {
       kind: 'embeddings',
       status: r.status,
       tmdbIds,
+      progress: {
+        processed: Number(r.processed_count ?? 0),
+        failed: Number(r.failed_count ?? 0),
+        total: Number(r.total_count ?? tmdbIds.length),
+      },
       createdAt: r.created_at,
       startedAt: r.started_at,
       finishedAt: r.finished_at,
@@ -96,6 +110,34 @@ export class MovieFeatureJobsService {
        set status = 'completed', finished_at = now(), error = null
        where user_id = $1 and id = $2`,
       [userId, id],
+    );
+  }
+
+  async setTotals(userId: string, id: string, total: number): Promise<void> {
+    await this.db.exec(
+      `update movie_feature_jobs
+       set total_count = $3
+       where user_id = $1 and id = $2`,
+      [userId, id, Math.max(0, Math.trunc(total))],
+    );
+  }
+
+  async addProgress(
+    userId: string,
+    id: string,
+    delta: { processed: number; failed: number },
+  ): Promise<void> {
+    await this.db.exec(
+      `update movie_feature_jobs
+       set processed_count = processed_count + $3,
+           failed_count = failed_count + $4
+       where user_id = $1 and id = $2`,
+      [
+        userId,
+        id,
+        Math.max(0, Math.trunc(delta.processed)),
+        Math.max(0, Math.trunc(delta.failed)),
+      ],
     );
   }
 }
