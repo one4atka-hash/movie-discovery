@@ -20,6 +20,34 @@ const TmdbReleaseDatesResponseSchema = z.object({
   ),
 });
 
+const TmdbMovieDetailsSchema = z.object({
+  id: z.number(),
+  title: z.string().optional().nullable(),
+  overview: z.string().optional().nullable(),
+  original_language: z.string().optional().nullable(),
+  genres: z
+    .array(
+      z.object({
+        id: z.number(),
+        name: z.string().optional().nullable(),
+      }),
+    )
+    .optional()
+    .nullable(),
+});
+
+const TmdbCreditsSchema = z.object({
+  id: z.number().optional(),
+  cast: z.array(z.unknown()).optional().nullable(),
+  crew: z.array(z.unknown()).optional().nullable(),
+});
+
+const TmdbKeywordsSchema = z.object({
+  id: z.number().optional(),
+  keywords: z.array(z.unknown()).optional().nullable(),
+  results: z.array(z.unknown()).optional().nullable(), // some TMDB shapes use `results`
+});
+
 @Injectable()
 export class MoviesService {
   constructor(
@@ -133,6 +161,103 @@ export class MoviesService {
       throw new ServiceUnavailableException('Unexpected TMDB payload');
     }
     return json;
+  }
+
+  /**
+   * Minimal TMDB "feature cache" v1: fetch details + credits + keywords and upsert into `movie_features`.
+   * Embeddings are intentionally out of scope for this step.
+   */
+  async refreshMovieFeatures(
+    tmdbId: number,
+    opts?: { language?: string | undefined },
+  ): Promise<{
+    ok: true;
+    tmdbId: number;
+    updatedAt: string;
+  }> {
+    const apiKey = (this.config.get<string>('TMDB_API_KEY') ?? '').trim();
+    if (!apiKey) {
+      throw new ServiceUnavailableException('TMDB is not configured');
+    }
+
+    const baseUrl = (
+      this.config.get<string>('TMDB_BASE_URL') ?? 'https://api.themoviedb.org/3'
+    )
+      .trim()
+      .replace(/\/+$/, '');
+
+    const language = (opts?.language ?? '').trim();
+
+    const urlDetails = new URL(`${baseUrl}/movie/${tmdbId}`);
+    urlDetails.searchParams.set('api_key', apiKey);
+    if (language) urlDetails.searchParams.set('language', language);
+
+    const urlCredits = new URL(`${baseUrl}/movie/${tmdbId}/credits`);
+    urlCredits.searchParams.set('api_key', apiKey);
+
+    const urlKeywords = new URL(`${baseUrl}/movie/${tmdbId}/keywords`);
+    urlKeywords.searchParams.set('api_key', apiKey);
+
+    const [resDetails, resCredits, resKeywords] = await Promise.all([
+      fetch(urlDetails.toString(), {
+        headers: { accept: 'application/json' },
+      }),
+      fetch(urlCredits.toString(), {
+        headers: { accept: 'application/json' },
+      }),
+      fetch(urlKeywords.toString(), {
+        headers: { accept: 'application/json' },
+      }),
+    ]);
+
+    if (!resDetails.ok || !resCredits.ok || !resKeywords.ok) {
+      throw new ServiceUnavailableException('TMDB request failed');
+    }
+
+    const [jsonDetails, jsonCredits, jsonKeywords] = await Promise.all([
+      resDetails.json() as Promise<unknown>,
+      resCredits.json() as Promise<unknown>,
+      resKeywords.json() as Promise<unknown>,
+    ]);
+
+    const details = TmdbMovieDetailsSchema.safeParse(jsonDetails);
+    const credits = TmdbCreditsSchema.safeParse(jsonCredits);
+    const keywords = TmdbKeywordsSchema.safeParse(jsonKeywords);
+    if (!details.success || !credits.success || !keywords.success) {
+      throw new ServiceUnavailableException('Unexpected TMDB payload');
+    }
+
+    const kw = keywords.data.keywords ?? keywords.data.results ?? [];
+    const updatedAt = new Date().toISOString();
+    await this.db.exec(
+      `insert into movie_features(
+         tmdb_id, title, overview, genres, "cast", crew, keywords, lang, updated_at
+       )
+       values ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb, $8, $9::timestamptz)
+       on conflict (tmdb_id)
+       do update set
+         title = excluded.title,
+         overview = excluded.overview,
+         genres = excluded.genres,
+         "cast" = excluded."cast",
+         crew = excluded.crew,
+         keywords = excluded.keywords,
+         lang = excluded.lang,
+         updated_at = excluded.updated_at`,
+      [
+        tmdbId,
+        (details.data.title ?? '').trim() || null,
+        details.data.overview ?? null,
+        JSON.stringify(details.data.genres ?? []),
+        JSON.stringify(credits.data.cast ?? []),
+        JSON.stringify(credits.data.crew ?? []),
+        JSON.stringify(kw ?? []),
+        (details.data.original_language ?? language ?? null) as string | null,
+        updatedAt,
+      ],
+    );
+
+    return { ok: true, tmdbId, updatedAt };
   }
 
   /**

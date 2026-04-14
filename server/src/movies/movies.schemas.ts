@@ -20,3 +20,11 @@ export const MovieReleasesQuerySchema = zodSchema(
     })
     .strict(),
 );
+
+export const RefreshFeaturesQuerySchema = zodSchema(
+  z
+    .object({
+      language: z.string().trim().optional().default(''),
+    })
+    .strict(),
+);

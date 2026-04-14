@@ -6,6 +6,7 @@ import { ZodBodyPipe } from '../common/zod-body.pipe';
 import {
   MovieReleasesQuerySchema,
   MoviesTmdbIdParamSchema,
+  RefreshFeaturesQuerySchema,
 } from './movies.schemas';
 import { MoviesService } from './movies.service';
 
@@ -13,6 +14,18 @@ import { MoviesService } from './movies.service';
 @Controller('movies')
 export class MoviesController {
   constructor(private readonly svc: MoviesService) {}
+
+  @Get(':tmdbId/features/refresh')
+  async refreshFeatures(
+    @Param(new ZodBodyPipe(MoviesTmdbIdParamSchema))
+    p: z.infer<typeof MoviesTmdbIdParamSchema>,
+    @Query(new ZodBodyPipe(RefreshFeaturesQuerySchema))
+    q: z.infer<typeof RefreshFeaturesQuerySchema>,
+  ) {
+    return await this.svc.refreshMovieFeatures(p.tmdbId, {
+      language: q.language || undefined,
+    });
+  }
 
   @Get(':tmdbId/editions')
   async editions(
