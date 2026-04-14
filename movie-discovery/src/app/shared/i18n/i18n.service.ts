@@ -48,7 +48,7 @@ const RU: Dict = {
   'serverConnect.password': 'Пароль',
   'serverConnect.connectLogin': 'Подключить (войти)',
   'serverConnect.connectRegister': 'Создать аккаунт',
-  'serverConnect.advancedRawToken': 'Advanced: raw server token',
+  'serverConnect.advancedRawToken': 'Расширенно: сырой токен сервера',
   'serverConnect.useToken': 'Использовать токен',
   'serverConnect.clearToken': 'Очистить токен',
   'serverConnect.errRequired': 'Нужны email и пароль.',
