@@ -16,7 +16,7 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-card>
-      <app-form-field [label]="label()" [hint]="hint()">
+      <app-form-field [label]="effectiveLabel()" [hint]="effectiveHint()">
         @if (session.me(); as me) {
           <p class="muted" style="margin: 0 0 0.5rem">
             {{ i18n.t('serverConnect.connectedAs') }} <b>{{ me.email }}</b>
@@ -147,8 +147,8 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
   ],
 })
 export class ServerConnectComponent {
-  readonly label = input<string>('Connect to server (optional)');
-  readonly hint = input<string>('');
+  readonly label = input<string | null>(null);
+  readonly hint = input<string | null>(null);
 
   readonly i18n = inject(I18nService);
   readonly session = inject(ServerSessionService);
@@ -160,6 +160,8 @@ export class ServerConnectComponent {
   tokenText = '';
 
   readonly connected = computed(() => Boolean(this.session.me()));
+  readonly effectiveLabel = computed(() => this.label() ?? this.i18n.t('serverConnect.server'));
+  readonly effectiveHint = computed(() => this.hint() ?? '');
 
   constructor() {
     this.tokenText = this.api.getToken() ?? '';
