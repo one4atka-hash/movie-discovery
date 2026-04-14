@@ -4,6 +4,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 
 import { StorageService } from '@core/storage.service';
+import { ServerCinemaApiService, type ServerAuthedUser } from '@core/server-cinema-api.service';
 import { ButtonComponent } from '@shared/ui/button/button.component';
 import { CardComponent } from '@shared/ui/card/card.component';
 import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
@@ -31,10 +32,88 @@ const HIDE_RESOLVED_KEY = 'import.hideResolved.v1';
       <app-card>
         <div class="grid">
           <app-form-field
-            label="Код подключения (опционально)"
-            hint="Если у тебя включена серверная синхронизация — вставь код подключения. Он сохранится в этом браузере."
+            label="Подключение к серверу (опционально)"
+            hint="Войдите или зарегистрируйтесь, чтобы импортировать данные на сервер."
           >
-            <textarea [(ngModel)]="token" rows="2" placeholder="eyJhbGciOi..."></textarea>
+            @if (serverMe(); as me) {
+              <p class="muted" style="margin: 0 0 0.5rem">
+                Connected as <b>{{ me.email }}</b>
+              </p>
+              <div class="actions" style="margin-top: 0.5rem">
+                <app-button
+                  variant="secondary"
+                  [loading]="serverAuthBusy()"
+                  [disabled]="serverAuthBusy()"
+                  (click)="disconnectServer()"
+                >
+                  Disconnect
+                </app-button>
+                <app-button
+                  variant="ghost"
+                  [loading]="serverAuthBusy()"
+                  [disabled]="serverAuthBusy()"
+                  (click)="refreshServerMe()"
+                >
+                  Refresh status
+                </app-button>
+                <app-button
+                  variant="ghost"
+                  [disabled]="serverAuthBusy()"
+                  (click)="showAdvancedServerToken.set(!showAdvancedServerToken())"
+                >
+                  {{ showAdvancedServerToken() ? 'Hide advanced' : 'Advanced' }}
+                </app-button>
+              </div>
+            } @else {
+              <div class="row2">
+                <app-form-field label="Email">
+                  <input class="input" [(ngModel)]="serverEmail" autocomplete="email" />
+                </app-form-field>
+                <app-form-field label="Password">
+                  <input
+                    class="input"
+                    type="password"
+                    [(ngModel)]="serverPassword"
+                    autocomplete="current-password"
+                  />
+                </app-form-field>
+              </div>
+              <div class="actions" style="margin-top: 0.5rem">
+                <app-button
+                  variant="secondary"
+                  [loading]="serverAuthBusy()"
+                  [disabled]="serverAuthBusy()"
+                  (click)="connectServerLogin()"
+                >
+                  Connect (login)
+                </app-button>
+                <app-button
+                  variant="ghost"
+                  [loading]="serverAuthBusy()"
+                  [disabled]="serverAuthBusy()"
+                  (click)="connectServerRegister()"
+                >
+                  Create account
+                </app-button>
+                <app-button
+                  variant="ghost"
+                  [disabled]="serverAuthBusy()"
+                  (click)="showAdvancedServerToken.set(!showAdvancedServerToken())"
+                >
+                  {{ showAdvancedServerToken() ? 'Hide advanced' : 'Advanced' }}
+                </app-button>
+              </div>
+              @if (serverAuthErr(); as err) {
+                <p class="muted" role="alert" style="margin-top: 0.65rem">{{ err }}</p>
+              }
+            }
+
+            @if (showAdvancedServerToken()) {
+              <details style="margin-top: 0.65rem" open>
+                <summary>Advanced: raw server token</summary>
+                <textarea [(ngModel)]="token" rows="2" placeholder="eyJhbGciOi..."></textarea>
+              </details>
+            }
           </app-form-field>
 
           <div class="row2">
@@ -403,8 +482,15 @@ const HIDE_RESOLVED_KEY = 'import.hideResolved.v1';
 export class ImportPageComponent {
   private readonly api = inject(ImportApiService);
   private readonly storage = inject(StorageService);
+  private readonly cinemaApi = inject(ServerCinemaApiService);
 
   token = this.storage.get<string>(TOKEN_KEY, '') ?? '';
+  readonly showAdvancedServerToken = signal(false);
+  readonly serverAuthBusy = signal(false);
+  readonly serverAuthErr = signal<string | null>(null);
+  readonly serverMe = signal<ServerAuthedUser | null>(null);
+  serverEmail = '';
+  serverPassword = '';
   kind: ImportKind = 'favorites';
   format: ImportFormat = 'json';
   payload = '';
@@ -484,6 +570,91 @@ export class ImportPageComponent {
     () => this._conflictsOffset() + this._conflictsLimit() < this._conflictsTotal(),
   );
 
+  constructor() {
+    const t = this.token.trim();
+    if (!t) return;
+    this.cinemaApi.setToken(t);
+    this.refreshServerMe({ silent: true });
+  }
+
+  refreshServerMe(input?: { silent?: boolean }): void {
+    if (!input?.silent) this.serverAuthErr.set(null);
+    this.serverAuthBusy.set(true);
+    this.cinemaApi.authMe().subscribe({
+      next: (me) => {
+        this.serverMe.set(me);
+        if (!me && !input?.silent) {
+          this.serverAuthErr.set('Not connected (invalid token or server unavailable).');
+        }
+      },
+      error: () => {
+        this.serverMe.set(null);
+        if (!input?.silent) this.serverAuthErr.set('Failed to check server status.');
+      },
+      complete: () => this.serverAuthBusy.set(false),
+    });
+  }
+
+  connectServerLogin(): void {
+    this.serverAuthErr.set(null);
+    const email = this.serverEmail.trim();
+    const password = this.serverPassword;
+    if (!email || !password) {
+      this.serverAuthErr.set('Email and password are required.');
+      return;
+    }
+    this.serverAuthBusy.set(true);
+    this.cinemaApi.authLogin(email, password).subscribe({
+      next: (res) => {
+        if (!res?.token) {
+          this.serverAuthErr.set('Login failed.');
+          return;
+        }
+        this.token = res.token;
+        this.storage.set(TOKEN_KEY, res.token);
+        this.cinemaApi.setToken(res.token);
+        this.serverMe.set(res.user ?? null);
+        this.showAdvancedServerToken.set(false);
+      },
+      error: () => this.serverAuthErr.set('Login failed.'),
+      complete: () => this.serverAuthBusy.set(false),
+    });
+  }
+
+  connectServerRegister(): void {
+    this.serverAuthErr.set(null);
+    const email = this.serverEmail.trim();
+    const password = this.serverPassword;
+    if (!email || !password) {
+      this.serverAuthErr.set('Email and password are required.');
+      return;
+    }
+    this.serverAuthBusy.set(true);
+    this.cinemaApi.authRegister(email, password).subscribe({
+      next: (res) => {
+        if (!res?.token) {
+          this.serverAuthErr.set('Registration failed.');
+          return;
+        }
+        this.token = res.token;
+        this.storage.set(TOKEN_KEY, res.token);
+        this.cinemaApi.setToken(res.token);
+        this.serverMe.set(res.user ?? null);
+        this.showAdvancedServerToken.set(false);
+      },
+      error: () => this.serverAuthErr.set('Registration failed.'),
+      complete: () => this.serverAuthBusy.set(false),
+    });
+  }
+
+  disconnectServer(): void {
+    this.serverAuthErr.set(null);
+    this.serverMe.set(null);
+    this.token = '';
+    this.storage.remove(TOKEN_KEY);
+    this.cinemaApi.clearToken();
+  }
+
   createJob(): void {
     this._err.set(null);
     const token = this.token.trim();
@@ -492,6 +663,7 @@ export class ImportPageComponent {
       return;
     }
     this.storage.set(TOKEN_KEY, token);
+    this.cinemaApi.setToken(token);
     this._busy.set(true);
     this.api
       .create(token, { kind: this.kind, format: this.format, payload: this.payload })
