@@ -679,6 +679,45 @@ Component tests:
   - [x] Rate limit на создание/комменты, длины текста, минимальные правила модерации (report — backlog)
   - [x] Notifications: “new comment / like” → запись в `notifications` (M2)
 
+#### 6.6 IA/Onboarding (подсказки в каждом блоке + объединение вкладок) — **backlog**
+Цель: чтобы пользователь **не “читал мысли разработчика”**. В каждой вкладке/секции есть:
+- [x] 1 строка **для чего этот блок**
+- [x] 1 строка **как им пользоваться (следующий шаг)**
+- [x] (опц.) `<details>` “Почему/как работает” для продвинутых
+
+##### 6.6.1 Подсказки по вкладкам (что сейчас делают)
+- [x] **Сегодня (`/decide`)**: Decision Mode → собрать shortlist из кандидатов, применить простые ограничения, выбрать победителя (и/или проголосовать по share‑link).
+- [x] **Дневник (`/diary`)**: журнал просмотров → добавить запись “смотрел(а)” с датой/локацией/оценкой/тегами; дальше — статистика и экспорт.
+- [x] **Списки (`/collections`)**: пользовательские коллекции (папки) → собрать “топ‑10”, “в дорогу”, “с детьми” и т.п. (сейчас: manual items).
+- [x] **Входящие (`/inbox`)**: “умные уведомления” → локальный feed + rules; опционально server feed/notifications/reminders при подключении.
+
+##### 6.6.2 Объединение пересекающегося функционала (IA)
+- [x] **Lists ↔ Watchlist**: объединить в одну зону “Списки” (внутри: таб “Статусы” + “Коллекции”), `/watchlist` оставить как алиас/редирект.
+- [x] **Inbox ↔ Notifications**: сделать Inbox единым центром уведомлений:
+  - [x] release subscriptions management (сейчас `/notifications`)
+  - [x] server notifications feed
+  - [x] rules editor
+  - [x] `/notifications` оставить как алиас/редирект на Inbox‑секцию.
+
+##### 6.6.3 UX‑шаблон подсказок (реюз существующих компонентов)
+- [x] Пустые состояния: `EmptyStateComponent` (title + instruction + CTA).
+- [x] Формы: `FormFieldComponent` hint/error.
+- [x] Продвинутые пояснения: native `<details>/<summary>` (уже используется в Inbox/import).
+- [x] i18n‑конвенция: `<feature>.<block>.purpose` + `<feature>.<block>.instruction` (+ `.emptyTitle/.emptyInstruction`).
+
+#### 6.7 Account UX (user‑friendly, без токенов) — **backlog**
+Цель: `/account` как “профиль + подключения + приватность + данные”, без ручной работы с JWT/секретами.
+
+Текущее состояние (проблемы):
+- [x] Паста JWT, dev‑email smoke test и экспорт/импорт перемешаны в “основной” UI.
+- [x] Концептуально две аутентификации: local FE auth и server JWT.
+
+План (милестоуны):
+- [x] **M1 (FE‑only)**: перестроить страницу на блоки “Profile / Connections / Data & Privacy / Advanced”; dev‑утилиты и raw JWT спрятать в Advanced.
+- [x] **M2 (FE + server auth endpoints уже есть)**: “Connect to server” через `POST /api/auth/login`/`register` + silent storage токена + `GET /api/auth/me` для статуса (без textarea).
+- [x] **M3**: streaming prefs sync как progressive enhancement (local‑first → server‑sync при подключении).
+- [x] **M4**: Notifications hub: Web Push connect/disconnect (VAPID) + user‑grade email setup (не dev‑endpoint).
+
 #### Portfolio (отдельный проект)
 - [x] Создать отдельную папку проекта: `portfolio-site/` (заготовка: `README.md`, `index.html`).
 - [x] Корневой `README.md` репозитория — оглавление монорепо (`movie-discovery/`, `server/`, Compose, `verify-all`); портфолио ссылается на него.
