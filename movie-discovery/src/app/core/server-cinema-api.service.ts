@@ -205,6 +205,21 @@ export class ServerCinemaApiService {
       .pipe(catchError(() => of(null)));
   }
 
+  previewMyEmbeddingsSeeds(input?: {
+    limit?: number;
+  }): Observable<{ ok: true; tmdbIds: number[] } | null> {
+    const h = this.authHeaders();
+    if (!h) return of(null);
+    const limit = input?.limit ?? 50;
+    const params = new HttpParams().set('limit', String(limit));
+    return this.http
+      .get<{ ok: true; tmdbIds: number[] }>('/api/me/movie-features/embeddings/seeds', {
+        headers: h,
+        params,
+      })
+      .pipe(catchError(() => of(null)));
+  }
+
   getPublicUserBySlug(slug: string): Observable<Record<string, unknown> | null> {
     return this.http.get<Record<string, unknown>>(`/api/u/${encodeURIComponent(slug)}`).pipe(
       catchError((e: unknown) => {

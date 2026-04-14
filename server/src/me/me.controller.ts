@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { z } from 'zod';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -85,5 +93,21 @@ export class MeController {
     const ids = await this.me.listMyFeatureRefreshSeeds(u.id, limit);
     const out = await this.jobs.createEmbeddingsJob(u.id, { tmdbIds: ids });
     return { ok: true, id: out.id, tmdbIds: ids };
+  }
+
+  @Get('movie-features/embeddings/seeds')
+  async getMyEmbeddingsSeeds(
+    @CurrentUser() u: AuthedUser,
+    @Query(
+      new ZodBodyPipe(
+        z.object({
+          limit: z.coerce.number().int().min(1).max(200).optional().default(50),
+        }),
+      ),
+    )
+    q: { limit: number },
+  ) {
+    const ids = await this.me.listMyFeatureRefreshSeeds(u.id, q.limit);
+    return { ok: true, tmdbIds: ids };
   }
 }

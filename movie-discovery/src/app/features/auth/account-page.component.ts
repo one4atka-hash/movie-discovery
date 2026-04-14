@@ -208,6 +208,14 @@ import {
                   </select>
                 </label>
                 <button
+                  class="btn"
+                  type="button"
+                  (click)="previewMyEmbeddingsSeeds()"
+                  [disabled]="jobsBusy()"
+                >
+                  Preview seeds
+                </button>
+                <button
                   class="btn btn--primary"
                   type="button"
                   (click)="createAndRunMyEmbeddingsJob()"
@@ -226,6 +234,12 @@ import {
               </div>
               <p class="ok" *ngIf="jobsOk()" style="margin-bottom: 0">{{ jobsOk() }}</p>
               <p class="err" *ngIf="jobsErr()" style="margin-bottom: 0">{{ jobsErr() }}</p>
+              <details *ngIf="seeds().length" class="why" style="margin-top: 0.65rem">
+                <summary class="why__sum">Seeds preview ({{ seeds().length }})</summary>
+                <ul class="why__list">
+                  <li *ngFor="let id of seeds()">TMDB {{ id }}</li>
+                </ul>
+              </details>
               <div class="subs-grid" *ngIf="jobs().length" style="margin-top: 0.65rem">
                 <article class="subCard" *ngFor="let j of jobs(); trackBy: trackByJobId">
                   <div class="subCard__head">
@@ -811,6 +825,7 @@ export class AccountPageComponent {
   readonly jobsErr = signal<string | null>(null);
   readonly jobs = signal<readonly EmbeddingsJobItem[]>([]);
   readonly embeddingsLimit = new FormControl<number>(50, { nonNullable: true });
+  readonly seeds = signal<readonly number[]>([]);
   private jobsPollTimer: ReturnType<typeof setInterval> | null = null;
   private jobsPollEndsAt = 0;
   private readonly destroyRef = inject(DestroyRef);
@@ -1081,6 +1096,7 @@ export class AccountPageComponent {
   createAndRunMyEmbeddingsJob(): void {
     this.jobsOk.set(null);
     this.jobsErr.set(null);
+    this.seeds.set([]);
     const token = this.serverJwt.value.trim();
     if (!token) {
       this.jobsErr.set(this.i18n.t('account.publicProfile.needJwt'));
@@ -1111,6 +1127,36 @@ export class AccountPageComponent {
       error: () => {
         this.jobsBusy.set(false);
         this.jobsErr.set('Request failed');
+      },
+    });
+  }
+
+  previewMyEmbeddingsSeeds(): void {
+    this.jobsOk.set(null);
+    this.jobsErr.set(null);
+    const token = this.serverJwt.value.trim();
+    if (!token) {
+      this.jobsErr.set(this.i18n.t('account.publicProfile.needJwt'));
+      return;
+    }
+    this.storage.set('server.jwt.token.v1', token);
+    this.jobsBusy.set(true);
+    const limit = this.embeddingsLimit.value;
+    this.cinemaApi.previewMyEmbeddingsSeeds({ limit }).subscribe({
+      next: (r) => {
+        this.jobsBusy.set(false);
+        if (!r?.ok) {
+          this.jobsErr.set('Request failed');
+          this.seeds.set([]);
+          return;
+        }
+        this.seeds.set(r.tmdbIds ?? []);
+        this.jobsOk.set(`Seeds: ${r.tmdbIds.length}`);
+      },
+      error: () => {
+        this.jobsBusy.set(false);
+        this.jobsErr.set('Request failed');
+        this.seeds.set([]);
       },
     });
   }
