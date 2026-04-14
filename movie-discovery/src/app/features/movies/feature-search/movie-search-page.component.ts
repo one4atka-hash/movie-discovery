@@ -191,12 +191,6 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                 <h2 class="dashSection__title" id="home-new-title">
                   {{ i18n.t('home.section.newReleases') }}
                 </h2>
-                <div class="dashSection__actions">
-                  <button class="btn" type="button" (click)="toggleNowPlayingExpanded()">
-                    {{ nowPlayingExpanded() ? i18n.t('common.collapse') : i18n.t('common.expand') }}
-                  </button>
-                  <a class="btn" routerLink="/now-playing">{{ i18n.t('common.openPage') }}</a>
-                </div>
               </div>
               <div class="spotlight__strip" *ngIf="nowPlayingLoading()">
                 <div
@@ -207,7 +201,7 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
               <div class="spotlight__strip" *ngIf="!nowPlayingLoading() && nowPlaying().length">
                 <a
                   class="spotlight__tile"
-                  *ngFor="let m of nowPlayingVisible(); trackBy: trackById"
+                  *ngFor="let m of nowPlaying(); trackBy: trackById"
                   [routerLink]="['/movie', m.id]"
                 >
                   <div class="spotlight__poster" [class.spotlight__poster--empty]="!m.poster_path">
@@ -241,10 +235,25 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                   {{ i18n.t('home.section.recommendations') }}
                 </h2>
                 <div class="dashSection__actions">
-                  <button class="btn" type="button" (click)="toggleRecsExpanded()">
-                    {{ recsExpanded() ? i18n.t('common.collapse') : i18n.t('common.expand') }}
+                  <button
+                    class="btn btn--icon"
+                    type="button"
+                    (click)="toggleRecsExpanded()"
+                    [attr.aria-label]="
+                      recsExpanded() ? i18n.t('common.collapse') : i18n.t('common.expand')
+                    "
+                    [title]="recsExpanded() ? i18n.t('common.collapse') : i18n.t('common.expand')"
+                  >
+                    <span aria-hidden="true">⤢</span>
                   </button>
-                  <a class="btn" routerLink="/recommendations">{{ i18n.t('common.openPage') }}</a>
+                  <a
+                    class="btn btn--icon"
+                    routerLink="/recommendations"
+                    [attr.aria-label]="i18n.t('common.openPage')"
+                    [title]="i18n.t('common.openPage')"
+                  >
+                    <span aria-hidden="true">↗</span>
+                  </a>
                   <button
                     type="button"
                     class="btn btn--icon btn--refresh"
@@ -306,10 +315,25 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                   {{ i18n.t('home.section.random') }}
                 </h2>
                 <div class="dashSection__actions">
-                  <button class="btn" type="button" (click)="toggleRandomExpanded()">
-                    {{ randomExpanded() ? i18n.t('common.collapse') : i18n.t('common.expand') }}
+                  <button
+                    class="btn btn--icon"
+                    type="button"
+                    (click)="toggleRandomExpanded()"
+                    [attr.aria-label]="
+                      randomExpanded() ? i18n.t('common.collapse') : i18n.t('common.expand')
+                    "
+                    [title]="randomExpanded() ? i18n.t('common.collapse') : i18n.t('common.expand')"
+                  >
+                    <span aria-hidden="true">⤢</span>
                   </button>
-                  <a class="btn" routerLink="/random">{{ i18n.t('common.openPage') }}</a>
+                  <a
+                    class="btn btn--icon"
+                    routerLink="/random"
+                    [attr.aria-label]="i18n.t('common.openPage')"
+                    [title]="i18n.t('common.openPage')"
+                  >
+                    <span aria-hidden="true">↗</span>
+                  </a>
                 </div>
               </div>
               <div class="grid grid--random" *ngIf="randomLoading()">
@@ -1106,21 +1130,14 @@ export class MovieSearchPageComponent {
   readonly showHero = computed(() => this._draft().trim().length < 2);
   readonly showEmpty = computed(() => this._hasSearched() && this._movies().length === 0);
 
-  readonly nowPlayingExpanded = signal(false);
   readonly recsExpanded = signal(false);
   readonly randomExpanded = signal(false);
 
-  readonly nowPlayingVisible = computed(() =>
-    this._nowPlaying().slice(0, this.nowPlayingExpanded() ? 12 : 6),
-  );
   readonly recsPreview = computed(() => this.recsVisible().slice(0, this.recsExpanded() ? 16 : 8));
   readonly randomPreview = computed(() =>
     this.randomVisible().slice(0, this.randomExpanded() ? 16 : 8),
   );
 
-  toggleNowPlayingExpanded(): void {
-    this.nowPlayingExpanded.set(!this.nowPlayingExpanded());
-  }
   toggleRecsExpanded(): void {
     this.recsExpanded.set(!this.recsExpanded());
   }
