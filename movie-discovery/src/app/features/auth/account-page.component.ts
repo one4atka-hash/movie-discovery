@@ -16,7 +16,11 @@ import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.compo
 import { ChipComponent } from '@shared/ui/chip/chip.component';
 import { StreamingCatalogService } from '@features/streaming/streaming-catalog.service';
 import { StorageService } from '@core/storage.service';
-import { ServerCinemaApiService, type MePublicProfile } from '@core/server-cinema-api.service';
+import {
+  ServerCinemaApiService,
+  type EmbeddingsJobItem,
+  type MePublicProfile,
+} from '@core/server-cinema-api.service';
 import {
   ExportsApiService,
   type ExportFormat,
@@ -179,6 +183,56 @@ import {
                   </li>
                 </ul>
               </details>
+            </div>
+
+            <div class="field" style="margin-top: 0.9rem">
+              <span>Embeddings jobs (server)</span>
+              <p class="muted" style="margin: 0.35rem 0 0">
+                История задач генерации эмбеддингов для ANN-рекомендаций.
+              </p>
+              <div class="actions" style="margin-top: 0">
+                <button
+                  class="btn"
+                  type="button"
+                  (click)="loadEmbeddingsJobs()"
+                  [disabled]="jobsBusy()"
+                >
+                  Load jobs
+                </button>
+              </div>
+              <p class="err" *ngIf="jobsErr()" style="margin-bottom: 0">{{ jobsErr() }}</p>
+              <div class="subs-grid" *ngIf="jobs().length" style="margin-top: 0.65rem">
+                <article class="subCard" *ngFor="let j of jobs(); trackBy: trackByJobId">
+                  <div class="subCard__head">
+                    <div class="subCard__left">
+                      <div class="subCard__t">
+                        <strong class="subCard__title">Job {{ j.id.slice(0, 8) }}</strong>
+                        <span class="subCard__date">
+                          {{ j.status }}
+                          · {{ j.progress.processed }}/{{ j.progress.total }}
+                          <ng-container *ngIf="j.progress.failed">
+                            · failed {{ j.progress.failed }}</ng-container
+                          >
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="muted" *ngIf="j.error" style="margin: 0">{{ j.error }}</p>
+                  <div class="subCard__actions">
+                    <button
+                      class="btn"
+                      type="button"
+                      (click)="runEmbeddingsJob(j.id)"
+                      [disabled]="jobsBusy()"
+                    >
+                      Run
+                    </button>
+                  </div>
+                </article>
+              </div>
+              <p class="muted" *ngIf="!jobsBusy() && !jobsErr() && !jobs().length">
+                Пока нет задач. Создать можно через API или будущий UI.
+              </p>
             </div>
           </div>
         </section>
@@ -727,6 +781,10 @@ export class AccountPageComponent {
   readonly featuresLimit = new FormControl<number>(30, { nonNullable: true });
   readonly featuresLanguage = new FormControl('', { nonNullable: true });
 
+  readonly jobsBusy = signal(false);
+  readonly jobsErr = signal<string | null>(null);
+  readonly jobs = signal<readonly EmbeddingsJobItem[]>([]);
+
   readonly ppSlug = new FormControl('', { nonNullable: true });
   readonly ppEnabled = new FormControl(false, { nonNullable: true });
   readonly ppVisibility = new FormControl<'private' | 'unlisted' | 'public'>('private', {
@@ -902,6 +960,54 @@ export class AccountPageComponent {
     });
   }
 
+  loadEmbeddingsJobs(): void {
+    this.jobsErr.set(null);
+    const token = this.serverJwt.value.trim();
+    if (!token) {
+      this.jobsErr.set(this.i18n.t('account.publicProfile.needJwt'));
+      return;
+    }
+    this.storage.set('server.jwt.token.v1', token);
+    this.jobsBusy.set(true);
+    this.cinemaApi.listEmbeddingsJobs({ limit: 20, offset: 0 }).subscribe({
+      next: (r) => {
+        this.jobsBusy.set(false);
+        if (!r?.ok) {
+          this.jobsErr.set('Request failed');
+          this.jobs.set([]);
+          return;
+        }
+        this.jobs.set(r.items ?? []);
+      },
+      error: () => {
+        this.jobsBusy.set(false);
+        this.jobsErr.set('Request failed');
+        this.jobs.set([]);
+      },
+    });
+  }
+
+  runEmbeddingsJob(id: string): void {
+    this.jobsErr.set(null);
+    const token = this.serverJwt.value.trim();
+    if (!token) {
+      this.jobsErr.set(this.i18n.t('account.publicProfile.needJwt'));
+      return;
+    }
+    this.storage.set('server.jwt.token.v1', token);
+    this.jobsBusy.set(true);
+    this.cinemaApi.runEmbeddingsJob(id).subscribe({
+      next: () => {
+        this.jobsBusy.set(false);
+        this.loadEmbeddingsJobs();
+      },
+      error: () => {
+        this.jobsBusy.set(false);
+        this.jobsErr.set('Request failed');
+      },
+    });
+  }
+
   posterUrl(path: string): string {
     return tmdbImg(92, path);
   }
@@ -912,6 +1018,10 @@ export class AccountPageComponent {
 
   trackByMovieId(_: number, m: { id: number }): number {
     return m.id;
+  }
+
+  trackByJobId(_: number, j: { id: string }): string {
+    return j.id;
   }
 
   removeSub(id: string): void {

@@ -42,6 +42,22 @@ export interface RefreshMyMovieFeaturesResponse {
   readonly errors: { readonly tmdbId: number; readonly error: string }[];
 }
 
+export interface EmbeddingsJobItem {
+  readonly id: string;
+  readonly kind: 'embeddings';
+  readonly status: 'queued' | 'running' | 'completed' | 'failed';
+  readonly tmdbIds: number[];
+  readonly progress: {
+    readonly processed: number;
+    readonly failed: number;
+    readonly total: number;
+  };
+  readonly createdAt: string;
+  readonly startedAt: string | null;
+  readonly finishedAt: string | null;
+  readonly error: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ServerCinemaApiService {
   private readonly http = inject(HttpClient);
@@ -143,6 +159,34 @@ export class ServerCinemaApiService {
         { limit, language },
         { headers: h },
       )
+      .pipe(catchError(() => of(null)));
+  }
+
+  listEmbeddingsJobs(input?: {
+    limit?: number;
+    offset?: number;
+  }): Observable<{ ok: true; items: EmbeddingsJobItem[] } | null> {
+    const h = this.authHeaders();
+    if (!h) return of(null);
+    const limit = input?.limit ?? 20;
+    const offset = input?.offset ?? 0;
+    const params = new HttpParams().set('limit', String(limit)).set('offset', String(offset));
+    return this.http
+      .get<{
+        ok: true;
+        items: EmbeddingsJobItem[];
+      }>('/api/movies/features/embeddings/jobs', { headers: h, params })
+      .pipe(catchError(() => of(null)));
+  }
+
+  runEmbeddingsJob(id: string): Observable<{ ok: true; status: string } | null> {
+    const h = this.authHeaders();
+    if (!h) return of(null);
+    return this.http
+      .post<{
+        ok: true;
+        status: string;
+      }>(`/api/movies/features/embeddings/jobs/${encodeURIComponent(id)}/run`, {}, { headers: h })
       .pipe(catchError(() => of(null)));
   }
 
