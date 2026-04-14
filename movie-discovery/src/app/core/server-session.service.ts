@@ -5,10 +5,12 @@ import {
   type ServerAuthedUser,
   type ServerAuthResponse,
 } from './server-cinema-api.service';
+import { I18nService } from '@shared/i18n/i18n.service';
 
 @Injectable({ providedIn: 'root' })
 export class ServerSessionService {
   private readonly api = inject(ServerCinemaApiService);
+  private readonly i18n = inject(I18nService);
 
   readonly busy = signal(false);
   readonly err = signal<string | null>(null);
@@ -26,12 +28,12 @@ export class ServerSessionService {
         next: (me) => {
           this.me.set(me);
           if (!me && !input?.silent) {
-            this.err.set('Not connected (invalid token or server unavailable).');
+            this.err.set(this.i18n.t('serverConnect.errNotConnected'));
           }
         },
         error: () => {
           this.me.set(null);
-          if (!input?.silent) this.err.set('Failed to check server status.');
+          if (!input?.silent) this.err.set(this.i18n.t('serverConnect.errStatusFailed'));
         },
       });
   }
@@ -40,7 +42,7 @@ export class ServerSessionService {
     this.err.set(null);
     const e = email.trim();
     if (!e || !password) {
-      this.err.set('Email and password are required.');
+      this.err.set(this.i18n.t('serverConnect.errRequired'));
       return;
     }
     this.busy.set(true);
@@ -48,8 +50,8 @@ export class ServerSessionService {
       .authLogin(e, password)
       .pipe(finalize(() => this.busy.set(false)))
       .subscribe({
-        next: (res) => this.onAuthResponse(res, 'Login failed.'),
-        error: () => this.err.set('Login failed.'),
+        next: (res) => this.onAuthResponse(res, this.i18n.t('serverConnect.errLoginFailed')),
+        error: () => this.err.set(this.i18n.t('serverConnect.errLoginFailed')),
       });
   }
 
@@ -57,7 +59,7 @@ export class ServerSessionService {
     this.err.set(null);
     const e = email.trim();
     if (!e || !password) {
-      this.err.set('Email and password are required.');
+      this.err.set(this.i18n.t('serverConnect.errRequired'));
       return;
     }
     this.busy.set(true);
@@ -65,8 +67,8 @@ export class ServerSessionService {
       .authRegister(e, password)
       .pipe(finalize(() => this.busy.set(false)))
       .subscribe({
-        next: (res) => this.onAuthResponse(res, 'Registration failed.'),
-        error: () => this.err.set('Registration failed.'),
+        next: (res) => this.onAuthResponse(res, this.i18n.t('serverConnect.errRegisterFailed')),
+        error: () => this.err.set(this.i18n.t('serverConnect.errRegisterFailed')),
       });
   }
 

@@ -51,6 +51,11 @@ const RU: Dict = {
   'serverConnect.advancedRawToken': 'Advanced: raw server token',
   'serverConnect.useToken': 'Использовать токен',
   'serverConnect.clearToken': 'Очистить токен',
+  'serverConnect.errRequired': 'Нужны email и пароль.',
+  'serverConnect.errNotConnected': 'Не подключено (невалидный токен или сервер недоступен).',
+  'serverConnect.errStatusFailed': 'Не удалось проверить статус сервера.',
+  'serverConnect.errLoginFailed': 'Не удалось войти.',
+  'serverConnect.errRegisterFailed': 'Не удалось зарегистрироваться.',
 
   'home.title': 'Выбор фильма на вечер — быстро и без лишнего шума.',
   'home.subtitle': 'Поиск, избранное, трейлеры и ссылки на стриминги (подписка, аренда, покупка).',
@@ -349,6 +354,11 @@ const EN: Dict = {
   'serverConnect.advancedRawToken': 'Advanced: raw server token',
   'serverConnect.useToken': 'Use token',
   'serverConnect.clearToken': 'Clear token',
+  'serverConnect.errRequired': 'Email and password are required.',
+  'serverConnect.errNotConnected': 'Not connected (invalid token or server unavailable).',
+  'serverConnect.errStatusFailed': 'Failed to check server status.',
+  'serverConnect.errLoginFailed': 'Login failed.',
+  'serverConnect.errRegisterFailed': 'Registration failed.',
 
   'home.title': 'Pick a movie for tonight — fast and distraction-free.',
   'home.subtitle': 'Search, favorites, trailers, and links to streaming (subscription, rent, buy).',
