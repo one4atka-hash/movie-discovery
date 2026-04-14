@@ -4,6 +4,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 
 import { AppModule } from './../src/app.module';
+import { DbService } from './../src/db/db.service';
 
 async function registerAndGetToken(app: INestApplication<App>) {
   const email = `e2e_${Date.now()}_${Math.random().toString(16).slice(2)}@example.com`;
@@ -322,6 +323,61 @@ describe('Movies releases (e2e)', () => {
     };
     expect(body.job?.status).toBe('failed');
     expect(body.job?.error).toContain('disabled');
+  });
+
+  it('can run embeddings job and writes vectors when enabled', async () => {
+    const prev = process.env.EMBEDDINGS_ENABLED;
+    process.env.EMBEDDINGS_ENABLED = '1';
+
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    const appEmb = moduleFixture.createNestApplication();
+    appEmb.setGlobalPrefix('api');
+    await appEmb.init();
+
+    const token = await registerAndGetToken(appEmb as INestApplication<App>);
+
+    // Prepare movie_features rows for tmdbIds.
+    const db = appEmb.get(DbService);
+    await db.exec(
+      `insert into movie_features(tmdb_id, title, overview, lang)
+       values (550, 'Fight Club', 'Test', 'en')
+       on conflict (tmdb_id) do update set title = excluded.title`,
+    );
+
+    const create = await request(appEmb.getHttpServer() as App)
+      .post('/api/movies/features/embeddings/jobs')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ tmdbIds: [550] })
+      .expect(201);
+
+    const id = (create.body as { ok: true; id: string }).id;
+
+    await request(appEmb.getHttpServer() as App)
+      .post(`/api/movies/features/embeddings/jobs/${id}/run`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
+
+    const get = await request(appEmb.getHttpServer() as App)
+      .get(`/api/movies/features/embeddings/jobs/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const body = get.body as {
+      ok: true;
+      job: { status: string; error: string | null } | null;
+    };
+    expect(body.job?.status).toBe('completed');
+
+    const rows = await db.query<{ embedding: string | null }>(
+      `select embedding from movie_features where tmdb_id = 550`,
+    );
+    expect(rows[0]?.embedding).toBeTruthy();
+
+    process.env.EMBEDDINGS_ENABLED = prev;
+    await appEmb.close();
   });
 
   afterEach(async () => {

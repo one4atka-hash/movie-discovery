@@ -4,6 +4,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 
 import { AppModule } from './../src/app.module';
+import { DbService } from './../src/db/db.service';
 
 async function registerAndGetToken(app: INestApplication<App>) {
   const email = `e2e_${Date.now()}_${Math.random().toString(16).slice(2)}@example.com`;
@@ -119,6 +120,55 @@ describe('Recommendations (e2e)', () => {
       (x) => (x as { tmdbId?: number }).tmdbId,
     );
     expect(ids2).not.toContain(550);
+  });
+
+  it('uses ANN mode when seed embeddings exist', async () => {
+    const token = await registerAndGetToken(app);
+
+    // Seed via favorites.
+    await request(app.getHttpServer())
+      .post('/api/favorites')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ tmdbId: 100 })
+      .expect(201);
+
+    // Provide embeddings for seed + candidates (cheap deterministic vectors).
+    // NOTE: these embeddings are arbitrary but valid pgvector literals.
+    const seedVec = `[${new Array(1536)
+      .fill(0)
+      .map((_, i) => (i === 0 ? '1' : '0'))
+      .join(',')}]`;
+    const cand1 = `[${new Array(1536)
+      .fill(0)
+      .map((_, i) => (i === 0 ? '0.9' : '0'))
+      .join(',')}]`;
+    const cand2 = `[${new Array(1536)
+      .fill(0)
+      .map((_, i) => (i === 1 ? '1' : '0'))
+      .join(',')}]`;
+
+    const db = app.get(DbService);
+    await db.exec(
+      `insert into movie_features(tmdb_id, title, overview, lang, embedding)
+       values
+         (100, 'Seed', '', 'en', $1::vector),
+         (200, 'Cand1', '', 'en', $2::vector),
+         (300, 'Cand2', '', 'en', $3::vector)
+       on conflict (tmdb_id) do update set embedding = excluded.embedding`,
+      [seedVec, cand1, cand2],
+    );
+
+    const recs = await request(app.getHttpServer())
+      .get('/api/recommendations')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const body = recs.body as {
+      meta: { mode: string };
+      items: { tmdbId: number }[];
+    };
+    expect(body.meta.mode).toBe('ann');
+    expect(body.items.length).toBeGreaterThan(0);
   });
 
   afterEach(async () => {

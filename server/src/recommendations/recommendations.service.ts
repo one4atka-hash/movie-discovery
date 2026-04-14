@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
 import { DbService } from '../db/db.service';
+import {
+  meanNormalized,
+  parsePgVectorLiteral,
+  toPgVectorLiteral,
+} from '../movies/embeddings.util';
 import { buildExplain } from './recommendations-explain.util';
 
 type FeedbackRow = {
@@ -70,10 +75,51 @@ export class RecommendationsService {
       score: number;
       explain: { key: string; params?: Record<string, string> }[];
     }[];
-    meta: { mode: 'mvp'; generatedAt: string };
+    meta: { mode: 'mvp' | 'ann'; generatedAt: string };
   }> {
-    const { unique } = await this.loadSignals(userId);
+    const { unique, blocked } = await this.loadSignals(userId);
 
+    // Try ANN if we have embeddings for at least one seed.
+    const seedEmbRows = await this.db.query<{ embedding: string }>(
+      `select embedding
+       from movie_features
+       where tmdb_id = any($1::bigint[])
+         and embedding is not null`,
+      [unique],
+    );
+    const seedVecs = seedEmbRows
+      .map((r) => parsePgVectorLiteral(r.embedding))
+      .filter((v): v is number[] => Array.isArray(v) && v.length > 0);
+    const profile = meanNormalized(seedVecs);
+
+    if (profile) {
+      const profileLit = toPgVectorLiteral(profile);
+      const blockedArr = [...blocked];
+      const rows = await this.db.query<{ tmdb_id: number; score: number }>(
+        `select tmdb_id,
+                (1 - (embedding <=> $1::vector)) as score
+         from movie_features
+         where embedding is not null
+           and tmdb_id <> all($2::bigint[])
+         order by embedding <=> $1::vector asc
+         limit 20`,
+        [profileLit, blockedArr],
+      );
+
+      return {
+        items: rows.map((r) => ({
+          tmdbId: r.tmdb_id,
+          score: Number(r.score ?? 0),
+          explain: buildExplain(
+            { seedCount: unique.length, mode: 'ann' },
+            { maxItems: 4 },
+          ),
+        })),
+        meta: { mode: 'ann', generatedAt: new Date().toISOString() },
+      };
+    }
+
+    // Fallback MVP: stable seed list.
     return {
       items: unique.map((tmdbId, i) => ({
         tmdbId,

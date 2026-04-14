@@ -89,4 +89,13 @@ export class MovieFeatureJobsService {
       [userId, id, error],
     );
   }
+
+  async markCompleted(userId: string, id: string): Promise<void> {
+    await this.db.exec(
+      `update movie_feature_jobs
+       set status = 'completed', finished_at = now(), error = null
+       where user_id = $1 and id = $2`,
+      [userId, id],
+    );
+  }
 }
