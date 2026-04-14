@@ -129,13 +129,18 @@ export class ServerCinemaApiService {
       .pipe(catchError(() => of(null)));
   }
 
-  refreshMyMovieFeatures(limit = 30): Observable<RefreshMyMovieFeaturesResponse | null> {
+  refreshMyMovieFeatures(input?: {
+    limit?: number;
+    language?: string;
+  }): Observable<RefreshMyMovieFeaturesResponse | null> {
     const h = this.authHeaders();
     if (!h) return of(null);
+    const limit = input?.limit ?? 30;
+    const language = (input?.language ?? '').trim();
     return this.http
       .post<RefreshMyMovieFeaturesResponse>(
         '/api/me/movie-features/refresh',
-        { limit },
+        { limit, language },
         { headers: h },
       )
       .pipe(catchError(() => of(null)));

@@ -52,13 +52,18 @@ export class MeController {
     @CurrentUser() u: AuthedUser,
     @Body(
       new ZodBodyPipe(
-        z.object({ limit: z.number().int().min(1).max(50).optional() }),
+        z.object({
+          limit: z.number().int().min(1).max(50).optional(),
+          language: z.string().trim().optional().default(''),
+        }),
       ),
     )
-    body: { limit?: number },
+    body: { limit?: number; language?: string },
   ) {
     const limit = body.limit ?? 30;
     const ids = await this.me.listMyFeatureRefreshSeeds(u.id, limit);
-    return await this.movies.refreshMovieFeaturesBatch(ids);
+    return await this.movies.refreshMovieFeaturesBatch(ids, {
+      language: body.language?.trim() || undefined,
+    });
   }
 }

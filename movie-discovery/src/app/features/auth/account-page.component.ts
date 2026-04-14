@@ -146,6 +146,20 @@ import {
                 Прогреть кэш TMDB фич (title/overview/credits/keywords) для твоих favorites/likes.
               </p>
               <div class="actions" style="margin-top: 0">
+                <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 200px">
+                  <span>Limit</span>
+                  <select class="input" [formControl]="featuresLimit">
+                    <option [ngValue]="10">10</option>
+                    <option [ngValue]="30">30</option>
+                    <option [ngValue]="50">50</option>
+                  </select>
+                </label>
+                <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 220px">
+                  <span>Language (optional)</span>
+                  <input class="input" [formControl]="featuresLanguage" placeholder="en" />
+                </label>
+              </div>
+              <div class="actions" style="margin-top: 0">
                 <button
                   class="btn"
                   type="button"
@@ -157,6 +171,14 @@ import {
               </div>
               <p class="ok" *ngIf="featuresOk()">{{ featuresOk() }}</p>
               <p class="err" *ngIf="featuresErr()" style="margin-bottom: 0">{{ featuresErr() }}</p>
+              <details *ngIf="featuresErrors().length" class="why" style="margin-top: 0.65rem">
+                <summary class="why__sum">Ошибки ({{ featuresErrors().length }})</summary>
+                <ul class="why__list">
+                  <li *ngFor="let e of featuresErrors()">
+                    <b>TMDB {{ e.tmdbId }}</b> — {{ e.error }}
+                  </li>
+                </ul>
+              </details>
             </div>
           </div>
         </section>
@@ -700,6 +722,10 @@ export class AccountPageComponent {
   readonly featuresBusy = signal(false);
   readonly featuresOk = signal<string | null>(null);
   readonly featuresErr = signal<string | null>(null);
+  readonly featuresErrors = signal<readonly { tmdbId: number; error: string }[]>([]);
+
+  readonly featuresLimit = new FormControl<number>(30, { nonNullable: true });
+  readonly featuresLanguage = new FormControl('', { nonNullable: true });
 
   readonly ppSlug = new FormControl('', { nonNullable: true });
   readonly ppEnabled = new FormControl(false, { nonNullable: true });
@@ -843,6 +869,7 @@ export class AccountPageComponent {
   refreshMyMovieFeatures(): void {
     this.featuresOk.set(null);
     this.featuresErr.set(null);
+    this.featuresErrors.set([]);
     const token = this.serverJwt.value.trim();
     if (!token) {
       this.featuresErr.set(this.i18n.t('account.publicProfile.needJwt'));
@@ -850,7 +877,9 @@ export class AccountPageComponent {
     }
     this.storage.set('server.jwt.token.v1', token);
     this.featuresBusy.set(true);
-    this.cinemaApi.refreshMyMovieFeatures(30).subscribe({
+    const limit = this.featuresLimit.value;
+    const language = this.featuresLanguage.value.trim();
+    this.cinemaApi.refreshMyMovieFeatures({ limit, language }).subscribe({
       next: (r) => {
         this.featuresBusy.set(false);
         if (!r) {
@@ -860,6 +889,7 @@ export class AccountPageComponent {
         const okN = r.items.length;
         const errN = r.errors.length;
         if (errN) {
+          this.featuresErrors.set(r.errors);
           this.featuresErr.set(`Done with errors: ok=${okN}, errors=${errN}`);
           return;
         }

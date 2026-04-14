@@ -67,8 +67,17 @@ describe('Me streaming prefs (e2e)', () => {
   it('POST /api/me/movie-features/refresh requires auth', async () => {
     await request(app.getHttpServer())
       .post('/api/me/movie-features/refresh')
-      .send({ limit: 10 })
+      .send({ limit: 10, language: 'en' })
       .expect(401);
+  });
+
+  it('POST /api/me/movie-features/refresh validates payload', async () => {
+    const token = await registerAndGetToken(app);
+    await request(app.getHttpServer())
+      .post('/api/me/movie-features/refresh')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ limit: 0 })
+      .expect(400);
   });
 
   afterEach(async () => {
