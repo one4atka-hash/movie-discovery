@@ -168,6 +168,11 @@ describe('Movies releases (e2e)', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(503);
 
+    await request(appNoKey.getHttpServer() as App)
+      .get('/api/movies/999999/features/refresh')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(503);
+
     process.env.TMDB_API_KEY = prev;
     await appNoKey.close();
   });
