@@ -263,6 +263,39 @@ describe('Movies releases (e2e)', () => {
     await appNoKey.close();
   });
 
+  it('supports creating and reading embeddings job', async () => {
+    const token = await registerAndGetToken(app);
+    const create = await request(app.getHttpServer())
+      .post('/api/movies/features/embeddings/jobs')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ tmdbIds: [550, 551] })
+      .expect(201);
+
+    const id = (create.body as { ok: true; id: string }).id;
+    expect(typeof id).toBe('string');
+    expect(id.length).toBeGreaterThan(10);
+
+    const get = await request(app.getHttpServer())
+      .get(`/api/movies/features/embeddings/jobs/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const body = get.body as {
+      ok: true;
+      job: {
+        id: string;
+        kind: string;
+        status: string;
+        tmdbIds: number[];
+      } | null;
+    };
+    expect(body.ok).toBe(true);
+    expect(body.job?.id).toBe(id);
+    expect(body.job?.kind).toBe('embeddings');
+    expect(body.job?.status).toBe('queued');
+    expect(body.job?.tmdbIds).toEqual([550, 551]);
+  });
+
   afterEach(async () => {
     await app.close();
   });

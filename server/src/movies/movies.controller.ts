@@ -10,19 +10,26 @@ import {
 import { z } from 'zod';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser, type AuthedUser } from '../auth/current-user.decorator';
 import { ZodBodyPipe } from '../common/zod-body.pipe';
 import {
   MovieReleasesQuerySchema,
+  CreateEmbeddingsJobSchema,
+  MovieFeatureJobIdParamSchema,
   MoviesTmdbIdParamSchema,
   RefreshFeaturesBatchSchema,
   RefreshFeaturesQuerySchema,
 } from './movies.schemas';
+import { MovieFeatureJobsService } from './movie-feature-jobs.service';
 import { MoviesService } from './movies.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('movies')
 export class MoviesController {
-  constructor(private readonly svc: MoviesService) {}
+  constructor(
+    private readonly svc: MoviesService,
+    private readonly jobs: MovieFeatureJobsService,
+  ) {}
 
   @Get(':tmdbId/features/refresh')
   async refreshFeatures(
@@ -44,6 +51,28 @@ export class MoviesController {
     return await this.svc.refreshMovieFeaturesBatch(body.tmdbIds, {
       language: body.language || undefined,
     });
+  }
+
+  @Post('features/embeddings/jobs')
+  async createEmbeddingsJob(
+    @CurrentUser() u: AuthedUser,
+    @Body(new ZodBodyPipe(CreateEmbeddingsJobSchema))
+    body: z.infer<typeof CreateEmbeddingsJobSchema>,
+  ) {
+    const out = await this.jobs.createEmbeddingsJob(u.id, {
+      tmdbIds: body.tmdbIds,
+    });
+    return { ok: true, id: out.id };
+  }
+
+  @Get('features/embeddings/jobs/:id')
+  async getEmbeddingsJob(
+    @CurrentUser() u: AuthedUser,
+    @Param(new ZodBodyPipe(MovieFeatureJobIdParamSchema))
+    p: z.infer<typeof MovieFeatureJobIdParamSchema>,
+  ) {
+    const job = await this.jobs.getJob(u.id, p.id);
+    return { ok: true, job };
   }
 
   @Get(':tmdbId/editions')

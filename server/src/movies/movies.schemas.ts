@@ -37,3 +37,15 @@ export const RefreshFeaturesBatchSchema = zodSchema(
     })
     .strict(),
 );
+
+export const CreateEmbeddingsJobSchema = zodSchema(
+  z
+    .object({
+      tmdbIds: z.array(z.number().int().positive()).min(1).max(200),
+    })
+    .strict(),
+);
+
+export const MovieFeatureJobIdParamSchema = zodSchema(
+  z.object({ id: z.string().uuid() }).strict(),
+);
