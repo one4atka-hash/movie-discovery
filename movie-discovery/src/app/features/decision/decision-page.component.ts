@@ -11,6 +11,7 @@ import { SegmentedControlComponent } from '@shared/ui/segmented-control/segmente
 import { SectionComponent } from '@shared/ui/section/section.component';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { PageIntroComponent } from '@shared/ui/page-intro/page-intro.component';
 import { DecisionService } from './decision.service';
 import type { Movie } from '@features/movies/data-access/models/movie.model';
 import { saveDecisionCandidatesForShare } from '@features/share-cards/decision-shortlist-share.storage';
@@ -31,20 +32,17 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
     BottomSheetComponent,
     SegmentedControlComponent,
     SectionComponent,
+    PageIntroComponent,
     MovieCardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <header class="head">
-        <h1 class="title">{{ i18n.t('nav.tonight') }}</h1>
-        <p class="sub">
-          Сегодня выбираем кино на вечер — быстро и без вечных “ну давай ещё один трейлер”.
-        </p>
-        <p class="sub">
-          Как пользоваться: выбери 1–2 пожелания → “Собрать список” → нажми на победителя.
-        </p>
-      </header>
+      <app-page-intro
+        [title]="i18n.t('nav.tonight')"
+        [purpose]="i18n.t('decide.purpose')"
+        [instruction]="i18n.t('decide.instruction')"
+      />
 
       <app-card title="Пожелания">
         <p class="muted">

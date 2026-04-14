@@ -80,6 +80,14 @@ const RU: Dict = {
   'home.subsSeeAll': 'Все подписки в аккаунте',
   'home.favoritesSeeAll': 'Всё избранное в аккаунте',
 
+  'decide.purpose': 'Быстро выбираем кино на вечер — без бесконечных трейлеров и метаний.',
+  'decide.instruction': 'Выбери 1–2 пожелания → «Собрать список» → нажми на победителя.',
+
+  'diary.purpose':
+    'Твоя история просмотров — чтобы помнить, что понравилось, и не пересматривать случайно.',
+  'diary.instruction':
+    'Нажми «Добавить запись» → выбери дату → (по желанию) поставь ★ и добавь пару слов.',
+
   'account.title': 'Аккаунт',
   'account.subtitle': 'Нужен для синхронизации подписок и уведомлений о релизах.',
   'account.loggedInAs': 'Вы вошли как',
@@ -382,6 +390,12 @@ const EN: Dict = {
   'home.railAria': 'Personal: subscriptions and favorites',
   'home.subsSeeAll': 'All subscriptions in account',
   'home.favoritesSeeAll': 'All favorites in account',
+
+  'decide.purpose': 'Pick a movie for tonight — fast, without endless trailer-hopping.',
+  'decide.instruction': 'Pick 1–2 preferences → Build shortlist → tap the winner.',
+
+  'diary.purpose': 'Your watch history — remember what you loved and avoid accidental rewatches.',
+  'diary.instruction': 'Tap “Add entry” → choose date → (optional) rate ★ and add a note.',
 
   'account.title': 'Account',
   'account.subtitle': 'Required for syncing release alerts and reminders.',

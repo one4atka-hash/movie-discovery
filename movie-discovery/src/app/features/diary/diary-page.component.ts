@@ -13,6 +13,7 @@ import { SectionComponent } from '@shared/ui/section/section.component';
 import { BadgeComponent } from '@shared/ui/badge/badge.component';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { PageIntroComponent } from '@shared/ui/page-intro/page-intro.component';
 import type { DiaryEntry, DiaryLocation } from './diary.model';
 import { DiaryService } from './diary.service';
 
@@ -31,20 +32,16 @@ import { DiaryService } from './diary.service';
     FormFieldComponent,
     ChipComponent,
     BadgeComponent,
+    PageIntroComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <header class="head">
-        <h1 class="title">{{ i18n.t('nav.diary') }}</h1>
-        <p class="sub">
-          Твоя история просмотров — чтобы помнить “что было классно” и не пересматривать случайно.
-        </p>
-        <p class="sub">
-          Как пользоваться: нажми “Добавить запись” → выбери дату → (по желанию) поставь ★ и добавь
-          пару слов.
-        </p>
-      </header>
+      <app-page-intro
+        [title]="i18n.t('nav.diary')"
+        [purpose]="i18n.t('diary.purpose')"
+        [instruction]="i18n.t('diary.instruction')"
+      />
 
       <app-section title="Записи">
         <div sectionActions>
