@@ -97,6 +97,20 @@ const RU: Dict = {
   'inbox.purpose': 'Напоминания и события — чтобы ничего важного не пролетело мимо.',
   'inbox.instruction': 'Открой ленту → отмечай прочитанное; в «Правилах» настрой, что присылать.',
 
+  'movieCard.action.favorite': 'В избранное',
+  'movieCard.action.unfavorite': 'Убрать из избранного',
+  'movieCard.action.dislike': 'Не нравится',
+  'movieCard.action.removeDislike': 'Убрать «не нравится»',
+  'movieCard.action.subscribeNeedLogin': 'Войдите, чтобы подписаться',
+  'movieCard.action.subscribeNoReleaseDate': 'Нет даты релиза',
+  'movieCard.action.subscribeRelease': 'Подписаться на релиз',
+  'movieCard.action.status.none': 'Статус: не задан (нажмите, чтобы поставить)',
+  'movieCard.action.status.want': 'Статус: хочу посмотреть (нажмите для следующего)',
+  'movieCard.action.status.watching': 'Статус: смотрю (нажмите для следующего)',
+  'movieCard.action.status.watched': 'Статус: посмотрел (нажмите для следующего)',
+  'movieCard.action.status.dropped': 'Статус: брошено (нажмите для следующего)',
+  'movieCard.action.status.hidden': 'Статус: скрыто (нажмите для следующего)',
+
   'account.title': 'Аккаунт',
   'account.subtitle': 'Нужен для синхронизации подписок и уведомлений о релизах.',
   'account.instruction':
@@ -414,6 +428,20 @@ const EN: Dict = {
 
   'inbox.purpose': 'Reminders and events — so nothing important slips by.',
   'inbox.instruction': 'Open the feed → mark items as read; use Rules to control what you receive.',
+
+  'movieCard.action.favorite': 'Add to favorites',
+  'movieCard.action.unfavorite': 'Remove from favorites',
+  'movieCard.action.dislike': 'Dislike',
+  'movieCard.action.removeDislike': 'Remove dislike',
+  'movieCard.action.subscribeNeedLogin': 'Sign in to subscribe',
+  'movieCard.action.subscribeNoReleaseDate': 'No release date',
+  'movieCard.action.subscribeRelease': 'Follow release',
+  'movieCard.action.status.none': 'Status: not set (tap to set)',
+  'movieCard.action.status.want': 'Status: want to watch (tap for next)',
+  'movieCard.action.status.watching': 'Status: watching (tap for next)',
+  'movieCard.action.status.watched': 'Status: watched (tap for next)',
+  'movieCard.action.status.dropped': 'Status: dropped (tap for next)',
+  'movieCard.action.status.hidden': 'Status: hidden (tap for next)',
 
   'account.title': 'Account',
   'account.subtitle': 'Required for syncing release alerts and reminders.',

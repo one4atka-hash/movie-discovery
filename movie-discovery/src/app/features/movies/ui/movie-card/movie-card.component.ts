@@ -57,6 +57,7 @@ import { WatchStateService } from '@features/watchlist/watch-state.service';
                 [class.chip--active]="isLiked()"
                 [attr.aria-pressed]="isLiked()"
                 (click)="onToggleLike($event)"
+                [attr.aria-label]="likeTitle()"
                 [title]="likeTitle()"
               >
                 <span class="chip__heart" aria-hidden="true">
@@ -94,7 +95,8 @@ import { WatchStateService } from '@features/watchlist/watch-state.service';
                 [class.chip--active]="reaction() === 'dislike'"
                 [attr.aria-pressed]="reaction() === 'dislike'"
                 (click)="onToggleReaction($event, 'dislike')"
-                title="Дизлайк"
+                [attr.aria-label]="dislikeTitle()"
+                [title]="dislikeTitle()"
               >
                 👎
               </button>
@@ -104,6 +106,7 @@ import { WatchStateService } from '@features/watchlist/watch-state.service';
                 [disabled]="!canSubscribe()"
                 [attr.aria-disabled]="!canSubscribe()"
                 (click)="onToggleSubscription($event)"
+                [attr.aria-label]="subscriptionTitle()"
                 [title]="subscriptionTitle()"
               >
                 🔔
@@ -115,6 +118,7 @@ import { WatchStateService } from '@features/watchlist/watch-state.service';
                 [class.chip--active]="!!watchStatus()"
                 [attr.aria-pressed]="!!watchStatus()"
                 (click)="onCycleStatus($event)"
+                [attr.aria-label]="statusTitle()"
                 [title]="statusTitle()"
               >
                 {{ statusEmoji() }}
@@ -462,7 +466,15 @@ export class MovieCardComponent {
   }
 
   likeTitle(): string {
-    return this.isLiked() ? 'Убрать из избранного' : 'В избранное';
+    return this.isLiked()
+      ? this.i18n.t('movieCard.action.unfavorite')
+      : this.i18n.t('movieCard.action.favorite');
+  }
+
+  dislikeTitle(): string {
+    return this.reaction() === 'dislike'
+      ? this.i18n.t('movieCard.action.removeDislike')
+      : this.i18n.t('movieCard.action.dislike');
   }
 
   onToggleLike(event: MouseEvent): void {
@@ -500,9 +512,10 @@ export class MovieCardComponent {
   }
 
   subscriptionTitle(): string {
-    if (!this.auth.user()) return 'Войти, чтобы подписаться';
-    if (!(this.movie().release_date ?? '').trim()) return 'Нет даты релиза';
-    return 'Подписаться на релиз';
+    if (!this.auth.user()) return this.i18n.t('movieCard.action.subscribeNeedLogin');
+    if (!(this.movie().release_date ?? '').trim())
+      return this.i18n.t('movieCard.action.subscribeNoReleaseDate');
+    return this.i18n.t('movieCard.action.subscribeRelease');
   }
 
   onToggleSubscription(event: MouseEvent): void {
@@ -537,12 +550,12 @@ export class MovieCardComponent {
 
   statusTitle = computed(() => {
     const s = this.watchStatus();
-    if (!s) return 'Статус: не задан (нажмите, чтобы поставить)';
-    if (s === 'want') return 'Статус: хочу посмотреть (нажмите для следующего)';
-    if (s === 'watching') return 'Статус: смотрю (нажмите для следующего)';
-    if (s === 'watched') return 'Статус: посмотрел (нажмите для следующего)';
-    if (s === 'dropped') return 'Статус: брошено (нажмите для следующего)';
-    return 'Статус: скрыто (нажмите для следующего)';
+    if (!s) return this.i18n.t('movieCard.action.status.none');
+    if (s === 'want') return this.i18n.t('movieCard.action.status.want');
+    if (s === 'watching') return this.i18n.t('movieCard.action.status.watching');
+    if (s === 'watched') return this.i18n.t('movieCard.action.status.watched');
+    if (s === 'dropped') return this.i18n.t('movieCard.action.status.dropped');
+    return this.i18n.t('movieCard.action.status.hidden');
   });
 
   trackByText(_: number, s: string): string {
