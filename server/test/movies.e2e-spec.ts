@@ -380,6 +380,78 @@ describe('Movies releases (e2e)', () => {
     await appEmb.close();
   });
 
+  it('completes embeddings job with error when provider fails (soft-fail)', async () => {
+    const prevEnabled = process.env.EMBEDDINGS_ENABLED;
+    const prevProvider = process.env.EMBEDDINGS_PROVIDER;
+    const prevKey = process.env.OPENAI_API_KEY;
+    process.env.EMBEDDINGS_ENABLED = '1';
+    process.env.EMBEDDINGS_PROVIDER = 'openai';
+    process.env.OPENAI_API_KEY = 'k';
+
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    const appEmb = moduleFixture.createNestApplication();
+    appEmb.setGlobalPrefix('api');
+    await appEmb.init();
+
+    const token = await registerAndGetToken(appEmb as INestApplication<App>);
+
+    // Prepare movie_features rows for tmdbIds.
+    const db = appEmb.get(DbService);
+    await db.exec(
+      `insert into movie_features(tmdb_id, title, overview, lang)
+       values (551, 'Test', 'Test', 'en')
+       on conflict (tmdb_id) do update set title = excluded.title`,
+    );
+
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.resolve(
+        new Response('boom', {
+          status: 500,
+          headers: { 'content-type': 'text/plain' },
+        }),
+      ),
+    );
+
+    const create = await request(appEmb.getHttpServer() as App)
+      .post('/api/movies/features/embeddings/jobs')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ tmdbIds: [551] })
+      .expect(201);
+
+    const id = (create.body as { ok: true; id: string }).id;
+
+    await request(appEmb.getHttpServer() as App)
+      .post(`/api/movies/features/embeddings/jobs/${id}/run`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
+
+    const get = await request(appEmb.getHttpServer() as App)
+      .get(`/api/movies/features/embeddings/jobs/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const body = get.body as {
+      ok: true;
+      job: {
+        status: string;
+        error: string | null;
+        progress?: { processed: number; failed: number; total: number };
+      } | null;
+    };
+    expect(body.job?.status).toBe('completed');
+    expect(body.job?.error).toContain('Failed to embed');
+    expect(body.job?.progress?.failed).toBeGreaterThan(0);
+
+    fetchSpy.mockRestore();
+    process.env.EMBEDDINGS_ENABLED = prevEnabled;
+    process.env.EMBEDDINGS_PROVIDER = prevProvider;
+    process.env.OPENAI_API_KEY = prevKey;
+    await appEmb.close();
+  });
+
   afterEach(async () => {
     await app.close();
   });

@@ -139,12 +139,12 @@ export class MovieFeatureJobsRunnerService {
     }
 
     if (embedFailures) {
-      await this.jobs.markFailed(
+      await this.jobs.markCompletedWithError(
         userId,
         jobId,
         `Failed to embed ${embedFailures} tmdbId(s)`,
       );
-      return { ok: true, status: 'failed' };
+      return { ok: true, status: 'completed' };
     }
 
     await this.jobs.markCompleted(userId, jobId);

@@ -65,12 +65,19 @@ export class EmbeddingsService {
         error: string;
       }
   > {
-    const provider = (this.config.get<string>('EMBEDDINGS_PROVIDER') ?? '')
+    const provider = (
+      process.env.EMBEDDINGS_PROVIDER ??
+      this.config.get<string>('EMBEDDINGS_PROVIDER') ??
+      ''
+    )
       .toLowerCase()
       .trim();
 
     if (provider === 'openai') {
-      const apiKey = this.config.get<string>('OPENAI_API_KEY') ?? '';
+      const apiKey =
+        process.env.OPENAI_API_KEY ??
+        this.config.get<string>('OPENAI_API_KEY') ??
+        '';
       if (!apiKey) {
         return {
           ok: false,
@@ -79,9 +86,11 @@ export class EmbeddingsService {
         };
       }
       const model =
+        process.env.OPENAI_EMBEDDINGS_MODEL ??
         this.config.get<string>('OPENAI_EMBEDDINGS_MODEL') ??
         'text-embedding-3-small';
       const baseUrl =
+        process.env.OPENAI_BASE_URL ??
         this.config.get<string>('OPENAI_BASE_URL') ??
         'https://api.openai.com/v1';
       const normBaseUrl = baseUrl.endsWith('/')

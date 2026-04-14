@@ -113,6 +113,19 @@ export class MovieFeatureJobsService {
     );
   }
 
+  async markCompletedWithError(
+    userId: string,
+    id: string,
+    error: string,
+  ): Promise<void> {
+    await this.db.exec(
+      `update movie_feature_jobs
+       set status = 'completed', finished_at = now(), error = $3
+       where user_id = $1 and id = $2`,
+      [userId, id, error],
+    );
+  }
+
   async setTotals(userId: string, id: string, total: number): Promise<void> {
     await this.db.exec(
       `update movie_feature_jobs
