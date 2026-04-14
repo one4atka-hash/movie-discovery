@@ -77,11 +77,11 @@ export class NotificationsService {
     );
   }
 
-  async insertSample(userId: string): Promise<void> {
+  async insertSample(userId: string, ruleId?: string | null): Promise<void> {
     await this.db.exec(
-      `insert into notifications(user_id, type, title, body, payload)
-       values ($1, 'info', $2, $3, '{"why":"manual run"}'::jsonb)`,
-      [userId, SAMPLE_ALERT_TITLE, SAMPLE_ALERT_BODY],
+      `insert into notifications(user_id, rule_id, type, title, body, payload)
+       values ($1, $2::uuid, 'info', $3, $4, '{"why":"manual run"}'::jsonb)`,
+      [userId, ruleId ?? null, SAMPLE_ALERT_TITLE, SAMPLE_ALERT_BODY],
     );
   }
 

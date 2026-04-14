@@ -28,7 +28,12 @@ export class AlertsDevController {
     if (!truthy(this.config.get<string>('DEV_ALERTS_ENABLED'))) {
       return { ok: false, error: 'Disabled' };
     }
-    await this.notifications.insertSample(u.id);
+    // Tie the sample notification to the most recently updated enabled rule (if any),
+    // so the user can test calendar export.
+    const enabledRuleId = (await this.rules.list(u.id)).find(
+      (r) => r.enabled,
+    )?.id;
+    await this.notifications.insertSample(u.id, enabledRuleId ?? null);
     if (
       this.pushDelivery.vapidConfigured() &&
       (await this.rules.userHasEnabledWebPush(u.id))
