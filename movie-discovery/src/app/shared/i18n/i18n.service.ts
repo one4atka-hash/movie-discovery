@@ -88,6 +88,14 @@ const RU: Dict = {
   'diary.instruction':
     'Нажми «Добавить запись» → выбери дату → (по желанию) поставь ★ и добавь пару слов.',
 
+  'lists.purpose':
+    'Списки — чтобы не потерять «посмотреть потом» и собирать подборки под настроение.',
+  'lists.instruction':
+    'Создай список → добавляй фильмы из поиска → открывай список, чтобы редактировать.',
+
+  'inbox.purpose': 'Напоминания и события — чтобы ничего важного не пролетело мимо.',
+  'inbox.instruction': 'Открой ленту → отмечай прочитанное; в «Правилах» настрой, что присылать.',
+
   'account.title': 'Аккаунт',
   'account.subtitle': 'Нужен для синхронизации подписок и уведомлений о релизах.',
   'account.loggedInAs': 'Вы вошли как',
@@ -396,6 +404,12 @@ const EN: Dict = {
 
   'diary.purpose': 'Your watch history — remember what you loved and avoid accidental rewatches.',
   'diary.instruction': 'Tap “Add entry” → choose date → (optional) rate ★ and add a note.',
+
+  'lists.purpose': 'Lists help you save “watch later” picks and build mood-based collections.',
+  'lists.instruction': 'Create a list → add movies from search → open the list to edit.',
+
+  'inbox.purpose': 'Reminders and events — so nothing important slips by.',
+  'inbox.instruction': 'Open the feed → mark items as read; use Rules to control what you receive.',
 
   'account.title': 'Account',
   'account.subtitle': 'Required for syncing release alerts and reminders.',

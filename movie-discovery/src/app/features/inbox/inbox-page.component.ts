@@ -16,6 +16,7 @@ import { ChipComponent } from '@shared/ui/chip/chip.component';
 import { ServerConnectComponent } from '@shared/ui/server-connect/server-connect.component';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { PageIntroComponent } from '@shared/ui/page-intro/page-intro.component';
 import type { AlertRule, InboxExplain, InboxItem } from './inbox.model';
 import { InboxService } from './inbox.service';
 import { inboxExplainFromRuleClauses } from './rule-clause.util';
@@ -49,20 +50,16 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
     FormFieldComponent,
     ChipComponent,
     ServerConnectComponent,
+    PageIntroComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <header class="head">
-        <h1 class="title">{{ i18n.t('nav.inbox') }}</h1>
-        <p class="sub">
-          Здесь живут напоминания и события — чтобы ничего важного не пролетело мимо.
-        </p>
-        <p class="sub">
-          Как пользоваться: открой ленту → отмечай прочитанное; в “Правилах” настрой, что тебе
-          присылать.
-        </p>
-      </header>
+      <app-page-intro
+        [title]="i18n.t('nav.inbox')"
+        [purpose]="i18n.t('inbox.purpose')"
+        [instruction]="i18n.t('inbox.instruction')"
+      />
 
       <app-section title="Inbox">
         <div sectionActions>

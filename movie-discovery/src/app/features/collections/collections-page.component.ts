@@ -11,6 +11,7 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
 import { SectionComponent } from '@shared/ui/section/section.component';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
+import { PageIntroComponent } from '@shared/ui/page-intro/page-intro.component';
 import type { Collection, CollectionVisibility } from './collections.model';
 import { CollectionsService } from './collections.service';
 
@@ -27,20 +28,16 @@ import { CollectionsService } from './collections.service';
     ButtonComponent,
     BottomSheetComponent,
     FormFieldComponent,
+    PageIntroComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
-      <header class="head">
-        <h1 class="title">{{ i18n.t('nav.lists') }}</h1>
-        <p class="sub">
-          Списки — чтобы не потерять “посмотреть потом” и собирать подборки под настроение.
-        </p>
-        <p class="sub">
-          Как пользоваться: создай список → добавляй фильмы из поиска → открывай, чтобы
-          редактировать.
-        </p>
-      </header>
+      <app-page-intro
+        [title]="i18n.t('nav.lists')"
+        [purpose]="i18n.t('lists.purpose')"
+        [instruction]="i18n.t('lists.instruction')"
+      />
 
       <app-section title="Мои списки">
         <div sectionActions>
