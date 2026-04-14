@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { ServerCinemaApiService } from '@core/server-cinema-api.service';
 import { ServerSessionService } from '@core/server-session.service';
+import { I18nService } from '@shared/i18n/i18n.service';
 import { ButtonComponent } from '@shared/ui/button/button.component';
 import { CardComponent } from '@shared/ui/card/card.component';
 import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
@@ -18,7 +19,7 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
       <app-form-field [label]="label()" [hint]="hint()">
         @if (session.me(); as me) {
           <p class="muted" style="margin: 0 0 0.5rem">
-            Connected as <b>{{ me.email }}</b>
+            {{ i18n.t('serverConnect.connectedAs') }} <b>{{ me.email }}</b>
           </p>
           <div class="actions" style="margin-top: 0.5rem">
             <app-button
@@ -27,7 +28,7 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
               [disabled]="session.busy()"
               (click)="disconnect()"
             >
-              Disconnect
+              {{ i18n.t('serverConnect.disconnect') }}
             </app-button>
             <app-button
               variant="ghost"
@@ -35,22 +36,26 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
               [disabled]="session.busy()"
               (click)="session.refreshMe()"
             >
-              Refresh status
+              {{ i18n.t('serverConnect.refresh') }}
             </app-button>
             <app-button
               variant="ghost"
               [disabled]="session.busy()"
               (click)="showAdvanced.set(!showAdvanced())"
             >
-              {{ showAdvanced() ? 'Hide advanced' : 'Advanced' }}
+              {{
+                showAdvanced()
+                  ? i18n.t('serverConnect.advancedHide')
+                  : i18n.t('serverConnect.advanced')
+              }}
             </app-button>
           </div>
         } @else {
           <div class="row2">
-            <app-form-field label="Email">
+            <app-form-field [label]="i18n.t('serverConnect.email')">
               <input class="input" [(ngModel)]="email" autocomplete="email" />
             </app-form-field>
-            <app-form-field label="Password">
+            <app-form-field [label]="i18n.t('serverConnect.password')">
               <input
                 class="input"
                 type="password"
@@ -66,7 +71,7 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
               [disabled]="session.busy()"
               (click)="login()"
             >
-              Connect (login)
+              {{ i18n.t('serverConnect.connectLogin') }}
             </app-button>
             <app-button
               variant="ghost"
@@ -74,14 +79,18 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
               [disabled]="session.busy()"
               (click)="register()"
             >
-              Create account
+              {{ i18n.t('serverConnect.connectRegister') }}
             </app-button>
             <app-button
               variant="ghost"
               [disabled]="session.busy()"
               (click)="showAdvanced.set(!showAdvanced())"
             >
-              {{ showAdvanced() ? 'Hide advanced' : 'Advanced' }}
+              {{
+                showAdvanced()
+                  ? i18n.t('serverConnect.advancedHide')
+                  : i18n.t('serverConnect.advanced')
+              }}
             </app-button>
           </div>
           @if (session.err(); as err) {
@@ -91,7 +100,7 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
 
         @if (showAdvanced()) {
           <details style="margin-top: 0.65rem" open>
-            <summary>Advanced: raw server token</summary>
+            <summary>{{ i18n.t('serverConnect.advancedRawToken') }}</summary>
             <textarea [(ngModel)]="tokenText" rows="2" placeholder="eyJhbGciOi..."></textarea>
             <div class="actions" style="margin-top: 0.5rem">
               <app-button
@@ -99,11 +108,11 @@ import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
                 [disabled]="session.busy() || !tokenText.trim()"
                 (click)="applyToken()"
               >
-                Use token
+                {{ i18n.t('serverConnect.useToken') }}
               </app-button>
-              <app-button variant="ghost" [disabled]="session.busy()" (click)="clearToken()"
-                >Clear token</app-button
-              >
+              <app-button variant="ghost" [disabled]="session.busy()" (click)="clearToken()">{{
+                i18n.t('serverConnect.clearToken')
+              }}</app-button>
             </div>
           </details>
         }
@@ -141,6 +150,7 @@ export class ServerConnectComponent {
   readonly label = input<string>('Connect to server (optional)');
   readonly hint = input<string>('');
 
+  readonly i18n = inject(I18nService);
   readonly session = inject(ServerSessionService);
   private readonly api = inject(ServerCinemaApiService);
 

@@ -65,11 +65,21 @@
           class="server-pill"
           [class.server-pill--on]="serverConnected()"
           routerLink="/account"
-          [attr.aria-label]="'Server: ' + (serverConnected() ? 'connected' : 'disconnected')"
-          [attr.title]="serverConnected() ? 'Server connected' : 'Server disconnected'"
+          [attr.aria-label]="
+            i18n.t('serverConnect.server') +
+            ': ' +
+            (serverConnected()
+              ? i18n.t('serverConnect.connected')
+              : i18n.t('serverConnect.disconnected'))
+          "
+          [attr.title]="
+            serverConnected()
+              ? i18n.t('serverConnect.server') + ': ' + i18n.t('serverConnect.connected')
+              : i18n.t('serverConnect.server') + ': ' + i18n.t('serverConnect.disconnected')
+          "
         >
           <span class="server-pill__dot" aria-hidden="true"></span>
-          <span class="server-pill__label">Server</span>
+          <span class="server-pill__label">{{ i18n.t('serverConnect.server') }}</span>
         </a>
         <button
           class="theme-btn"
