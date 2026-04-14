@@ -1028,9 +1028,16 @@ export class MovieSearchPageComponent {
   readonly recsLoading = computed(() => this._recsLoading());
   readonly recsError = computed(() => this._recsError());
   readonly recsSeeds = computed(() => this._recsSeeds());
+  private readonly _subbedIds = computed(
+    () => new Set(this.subsSvc.mySubscriptions().map((s) => s.tmdbId)),
+  );
   readonly recsVisible = computed(() =>
     this._recs().filter(
-      (m) => !this.recsFeedback.isHidden(m.id) && this.reactions.reactionFor(m.id)() !== 'dislike',
+      (m) =>
+        !this.recsFeedback.isHidden(m.id) &&
+        this.reactions.reactionFor(m.id)() !== 'dislike' &&
+        this.reactions.reactionFor(m.id)() !== 'like' &&
+        !this._subbedIds().has(m.id),
     ),
   );
 

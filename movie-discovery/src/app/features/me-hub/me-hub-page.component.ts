@@ -23,6 +23,8 @@ import { InboxService } from '@features/inbox/inbox.service';
 import type { Movie, MovieSearchResponse } from '@features/movies/data-access/models/movie.model';
 import { MovieService } from '@features/movies/data-access/services/movie.service';
 import { FavoritesService } from '@features/movies/data-access/services/favorites.service';
+import { MovieReactionsService } from '@features/movies/data-access/services/movie-reactions.service';
+import { ReleaseSubscriptionsService } from '@features/notifications/release-subscriptions.service';
 import { ButtonComponent } from '@shared/ui/button/button.component';
 import { CardComponent } from '@shared/ui/card/card.component';
 import { EmptyStateComponent } from '@shared/ui/empty-state/empty-state.component';
@@ -369,6 +371,8 @@ export class MeHubPageComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly moviesApi = inject(MovieService);
   private readonly fav = inject(FavoritesService);
+  private readonly reactions = inject(MovieReactionsService);
+  private readonly subsSvc = inject(ReleaseSubscriptionsService);
   private readonly watch = inject(WatchStateService);
   private readonly diary = inject(DiaryService);
   private readonly inbox = inject(InboxService);
@@ -485,6 +489,13 @@ export class MeHubPageComponent {
       return;
     }
     const banned = new Set(seedIds);
+    const liked = new Set<number>(
+      Object.entries(this.reactions.all())
+        .filter(([, v]) => v === 'like')
+        .map(([k]) => Number(k))
+        .filter((x) => Number.isFinite(x) && x > 0),
+    );
+    const subbed = new Set<number>(this.subsSvc.mySubscriptions().map((s) => s.tmdbId));
     forkJoin(
       seedIds.map((id) =>
         this.moviesApi.getMovieRecommendations(id, 1).pipe(
@@ -501,7 +512,8 @@ export class MeHubPageComponent {
         const seen = new Set<number>();
         for (const res of responses) {
           for (const m of res.results ?? []) {
-            if (!m?.id || banned.has(m.id) || seen.has(m.id)) continue;
+            if (!m?.id || banned.has(m.id) || seen.has(m.id) || liked.has(m.id) || subbed.has(m.id))
+              continue;
             seen.add(m.id);
             out.push(m);
           }
