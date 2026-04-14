@@ -6,6 +6,16 @@ import { StorageService } from './storage.service';
 
 const SERVER_JWT_KEY = 'server.jwt.token.v1';
 
+export interface ServerAuthedUser {
+  readonly id: string;
+  readonly email: string;
+}
+
+export interface ServerAuthResponse {
+  readonly token: string;
+  readonly user: ServerAuthedUser;
+}
+
 export interface ServerReleaseReminderItem {
   readonly id: string;
   readonly tmdbId: number;
@@ -63,6 +73,14 @@ export class ServerCinemaApiService {
   private readonly http = inject(HttpClient);
   private readonly storage = inject(StorageService);
 
+  setToken(token: string): void {
+    this.storage.set(SERVER_JWT_KEY, token.trim());
+  }
+
+  clearToken(): void {
+    this.storage.remove(SERVER_JWT_KEY);
+  }
+
   private token(): string | null {
     const t = this.storage.get<string>(SERVER_JWT_KEY, '')?.trim();
     return t || null;
@@ -72,6 +90,26 @@ export class ServerCinemaApiService {
     const t = this.token();
     if (!t) return null;
     return new HttpHeaders({ Authorization: `Bearer ${t}` });
+  }
+
+  authRegister(email: string, password: string): Observable<ServerAuthResponse | null> {
+    return this.http
+      .post<ServerAuthResponse>('/api/auth/register', { email, password })
+      .pipe(catchError(() => of(null)));
+  }
+
+  authLogin(email: string, password: string): Observable<ServerAuthResponse | null> {
+    return this.http
+      .post<ServerAuthResponse>('/api/auth/login', { email, password })
+      .pipe(catchError(() => of(null)));
+  }
+
+  authMe(): Observable<ServerAuthedUser | null> {
+    const h = this.authHeaders();
+    if (!h) return of(null);
+    return this.http
+      .get<ServerAuthedUser>('/api/auth/me', { headers: h })
+      .pipe(catchError(() => of(null)));
   }
 
   getMovieReleases(tmdbId: number, region?: string): Observable<MovieReleasesResponse | null> {

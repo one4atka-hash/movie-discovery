@@ -28,6 +28,7 @@ import {
   ServerCinemaApiService,
   type EmbeddingsJobItem,
   type MePublicProfile,
+  type ServerAuthedUser,
 } from '@core/server-cinema-api.service';
 import {
   ExportsApiService,
@@ -94,15 +95,97 @@ import {
             Здесь можно выгрузить свои данные и при необходимости импортировать их обратно.
           </p>
           <div class="card">
-            <label class="field">
-              <span>Код подключения (опционально)</span>
-              <textarea
-                class="input"
-                rows="2"
-                [formControl]="serverJwt"
-                placeholder="eyJhbGciOi..."
-              ></textarea>
-            </label>
+            <div class="field">
+              <span>Подключение к серверу (опционально)</span>
+              <p class="muted" style="margin: 0.35rem 0 0">
+                Войдите или зарегистрируйтесь, чтобы включить серверные функции (import/export,
+                inbox, recommendations, embeddings).
+              </p>
+
+              <ng-container *ngIf="serverMe() as me; else connectTpl">
+                <p class="ok" style="margin: 0.5rem 0 0">
+                  Connected as <b>{{ me.email }}</b>
+                </p>
+                <div class="actions" style="margin-top: 0.5rem">
+                  <button
+                    class="btn"
+                    type="button"
+                    (click)="disconnectServer()"
+                    [disabled]="serverAuthBusy()"
+                  >
+                    Disconnect
+                  </button>
+                  <button
+                    class="btn"
+                    type="button"
+                    (click)="refreshServerMe()"
+                    [disabled]="serverAuthBusy()"
+                  >
+                    Refresh status
+                  </button>
+                </div>
+              </ng-container>
+
+              <ng-template #connectTpl>
+                <div class="actions" style="margin-top: 0.5rem; align-items: flex-end">
+                  <label class="field" style="margin-bottom: 0; flex: 1 1 220px; max-width: 320px">
+                    <span>Email</span>
+                    <input class="input" [formControl]="serverEmail" autocomplete="email" />
+                  </label>
+                  <label class="field" style="margin-bottom: 0; flex: 1 1 180px; max-width: 260px">
+                    <span>Password</span>
+                    <input
+                      class="input"
+                      type="password"
+                      [formControl]="serverPassword"
+                      autocomplete="current-password"
+                    />
+                  </label>
+                </div>
+                <div class="actions" style="margin-top: 0.5rem">
+                  <button
+                    class="btn btn--primary"
+                    type="button"
+                    (click)="connectServerLogin()"
+                    [disabled]="serverAuthBusy()"
+                  >
+                    Connect (login)
+                  </button>
+                  <button
+                    class="btn"
+                    type="button"
+                    (click)="connectServerRegister()"
+                    [disabled]="serverAuthBusy()"
+                  >
+                    Create account
+                  </button>
+                  <button
+                    class="btn"
+                    type="button"
+                    (click)="showAdvancedServerToken.set(!showAdvancedServerToken())"
+                    [disabled]="serverAuthBusy()"
+                  >
+                    {{ showAdvancedServerToken() ? 'Hide advanced' : 'Advanced' }}
+                  </button>
+                </div>
+                <p class="err" *ngIf="serverAuthErr()" style="margin-bottom: 0">
+                  {{ serverAuthErr() }}
+                </p>
+              </ng-template>
+            </div>
+
+            <details *ngIf="showAdvancedServerToken()" class="why" style="margin-top: 0.65rem">
+              <summary class="why__sum">Advanced: raw server token</summary>
+              <label class="field" style="margin-top: 0.5rem">
+                <span>JWT</span>
+                <textarea
+                  class="input"
+                  rows="2"
+                  [formControl]="serverJwt"
+                  placeholder="eyJhbGciOi..."
+                ></textarea>
+              </label>
+            </details>
 
             <div class="actions" style="margin-top: 0">
               <button class="btn" type="button" [routerLink]="['/import']">Импорт</button>
@@ -812,6 +895,12 @@ export class AccountPageComponent {
   readonly serverJwt = new FormControl(this.storage.get<string>('server.jwt.token.v1', '') ?? '', {
     nonNullable: true,
   });
+  readonly showAdvancedServerToken = signal(false);
+  readonly serverEmail = new FormControl('', { nonNullable: true });
+  readonly serverPassword = new FormControl('', { nonNullable: true });
+  readonly serverAuthBusy = signal(false);
+  readonly serverAuthErr = signal<string | null>(null);
+  readonly serverMe = signal<ServerAuthedUser | null>(null);
   readonly exportKind = new FormControl<ExportKind>('diary', { nonNullable: true });
   readonly exportFormat = new FormControl<ExportFormat>('csv', { nonNullable: true });
   readonly exportError = signal<string | null>(null);
@@ -860,6 +949,11 @@ export class AccountPageComponent {
   readonly favorites = computed(() => this.fav.favorites());
 
   constructor() {
+    // If server token is already persisted, try to resolve /auth/me for status UI.
+    if (this.serverJwt.value.trim()) {
+      this.refreshServerMe({ silent: true });
+    }
+
     // If JWT is already persisted, pre-load jobs immediately.
     if (this.serverJwt.value.trim()) {
       this.loadEmbeddingsJobs({ silent: true });
@@ -868,12 +962,96 @@ export class AccountPageComponent {
     // Auto-load jobs when JWT becomes available/changes.
     this.serverJwt.valueChanges.pipe(debounceTime(250), distinctUntilChanged()).subscribe(() => {
       const token = this.serverJwt.value.trim();
-      if (!token) return;
+      if (!token) {
+        this.storage.remove('server.jwt.token.v1');
+        this.serverMe.set(null);
+        return;
+      }
       this.storage.set('server.jwt.token.v1', token);
+      this.refreshServerMe({ silent: true });
       this.loadEmbeddingsJobs({ silent: true });
     });
 
     this.destroyRef.onDestroy(() => this.stopJobsPolling());
+  }
+
+  refreshServerMe(input?: { silent?: boolean }): void {
+    if (!input?.silent) {
+      this.serverAuthErr.set(null);
+    }
+    this.serverAuthBusy.set(true);
+    this.cinemaApi.authMe().subscribe({
+      next: (me) => {
+        this.serverMe.set(me);
+        if (!me && !input?.silent) {
+          this.serverAuthErr.set('Not connected (invalid token or server unavailable).');
+        }
+      },
+      error: () => {
+        this.serverMe.set(null);
+        if (!input?.silent) {
+          this.serverAuthErr.set('Failed to check server status.');
+        }
+      },
+      complete: () => this.serverAuthBusy.set(false),
+    });
+  }
+
+  connectServerLogin(): void {
+    this.serverAuthErr.set(null);
+    const email = this.serverEmail.value.trim();
+    const password = this.serverPassword.value;
+    if (!email || !password) {
+      this.serverAuthErr.set('Email and password are required.');
+      return;
+    }
+    this.serverAuthBusy.set(true);
+    this.cinemaApi.authLogin(email, password).subscribe({
+      next: (res) => {
+        if (!res?.token) {
+          this.serverAuthErr.set('Login failed.');
+          return;
+        }
+        this.cinemaApi.setToken(res.token);
+        this.serverJwt.setValue(res.token);
+        this.serverMe.set(res.user ?? null);
+        this.showAdvancedServerToken.set(false);
+      },
+      error: () => this.serverAuthErr.set('Login failed.'),
+      complete: () => this.serverAuthBusy.set(false),
+    });
+  }
+
+  connectServerRegister(): void {
+    this.serverAuthErr.set(null);
+    const email = this.serverEmail.value.trim();
+    const password = this.serverPassword.value;
+    if (!email || !password) {
+      this.serverAuthErr.set('Email and password are required.');
+      return;
+    }
+    this.serverAuthBusy.set(true);
+    this.cinemaApi.authRegister(email, password).subscribe({
+      next: (res) => {
+        if (!res?.token) {
+          this.serverAuthErr.set('Registration failed.');
+          return;
+        }
+        this.cinemaApi.setToken(res.token);
+        this.serverJwt.setValue(res.token);
+        this.serverMe.set(res.user ?? null);
+        this.showAdvancedServerToken.set(false);
+      },
+      error: () => this.serverAuthErr.set('Registration failed.'),
+      complete: () => this.serverAuthBusy.set(false),
+    });
+  }
+
+  disconnectServer(): void {
+    this.serverAuthErr.set(null);
+    this.cinemaApi.clearToken();
+    this.serverJwt.setValue('');
+    this.serverMe.set(null);
   }
 
   loadServerPublicProfile(): void {
