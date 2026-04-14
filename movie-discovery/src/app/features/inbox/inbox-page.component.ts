@@ -18,7 +18,11 @@ import { ToastService } from '@shared/ui/toast/toast.service';
 import type { AlertRule, InboxExplain, InboxItem } from './inbox.model';
 import { InboxService } from './inbox.service';
 import { inboxExplainFromRuleClauses } from './rule-clause.util';
-import { AlertsApiService, type ServerNotificationItem } from './alerts-api.service';
+import {
+  AlertsApiService,
+  type ServerAlertRuleItem,
+  type ServerNotificationItem,
+} from './alerts-api.service';
 import {
   ServerCinemaApiService,
   type ServerReleaseReminderItem,
@@ -272,6 +276,36 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
             <div class="actions">
               <app-button variant="secondary" (click)="openRuleEdit(r)">Edit</app-button>
               <app-button variant="danger" (click)="svc.removeRule(r.id)">Delete</app-button>
+            </div>
+          </app-card>
+        </div>
+
+        <div class="list" *ngIf="tab() === 'rules' && serverToken.trim() && serverRules().length">
+          <p class="muted" style="margin: 0 0 0.5rem">Server rules</p>
+          <app-card
+            *ngFor="let r of serverRules(); trackBy: trackByServerRuleId"
+            [title]="r.name"
+            class="inbox-server-row"
+          >
+            <p class="muted">
+              {{ r.enabled ? 'Enabled' : 'Disabled' }} · inApp={{
+                r.channels.inApp ? 'on' : 'off'
+              }}
+              · webPush={{ r.channels.webPush ? 'on' : 'off' }} · email={{
+                r.channels.email ? 'on' : 'off'
+              }}
+              · calendar={{ r.channels.calendar ? 'on' : 'off' }}
+            </p>
+            <div class="actions">
+              @if (r.channels.calendar) {
+                <app-button
+                  variant="secondary"
+                  [disabled]="serverBusy()"
+                  (click)="downloadRuleCalendar(r.id)"
+                >
+                  Download calendar (.ics)
+                </app-button>
+              }
             </div>
           </app-card>
         </div>
@@ -557,6 +591,8 @@ export class InboxPageComponent {
   serverToken = this.storage.get<string>(SERVER_JWT_KEY, '') ?? '';
   private readonly _serverRows = signal<ServerNotificationItem[]>([]);
   readonly serverRows = this._serverRows.asReadonly();
+  private readonly _serverRules = signal<ServerAlertRuleItem[]>([]);
+  readonly serverRules = this._serverRules.asReadonly();
   private readonly _reminderRows = signal<ServerReleaseReminderItem[]>([]);
   readonly reminderRows = this._reminderRows.asReadonly();
   private readonly _serverBusy = signal(false);
@@ -585,10 +621,12 @@ export class InboxPageComponent {
     this._serverBusy.set(true);
     forkJoin({
       notifications: this.alertsApi.listNotifications(t),
+      rules: this.alertsApi.listRules(t),
       reminders: this.cinemaApi.listReleaseReminders(),
     }).subscribe({
-      next: ({ notifications, reminders }) => {
+      next: ({ notifications, rules, reminders }) => {
         this._serverRows.set(notifications.items);
+        this._serverRules.set(rules ?? []);
         this._reminderRows.set(reminders?.items ?? []);
         this._serverBusy.set(false);
       },
@@ -676,6 +714,10 @@ export class InboxPageComponent {
   }
 
   trackByServerId(_: number, it: ServerNotificationItem): string {
+    return it.id;
+  }
+
+  trackByServerRuleId(_: number, it: ServerAlertRuleItem): string {
     return it.id;
   }
 

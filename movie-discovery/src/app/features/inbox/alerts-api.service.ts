@@ -14,6 +14,22 @@ export interface ServerNotificationItem {
   readonly ruleId: string | null;
 }
 
+export interface ServerAlertRuleItem {
+  readonly id: string;
+  readonly name: string;
+  readonly enabled: boolean;
+  readonly filters: Record<string, unknown>;
+  readonly channels: {
+    readonly inApp: boolean;
+    readonly webPush: boolean;
+    readonly email: boolean;
+    readonly calendar: boolean;
+  };
+  readonly quietHours: { start: string; end: string; tz: string } | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AlertsApiService {
   private readonly http = inject(HttpClient);
@@ -22,6 +38,12 @@ export class AlertsApiService {
     const params = new HttpParams().set('limit', String(limit));
     return this.http.get<{ items: ServerNotificationItem[] }>('/api/notifications', {
       params,
+      headers: this.auth(token),
+    });
+  }
+
+  listRules(token: string): Observable<ServerAlertRuleItem[]> {
+    return this.http.get<ServerAlertRuleItem[]>('/api/alert-rules', {
       headers: this.auth(token),
     });
   }
