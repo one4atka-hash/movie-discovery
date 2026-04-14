@@ -58,6 +58,27 @@ export const routes: Routes = [
       import('./features/me-hub/me-hub-page.component').then((c) => c.MeHubPageComponent),
   },
   {
+    path: 'now-playing',
+    loadComponent: () =>
+      import('./features/movies/feature-search/now-playing-page.component').then(
+        (c) => c.NowPlayingPageComponent,
+      ),
+  },
+  {
+    path: 'recommendations',
+    loadComponent: () =>
+      import('./features/movies/feature-search/recommendations-page.component').then(
+        (c) => c.RecommendationsPageComponent,
+      ),
+  },
+  {
+    path: 'random',
+    loadComponent: () =>
+      import('./features/movies/feature-search/random-page.component').then(
+        (c) => c.RandomPageComponent,
+      ),
+  },
+  {
     path: 'import',
     loadComponent: () =>
       import('./features/import/import-page.component').then((c) => c.ImportPageComponent),

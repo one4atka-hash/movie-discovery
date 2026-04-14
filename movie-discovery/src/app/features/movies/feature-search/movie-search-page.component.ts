@@ -187,9 +187,17 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
 
           <div class="dashboard__main">
             <section class="dashSection" id="home-new" aria-labelledby="home-new-title">
-              <h2 class="dashSection__title" id="home-new-title">
-                {{ i18n.t('home.section.newReleases') }}
-              </h2>
+              <div class="dashSection__head">
+                <h2 class="dashSection__title" id="home-new-title">
+                  {{ i18n.t('home.section.newReleases') }}
+                </h2>
+                <div class="dashSection__actions">
+                  <button class="btn" type="button" (click)="toggleNowPlayingExpanded()">
+                    {{ nowPlayingExpanded() ? i18n.t('common.collapse') : i18n.t('common.expand') }}
+                  </button>
+                  <a class="btn" routerLink="/now-playing">{{ i18n.t('common.openPage') }}</a>
+                </div>
+              </div>
               <div class="spotlight__strip" *ngIf="nowPlayingLoading()">
                 <div
                   class="spotlight__skel"
@@ -199,7 +207,7 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
               <div class="spotlight__strip" *ngIf="!nowPlayingLoading() && nowPlaying().length">
                 <a
                   class="spotlight__tile"
-                  *ngFor="let m of nowPlaying(); trackBy: trackById"
+                  *ngFor="let m of nowPlayingVisible(); trackBy: trackById"
                   [routerLink]="['/movie', m.id]"
                 >
                   <div class="spotlight__poster" [class.spotlight__poster--empty]="!m.poster_path">
@@ -232,16 +240,22 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                 <h2 class="dashSection__title" id="home-recs-title">
                   {{ i18n.t('home.section.recommendations') }}
                 </h2>
-                <button
-                  type="button"
-                  class="btn btn--icon btn--refresh"
-                  (click)="refreshRecommendations()"
-                  [disabled]="recsLoading()"
-                  [attr.aria-label]="i18n.t('home.recommendationsRefreshAria')"
-                  [title]="i18n.t('home.recommendationsRefresh')"
-                >
-                  <span aria-hidden="true" class="btn__refreshIcon">↻</span>
-                </button>
+                <div class="dashSection__actions">
+                  <button class="btn" type="button" (click)="toggleRecsExpanded()">
+                    {{ recsExpanded() ? i18n.t('common.collapse') : i18n.t('common.expand') }}
+                  </button>
+                  <a class="btn" routerLink="/recommendations">{{ i18n.t('common.openPage') }}</a>
+                  <button
+                    type="button"
+                    class="btn btn--icon btn--refresh"
+                    (click)="refreshRecommendations()"
+                    [disabled]="recsLoading()"
+                    [attr.aria-label]="i18n.t('home.recommendationsRefreshAria')"
+                    [title]="i18n.t('home.recommendationsRefresh')"
+                  >
+                    <span aria-hidden="true" class="btn__refreshIcon">↻</span>
+                  </button>
+                </div>
               </div>
               <div class="grid grid--random" *ngIf="recsLoading()">
                 <div
@@ -250,7 +264,7 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                 ></div>
               </div>
               <div class="grid grid--random" *ngIf="!recsLoading() && recsVisible().length">
-                <div class="grid__item" *ngFor="let m of recsVisible(); trackBy: trackById">
+                <div class="grid__item" *ngFor="let m of recsPreview(); trackBy: trackById">
                   <a class="grid__link" [routerLink]="['/movie', m.id]">
                     <app-movie-card [movie]="m" [providers]="myProvidersFor(m.id)" />
                   </a>
@@ -287,9 +301,17 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
             </section>
 
             <section class="dashSection" id="home-random" aria-labelledby="home-rand-title">
-              <h2 class="dashSection__title" id="home-rand-title">
-                {{ i18n.t('home.section.random') }}
-              </h2>
+              <div class="dashSection__head">
+                <h2 class="dashSection__title" id="home-rand-title">
+                  {{ i18n.t('home.section.random') }}
+                </h2>
+                <div class="dashSection__actions">
+                  <button class="btn" type="button" (click)="toggleRandomExpanded()">
+                    {{ randomExpanded() ? i18n.t('common.collapse') : i18n.t('common.expand') }}
+                  </button>
+                  <a class="btn" routerLink="/random">{{ i18n.t('common.openPage') }}</a>
+                </div>
+              </div>
               <div class="grid grid--random" *ngIf="randomLoading()">
                 <div
                   class="skeleton-card"
@@ -297,7 +319,7 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                 ></div>
               </div>
               <div class="grid grid--random" *ngIf="!randomLoading() && randomVisible().length">
-                <div class="grid__item" *ngFor="let m of randomVisible(); trackBy: trackById">
+                <div class="grid__item" *ngFor="let m of randomPreview(); trackBy: trackById">
                   <a class="grid__link" [routerLink]="['/movie', m.id]">
                     <app-movie-card [movie]="m" [providers]="myProvidersFor(m.id)" />
                   </a>
@@ -910,6 +932,13 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
         background: color-mix(in srgb, #000 62%, transparent);
       }
 
+      .dashSection__actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
       .cardHud {
         position: absolute;
         top: 8px;
@@ -1096,6 +1125,28 @@ export class MovieSearchPageComponent {
 
   readonly showHero = computed(() => this._draft().trim().length < 2);
   readonly showEmpty = computed(() => this._hasSearched() && this._movies().length === 0);
+
+  readonly nowPlayingExpanded = signal(false);
+  readonly recsExpanded = signal(false);
+  readonly randomExpanded = signal(false);
+
+  readonly nowPlayingVisible = computed(() =>
+    this._nowPlaying().slice(0, this.nowPlayingExpanded() ? 12 : 6),
+  );
+  readonly recsPreview = computed(() => this.recsVisible().slice(0, this.recsExpanded() ? 16 : 8));
+  readonly randomPreview = computed(() =>
+    this.randomVisible().slice(0, this.randomExpanded() ? 16 : 8),
+  );
+
+  toggleNowPlayingExpanded(): void {
+    this.nowPlayingExpanded.set(!this.nowPlayingExpanded());
+  }
+  toggleRecsExpanded(): void {
+    this.recsExpanded.set(!this.recsExpanded());
+  }
+  toggleRandomExpanded(): void {
+    this.randomExpanded.set(!this.randomExpanded());
+  }
   readonly canLoadMore = computed(
     () =>
       this._hasSearched() &&
@@ -1298,7 +1349,7 @@ export class MovieSearchPageComponent {
         shuffleInPlace(list);
         const withPoster = list.filter((m) => m.poster_path);
         const pool = withPoster.length >= 6 ? withPoster : list;
-        this._nowPlaying.set(pool.slice(0, 6));
+        this._nowPlaying.set(pool.slice(0, 12));
         this._nowPlayingLoading.set(false);
       });
   }
@@ -1324,9 +1375,9 @@ export class MovieSearchPageComponent {
       .subscribe((res) => {
         const list = [...(res.results ?? [])];
         shuffleInPlace(list);
-        this._randomMovies.set(list.slice(0, 8));
+        this._randomMovies.set(list.slice(0, 24));
         this._randomLoading.set(false);
-        this.ensureProvidersForIds(list.slice(0, 8).map((m) => m.id));
+        this.ensureProvidersForIds(list.slice(0, 24).map((m) => m.id));
       });
   }
 
@@ -1381,9 +1432,9 @@ export class MovieSearchPageComponent {
         const withPoster = out.filter((m) => m.poster_path);
         const pool = withPoster.length >= 8 ? withPoster : out;
         shuffleInPlace(pool);
-        this._recs.set(pool.slice(0, 8));
+        this._recs.set(pool.slice(0, 24));
         this._recsLoading.set(false);
-        this.ensureProvidersForIds(pool.slice(0, 8).map((m) => m.id));
+        this.ensureProvidersForIds(pool.slice(0, 24).map((m) => m.id));
       });
   }
 
