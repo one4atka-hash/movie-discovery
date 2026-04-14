@@ -33,8 +33,9 @@ import { CollectionsService } from './collections.service';
     <section class="page">
       <header class="head">
         <h1 class="title">{{ i18n.t('nav.lists') }}</h1>
+        <p class="sub">Purpose: собирать фильмы в списки (подборки) под сценарии.</p>
         <p class="sub">
-          Коллекции, watchlist по статусам и авто‑подборки (Rule Builder будет переиспользован).
+          Как пользоваться: создай коллекцию → добавь фильмы → открой список, чтобы управлять.
         </p>
       </header>
 

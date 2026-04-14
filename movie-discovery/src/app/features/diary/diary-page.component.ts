@@ -37,7 +37,10 @@ import { DiaryService } from './diary.service';
     <section class="page">
       <header class="head">
         <h1 class="title">{{ i18n.t('nav.diary') }}</h1>
-        <p class="sub">Журнал просмотров: записи, теги, оценки и заметки.</p>
+        <p class="sub">Purpose: сохранять историю просмотров, оценку и заметки.</p>
+        <p class="sub">
+          Как пользоваться: нажми “Добавить запись”, выбери дату и поставь оценку (опционально).
+        </p>
       </header>
 
       <app-section title="Записи">

@@ -50,9 +50,9 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
     <section class="page">
       <header class="head">
         <h1 class="title">{{ i18n.t('nav.inbox') }}</h1>
+        <p class="sub">Purpose: получать полезные уведомления и управлять правилами.</p>
         <p class="sub">
-          Умные уведомления: релизы, доступность на моих сервисах, “уходит скоро”, digest и
-          “почему”.
+          Как пользоваться: открой Feed → отметь прочитанное; на вкладке Rules создай правило.
         </p>
       </header>
 

@@ -38,9 +38,9 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
     <section class="page">
       <header class="head">
         <h1 class="title">{{ i18n.t('nav.tonight') }}</h1>
+        <p class="sub">Purpose: быстро выбрать фильм на вечер из shortlist.</p>
         <p class="sub">
-          Decision Mode (MVP): ограничения → shortlist → победитель. Дальше подключим правила, «мои
-          сервисы» и explainable рекомендации.
+          Как пользоваться: выбери 1–2 ограничения → “Собрать shortlist” → выбери победителя.
         </p>
       </header>
 
