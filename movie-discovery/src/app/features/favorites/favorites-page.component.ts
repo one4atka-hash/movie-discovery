@@ -26,15 +26,20 @@ import { I18nService } from '@shared/i18n/i18n.service';
         [subtitle]="i18n.t('home.favoritesEmptySubtitle')"
       />
 
-      <div class="grid" *ngIf="favorites().length">
-        <a
-          class="grid__item"
-          *ngFor="let m of favorites(); trackBy: trackById"
-          [routerLink]="['/movie', m.id]"
-        >
-          <app-movie-card [movie]="m" />
-        </a>
-      </div>
+      <ng-container *ngIf="favorites().length">
+        <section class="series" *ngFor="let g of grouped(); trackBy: trackByGroupKey">
+          <h2 class="series__title">{{ g.label }}</h2>
+          <div class="grid">
+            <a
+              class="grid__item"
+              *ngFor="let m of g.items; trackBy: trackById"
+              [routerLink]="['/movie', m.id]"
+            >
+              <app-movie-card [movie]="m" />
+            </a>
+          </div>
+        </section>
+      </ng-container>
     </section>
   `,
   styles: [
@@ -57,6 +62,15 @@ import { I18nService } from '@shared/i18n/i18n.service';
       .title {
         margin: 0;
       }
+      .series {
+        margin-bottom: 1.2rem;
+      }
+      .series__title {
+        margin: 0 0 0.65rem;
+        font-size: 1.05rem;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -78,7 +92,59 @@ export class FavoritesPageComponent {
 
   readonly favorites = computed(() => this.fav.favorites());
 
+  readonly grouped = computed(() => {
+    const list = this.favorites();
+    const byKey = new Map<string, { key: string; label: string; items: any[] }>();
+    for (const m of list) {
+      const key = seriesKeyFromTitle(m.title);
+      const label = seriesLabelFromKey(key);
+      const g = byKey.get(key) ?? { key, label, items: [] };
+      g.items.push(m);
+      byKey.set(key, g);
+    }
+    const groups = [...byKey.values()];
+    for (const g of groups) {
+      g.items.sort(
+        (a, b) => (a.release_date ?? '').localeCompare(b.release_date ?? '') || a.id - b.id,
+      );
+    }
+    groups.sort((a, b) => b.items.length - a.items.length || a.label.localeCompare(b.label));
+    return groups;
+  });
+
   trackById(_: number, m: { id: number }): number {
     return m.id;
   }
+
+  trackByGroupKey(_: number, g: { key: string }): string {
+    return g.key;
+  }
+}
+
+function seriesKeyFromTitle(title: string): string {
+  const t = (title ?? '').trim().toLowerCase();
+  if (!t) return 'other';
+  const base = t
+    .replace(/\(\d{4}\)\s*$/, '')
+    .split(':')[0]!
+    .split('—')[0]!
+    .split('-')[0]!
+    .trim();
+  // remove sequel markers at the end
+  const cleaned = base
+    .replace(/\b(episode|part|chapter|vol|volume)\s+\d+\b/g, '')
+    .replace(/\b[ivx]{1,6}\b$/i, '')
+    .replace(/\b\d+\b$/i, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || 'other';
+}
+
+function seriesLabelFromKey(key: string): string {
+  if (key === 'other') return 'Other';
+  return key
+    .split(' ')
+    .map((w) => (w ? w[0]!.toUpperCase() + w.slice(1) : ''))
+    .join(' ');
 }

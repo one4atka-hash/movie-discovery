@@ -168,22 +168,24 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
               <p class="railBlock__empty" *ngIf="!favCount()">
                 {{ i18n.t('home.favoritesEmptySubtitle') }}
               </p>
-              <ul class="railList railList--fav" *ngIf="favCount()">
-                <li class="railList__row" *ngFor="let m of favoritesPreview(); trackBy: trackById">
-                  <a class="railFav" [routerLink]="['/movie', m.id]">
-                    <div class="railFav__thumb" [class.railFav__thumb--empty]="!m.poster_path">
-                      <img
-                        *ngIf="m.poster_path as p"
-                        [src]="posterUrlSmall(p)"
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </div>
-                    <span class="railFav__title">{{ m.title }}</span>
-                  </a>
-                </li>
-              </ul>
+              <div class="favGrid" *ngIf="favCount()">
+                <a
+                  class="favTile"
+                  *ngFor="let m of favoritesPreview(); trackBy: trackById"
+                  [routerLink]="['/movie', m.id]"
+                  [attr.aria-label]="m.title"
+                >
+                  <div class="favTile__thumb" [class.favTile__thumb--empty]="!m.poster_path">
+                    <img
+                      *ngIf="m.poster_path as p"
+                      [src]="posterUrlSmall(p)"
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                </a>
+              </div>
             </section>
           </aside>
 
@@ -739,6 +741,46 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
         overflow: hidden;
       }
 
+      .favGrid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        max-height: min(72vh, 720px);
+        overflow: auto;
+        padding-right: 0.25rem;
+      }
+      .favTile {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        border-radius: 12px;
+      }
+      .favTile:focus-visible {
+        outline: var(--focus-ring);
+        outline-offset: 3px;
+      }
+      .favTile__thumb {
+        aspect-ratio: 2 / 3;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        background: color-mix(in srgb, var(--bg-muted) 55%, transparent);
+      }
+      .favTile__thumb--empty {
+        background: linear-gradient(
+          145deg,
+          color-mix(in srgb, var(--accent) 22%, transparent),
+          color-mix(in srgb, var(--accent-secondary) 14%, transparent)
+        );
+      }
+      .favTile__thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
       .dashSection {
         border-radius: var(--radius-lg);
         border: 1px solid var(--border-subtle);
@@ -1126,7 +1168,7 @@ export class MovieSearchPageComponent {
   readonly subsCount = computed(() => this._subsAll().length);
   readonly favCount = computed(() => this._favAll().length);
   readonly subsPreview = computed(() => pickSubsPreview(this._subsAll(), 5));
-  readonly favoritesPreview = computed(() => pickRandomSlice(this._favAll(), 5));
+  readonly favoritesPreview = computed(() => pickRandomSlice(this._favAll(), 9));
   readonly showSubsSeeAll = computed(() => this.subsCount() > 5);
   readonly showFavSeeAll = computed(() => this.favCount() > 5);
   readonly isAuthed = computed(() => this.auth.isAuthenticated());
