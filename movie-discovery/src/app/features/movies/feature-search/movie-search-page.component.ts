@@ -1031,6 +1031,17 @@ export class MovieSearchPageComponent {
   private readonly _subbedIds = computed(
     () => new Set(this.subsSvc.mySubscriptions().map((s) => s.tmdbId)),
   );
+  private readonly _likedIds = computed(() => {
+    const out = new Set<number>();
+    const map = this.reactions.all();
+    for (const [k, v] of Object.entries(map)) {
+      if (v !== 'like') continue;
+      const id = Number(k);
+      if (Number.isFinite(id) && id > 0) out.add(id);
+    }
+    return out;
+  });
+  private readonly _recsIds = computed(() => new Set(this.recsVisible().map((m) => m.id)));
   readonly recsVisible = computed(() =>
     this._recs().filter(
       (m) =>
@@ -1055,7 +1066,15 @@ export class MovieSearchPageComponent {
   });
 
   readonly randomVisible = computed(() => {
-    return filterOnlyMyServices(this._randomMovies(), this.onlyMyServices(), this._myProviders());
+    const base = filterOnlyMyServices(
+      this._randomMovies(),
+      this.onlyMyServices(),
+      this._myProviders(),
+    );
+    const liked = this._likedIds();
+    const subbed = this._subbedIds();
+    const recs = this._recsIds();
+    return base.filter((m) => !liked.has(m.id) && !subbed.has(m.id) && !recs.has(m.id));
   });
 
   myProvidersFor(tmdbId: number): readonly string[] {
