@@ -21,6 +21,60 @@ type JobRow = {
 export class MovieFeatureJobsService {
   constructor(private readonly db: DbService) {}
 
+  async listJobs(
+    userId: string,
+    input: { limit: number; offset: number },
+  ): Promise<
+    {
+      id: string;
+      kind: 'embeddings';
+      status: JobRow['status'];
+      tmdbIds: number[];
+      progress: { processed: number; failed: number; total: number };
+      createdAt: string;
+      startedAt: string | null;
+      finishedAt: string | null;
+      error: string | null;
+    }[]
+  > {
+    const limit = Math.max(1, Math.min(100, Math.trunc(input.limit)));
+    const offset = Math.max(0, Math.trunc(input.offset));
+
+    const rows = await this.db.query<JobRow>(
+      `select id, user_id, kind, status, tmdb_ids,
+              processed_count, failed_count, total_count,
+              created_at, started_at, finished_at, error
+       from movie_feature_jobs
+       where user_id = $1
+       order by created_at desc
+       limit $2 offset $3`,
+      [userId, limit, offset],
+    );
+
+    return rows.map((r) => {
+      const tmdbIds = Array.isArray(r.tmdb_ids)
+        ? (r.tmdb_ids as unknown[])
+            .map((x) => (typeof x === 'number' ? x : Number(x)))
+            .filter((n) => Number.isFinite(n) && n > 0)
+        : [];
+      return {
+        id: r.id,
+        kind: 'embeddings',
+        status: r.status,
+        tmdbIds,
+        progress: {
+          processed: Number(r.processed_count ?? 0),
+          failed: Number(r.failed_count ?? 0),
+          total: Number(r.total_count ?? tmdbIds.length),
+        },
+        createdAt: r.created_at,
+        startedAt: r.started_at,
+        finishedAt: r.finished_at,
+        error: r.error,
+      };
+    });
+  }
+
   async createEmbeddingsJob(
     userId: string,
     input: { tmdbIds: readonly number[] },

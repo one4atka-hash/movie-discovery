@@ -16,6 +16,7 @@ import {
   MovieReleasesQuerySchema,
   CreateEmbeddingsJobSchema,
   MovieFeatureJobIdParamSchema,
+  ListEmbeddingsJobsQuerySchema,
   MoviesTmdbIdParamSchema,
   RefreshFeaturesBatchSchema,
   RefreshFeaturesQuerySchema,
@@ -65,6 +66,19 @@ export class MoviesController {
       tmdbIds: body.tmdbIds,
     });
     return { ok: true, id: out.id };
+  }
+
+  @Get('features/embeddings/jobs')
+  async listEmbeddingsJobs(
+    @CurrentUser() u: AuthedUser,
+    @Query(new ZodBodyPipe(ListEmbeddingsJobsQuerySchema))
+    q: z.infer<typeof ListEmbeddingsJobsQuerySchema>,
+  ) {
+    const items = await this.jobs.listJobs(u.id, {
+      limit: q.limit,
+      offset: q.offset,
+    });
+    return { ok: true, items };
   }
 
   @Get('features/embeddings/jobs/:id')
