@@ -5,7 +5,8 @@ import { truthy } from '../config/env.schema';
 import { DbService } from '../db/db.service';
 
 import { MovieFeatureJobsService } from './movie-feature-jobs.service';
-import { deterministicEmbedding, toPgVectorLiteral } from './embeddings.util';
+import { toPgVectorLiteral } from './embeddings.util';
+import { EmbeddingsService } from './embeddings.service';
 
 @Injectable()
 export class MovieFeatureJobsRunnerService {
@@ -13,6 +14,7 @@ export class MovieFeatureJobsRunnerService {
     private readonly config: ConfigService,
     private readonly jobs: MovieFeatureJobsService,
     private readonly db: DbService,
+    private readonly embeddings: EmbeddingsService,
   ) {}
 
   async runEmbeddingsJob(
@@ -69,12 +71,13 @@ export class MovieFeatureJobsRunnerService {
         missing += 1;
         continue;
       }
-      const emb = deterministicEmbedding({
+      const embRes = await this.embeddings.embedMovieFeature({
         tmdbId: id,
         title: r.title,
         overview: r.overview,
         lang: r.lang,
       });
+      const emb = embRes.vector;
       const lit = toPgVectorLiteral(emb);
       await this.db.exec(
         `update movie_features

@@ -103,6 +103,26 @@ export const EnvSchema = z.object({
     .default(''),
 
   /**
+   * Embeddings provider:
+   * - deterministic: no external deps (default; useful for dev/tests)
+   * - openai: uses OpenAI embeddings API (requires OPENAI_API_KEY)
+   */
+  EMBEDDINGS_PROVIDER: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').toLowerCase())
+    .pipe(z.enum(['', 'deterministic', 'openai']))
+    .default('deterministic'),
+
+  /** OpenAI API key (only if EMBEDDINGS_PROVIDER=openai). */
+  OPENAI_API_KEY: z.string().optional().default(''),
+  OPENAI_EMBEDDINGS_MODEL: z
+    .string()
+    .optional()
+    .default('text-embedding-3-small'),
+  OPENAI_BASE_URL: z.string().optional().default('https://api.openai.com/v1'),
+
+  /**
    * Periodically sync tracked movies with TMDB watch providers → availability_snapshots/events.
    */
   AVAILABILITY_CRON_ENABLED: z

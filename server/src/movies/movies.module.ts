@@ -5,6 +5,7 @@ import { MoviesController } from './movies.controller';
 import { MovieFeatureJobsService } from './movie-feature-jobs.service';
 import { MovieFeatureJobsRunnerService } from './movie-feature-jobs-runner.service';
 import { MoviesService } from './movies.service';
+import { EmbeddingsService } from './embeddings.service';
 
 @Module({
   imports: [DbModule],
@@ -12,6 +13,7 @@ import { MoviesService } from './movies.service';
   providers: [
     MoviesService,
     MovieFeatureJobsService,
+    EmbeddingsService,
     MovieFeatureJobsRunnerService,
   ],
 })
