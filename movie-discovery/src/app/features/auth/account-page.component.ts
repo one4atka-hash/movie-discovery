@@ -192,6 +192,14 @@ import {
               </p>
               <div class="actions" style="margin-top: 0">
                 <button
+                  class="btn btn--primary"
+                  type="button"
+                  (click)="createAndRunMyEmbeddingsJob()"
+                  [disabled]="jobsBusy()"
+                >
+                  Create + Run (from my favorites/likes)
+                </button>
+                <button
                   class="btn"
                   type="button"
                   (click)="loadEmbeddingsJobs()"
@@ -1000,6 +1008,40 @@ export class AccountPageComponent {
       next: () => {
         this.jobsBusy.set(false);
         this.loadEmbeddingsJobs();
+      },
+      error: () => {
+        this.jobsBusy.set(false);
+        this.jobsErr.set('Request failed');
+      },
+    });
+  }
+
+  createAndRunMyEmbeddingsJob(): void {
+    this.jobsErr.set(null);
+    const token = this.serverJwt.value.trim();
+    if (!token) {
+      this.jobsErr.set(this.i18n.t('account.publicProfile.needJwt'));
+      return;
+    }
+    this.storage.set('server.jwt.token.v1', token);
+    this.jobsBusy.set(true);
+    this.cinemaApi.createMyEmbeddingsJob({ limit: 50 }).subscribe({
+      next: (r) => {
+        if (!r?.ok) {
+          this.jobsBusy.set(false);
+          this.jobsErr.set('Request failed');
+          return;
+        }
+        this.cinemaApi.runEmbeddingsJob(r.id).subscribe({
+          next: () => {
+            this.jobsBusy.set(false);
+            this.loadEmbeddingsJobs();
+          },
+          error: () => {
+            this.jobsBusy.set(false);
+            this.jobsErr.set('Request failed');
+          },
+        });
       },
       error: () => {
         this.jobsBusy.set(false);

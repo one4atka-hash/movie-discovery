@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, type AuthedUser } from '../auth/current-user.decorator';
 import { ZodBodyPipe } from '../common/zod-body.pipe';
+import { MovieFeatureJobsService } from '../movies/movie-feature-jobs.service';
 import { MoviesService } from '../movies/movies.service';
 import { MeService } from './me.service';
 import { PublicProfilePutSchema } from './public-profile.schemas';
@@ -15,6 +16,7 @@ export class MeController {
   constructor(
     private readonly me: MeService,
     private readonly movies: MoviesService,
+    private readonly jobs: MovieFeatureJobsService,
   ) {}
 
   @Get('public-profile')
@@ -65,5 +67,23 @@ export class MeController {
     return await this.movies.refreshMovieFeaturesBatch(ids, {
       language: body.language?.trim() || undefined,
     });
+  }
+
+  @Post('movie-features/embeddings/jobs')
+  async createMyEmbeddingsJob(
+    @CurrentUser() u: AuthedUser,
+    @Body(
+      new ZodBodyPipe(
+        z.object({
+          limit: z.number().int().min(1).max(200).optional(),
+        }),
+      ),
+    )
+    body: { limit?: number },
+  ) {
+    const limit = body.limit ?? 50;
+    const ids = await this.me.listMyFeatureRefreshSeeds(u.id, limit);
+    const out = await this.jobs.createEmbeddingsJob(u.id, { tmdbIds: ids });
+    return { ok: true, id: out.id, tmdbIds: ids };
   }
 }

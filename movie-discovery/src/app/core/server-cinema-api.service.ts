@@ -190,6 +190,21 @@ export class ServerCinemaApiService {
       .pipe(catchError(() => of(null)));
   }
 
+  createMyEmbeddingsJob(input?: {
+    limit?: number;
+  }): Observable<{ ok: true; id: string; tmdbIds: number[] } | null> {
+    const h = this.authHeaders();
+    if (!h) return of(null);
+    const limit = input?.limit ?? 50;
+    return this.http
+      .post<{
+        ok: true;
+        id: string;
+        tmdbIds: number[];
+      }>('/api/me/movie-features/embeddings/jobs', { limit }, { headers: h })
+      .pipe(catchError(() => of(null)));
+  }
+
   getPublicUserBySlug(slug: string): Observable<Record<string, unknown> | null> {
     return this.http.get<Record<string, unknown>>(`/api/u/${encodeURIComponent(slug)}`).pipe(
       catchError((e: unknown) => {
