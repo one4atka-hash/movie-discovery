@@ -156,6 +156,11 @@ export function inferLocaleFromEnvironment(): string {
   for (const raw of list) {
     const tag = raw.trim();
     if (/^[a-z]{2}-[A-Z]{2}$/.test(tag)) {
+      // UI-словари в приложении только ru/en, а региональные варианты английского
+      // часто приходят из настроек браузера (например, en-AU) и выглядят странно
+      // для пользователя. Для авто-детекта нормализуем к "обычному" en-US.
+      const base = tag.split('-')[0]?.toLowerCase();
+      if (base === 'en') return 'en-US';
       return tag;
     }
     const base = tag.split('-')[0]?.toLowerCase();

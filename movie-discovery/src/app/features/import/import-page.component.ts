@@ -27,25 +27,25 @@ const HIDE_RESOLVED_KEY = 'import.hideResolved.v1';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-section title="Import (MVP)">
+    <app-section title="Импорт данных">
       <app-card>
         <div class="grid">
           <app-form-field
-            label="Server JWT token"
-            hint="MVP: вставь JWT от backend (Bearer token). Мы сохраним его локально в браузере."
+            label="Код подключения (опционально)"
+            hint="Если у тебя включена серверная синхронизация — вставь код подключения. Он сохранится в этом браузере."
           >
             <textarea [(ngModel)]="token" rows="2" placeholder="eyJhbGciOi..."></textarea>
           </app-form-field>
 
           <div class="row2">
-            <app-form-field label="Kind">
+            <app-form-field label="Что импортируем">
               <select [(ngModel)]="kind">
                 <option value="diary">diary</option>
                 <option value="watch_state">watch_state</option>
                 <option value="favorites">favorites</option>
               </select>
             </app-form-field>
-            <app-form-field label="Format">
+            <app-form-field label="Формат">
               <select [(ngModel)]="format">
                 <option value="json">json</option>
                 <option value="csv">csv</option>
@@ -53,27 +53,30 @@ const HIDE_RESOLVED_KEY = 'import.hideResolved.v1';
             </app-form-field>
           </div>
 
-          <app-form-field label="Payload" hint="JSON/CSV как строка (MVP: до 200KB).">
+          <app-form-field
+            label="Данные"
+            hint="Вставь JSON/CSV. Если файл большой — лучше импортировать частями."
+          >
             <textarea [(ngModel)]="payload" rows="8" placeholder='{"items":[...]}'></textarea>
           </app-form-field>
 
           <div class="actions">
             <app-button variant="secondary" [disabled]="busy()" (click)="createJob()">
-              Create job
+              Подготовить
             </app-button>
             <app-button variant="secondary" [disabled]="busy() || !jobId()" (click)="preview()">
-              Preview
+              Предпросмотр
             </app-button>
             <app-button variant="primary" [disabled]="busy() || !jobId()" (click)="apply()">
-              Apply
+              Импортировать
             </app-button>
           </div>
 
           @if (jobId(); as id) {
             <p class="meta">
-              <b>Job</b>: <code>{{ id }}</code>
+              <b>Задача</b>: <code>{{ id }}</code>
               @if (jobStatus(); as st) {
-                · <b>Status</b>: {{ st }}
+                · <b>Статус</b>: {{ st }}
               }
             </p>
           }

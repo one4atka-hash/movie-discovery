@@ -33,24 +33,27 @@ import { CollectionsService } from './collections.service';
     <section class="page">
       <header class="head">
         <h1 class="title">{{ i18n.t('nav.lists') }}</h1>
-        <p class="sub">Purpose: собирать фильмы в списки (подборки) под сценарии.</p>
         <p class="sub">
-          Как пользоваться: создай коллекцию → добавь фильмы → открой список, чтобы управлять.
+          Списки — чтобы не потерять “посмотреть потом” и собирать подборки под настроение.
+        </p>
+        <p class="sub">
+          Как пользоваться: создай список → добавляй фильмы из поиска → открывай, чтобы
+          редактировать.
         </p>
       </header>
 
-      <app-section title="Collections">
+      <app-section title="Мои списки">
         <div sectionActions>
-          <app-button (click)="openCreate()">New collection</app-button>
+          <app-button (click)="openCreate()">Новый список</app-button>
         </div>
 
         <app-empty-state
           *ngIf="!collections().length"
           title="Нет списков"
-          subtitle="Создайте коллекцию и добавьте туда фильмы. Дальше — авто‑коллекции и taste summary."
+          subtitle="Создай первый список — например “На выходные” или “Когда хочется комедию”."
         >
           <app-button variant="secondary" (click)="openCreate()">Создать</app-button>
-          <app-button variant="ghost" routerLink="/">Открыть поиск</app-button>
+          <app-button variant="ghost" routerLink="/">Найти фильм</app-button>
         </app-empty-state>
 
         <div class="grid" *ngIf="collections().length">
@@ -58,29 +61,29 @@ import { CollectionsService } from './collections.service';
             @if (c.description) {
               <p class="muted">{{ c.description }}</p>
             }
-            <p class="muted">Items: {{ c.items.length }} · {{ visibilityLabel(c.visibility) }}</p>
+            <p class="muted">Фильмов: {{ c.items.length }} · {{ visibilityLabel(c.visibility) }}</p>
 
             <div class="actions">
-              <app-button variant="secondary" (click)="select(c)">Open</app-button>
-              <app-button variant="ghost" (click)="openEdit(c)">Edit</app-button>
-              <app-button variant="danger" (click)="remove(c)">Delete</app-button>
+              <app-button variant="secondary" (click)="select(c)">Открыть</app-button>
+              <app-button variant="ghost" (click)="openEdit(c)">Изменить</app-button>
+              <app-button variant="danger" (click)="remove(c)">Удалить</app-button>
             </div>
           </app-card>
         </div>
       </app-section>
 
-      <app-section title="Selected" *ngIf="selected() as s">
+      <app-section title="Открытый список" *ngIf="selected() as s">
         <div sectionActions>
-          <app-button variant="secondary" (click)="openAddItem()">Add item</app-button>
-          <app-button variant="ghost" (click)="selected.set(null)">Close</app-button>
+          <app-button variant="secondary" (click)="openAddItem()">Добавить фильм</app-button>
+          <app-button variant="ghost" (click)="selected.set(null)">Закрыть</app-button>
         </div>
 
         <app-empty-state
           *ngIf="!s.items.length"
           title="Пусто"
-          subtitle="Добавьте первый фильм (пока вручную: title + optional TMDB id)."
+          subtitle="Добавь первый фильм — можно по названию, а потом уточнить по TMDB."
         >
-          <app-button variant="secondary" (click)="openAddItem()">Add item</app-button>
+          <app-button variant="secondary" (click)="openAddItem()">Добавить фильм</app-button>
         </app-empty-state>
 
         <div class="list" *ngIf="s.items.length">

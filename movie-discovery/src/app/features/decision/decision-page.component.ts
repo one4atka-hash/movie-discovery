@@ -38,16 +38,18 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
     <section class="page">
       <header class="head">
         <h1 class="title">{{ i18n.t('nav.tonight') }}</h1>
-        <p class="sub">Purpose: быстро выбрать фильм на вечер из shortlist.</p>
         <p class="sub">
-          Как пользоваться: выбери 1–2 ограничения → “Собрать shortlist” → выбери победителя.
+          Сегодня выбираем кино на вечер — быстро и без вечных “ну давай ещё один трейлер”.
+        </p>
+        <p class="sub">
+          Как пользоваться: выбери 1–2 пожелания → “Собрать список” → нажми на победителя.
         </p>
       </header>
 
-      <app-card title="Ограничения (MVP)">
+      <app-card title="Пожелания">
         <p class="muted">
-          Выберите 1–2 ограничения — и мы соберём shortlist. Этот UI будет переиспользован в Rule
-          Builder и фильтрах Discover.
+          Выберите 1–2 пункта — и мы соберём аккуратный список вариантов. Если ничего не выбирать —
+          тоже ок: будет “как есть”, без лишних условий.
         </p>
 
         <div class="row">
@@ -83,7 +85,7 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
           <app-button variant="ghost" (click)="reset()">Сбросить</app-button>
           <app-button variant="secondary" (click)="openMore.set(true)">Ещё…</app-button>
           <app-button data-testid="decision-build-shortlist" [loading]="loading()" (click)="build()"
-            >Собрать shortlist</app-button
+            >Собрать список</app-button
           >
         </div>
       </app-card>
@@ -94,7 +96,7 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
         ariaLabel="More constraints"
         (closed)="openMore.set(false)"
       >
-        <p class="muted">Пресеты (MVP) — быстро собрать shortlist под сценарий.</p>
+        <p class="muted">Готовые сценарии — чтобы собрать список за пару секунд.</p>
 
         <div class="row">
           <app-chip [selected]="preset() === 'weeknight'" (clicked)="applyPreset('weeknight')">

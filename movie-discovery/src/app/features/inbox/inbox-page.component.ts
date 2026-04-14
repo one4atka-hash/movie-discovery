@@ -50,9 +50,12 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
     <section class="page">
       <header class="head">
         <h1 class="title">{{ i18n.t('nav.inbox') }}</h1>
-        <p class="sub">Purpose: получать полезные уведомления и управлять правилами.</p>
         <p class="sub">
-          Как пользоваться: открой Feed → отметь прочитанное; на вкладке Rules создай правило.
+          Здесь живут напоминания и события — чтобы ничего важного не пролетело мимо.
+        </p>
+        <p class="sub">
+          Как пользоваться: открой ленту → отмечай прочитанное; в “Правилах” настрой, что тебе
+          присылать.
         </p>
       </header>
 
@@ -64,15 +67,17 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
             [value]="tab()"
             (select)="tab.set($event)"
           />
-          <app-button variant="secondary" (click)="svc.addSample()">Add sample</app-button>
-          <app-button variant="ghost" (click)="svc.markAllRead()">Mark all read</app-button>
-          <app-button variant="secondary" (click)="openRuleCreate()">New rule</app-button>
+          <app-button variant="secondary" (click)="svc.addSample()">Показать пример</app-button>
+          <app-button variant="ghost" (click)="svc.markAllRead()"
+            >Отметить всё прочитанным</app-button
+          >
+          <app-button variant="secondary" (click)="openRuleCreate()">Новое правило</app-button>
         </div>
 
         <app-card>
           <app-form-field
-            label="Server JWT (optional)"
-            hint="Для ленты с backend: тот же токен, что в Account / Import. Сохраняется локально."
+            label="Подключить синхронизацию (опционально)"
+            hint="Если у тебя есть серверная синхронизация — вставь код подключения. Мы сохраним его в этом браузере."
           >
             <textarea
               [(ngModel)]="serverToken"
@@ -89,7 +94,7 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
               (click)="loadServerFeed()"
               data-testid="inbox-load-server-feed"
             >
-              Load server feed
+              Загрузить ленту
             </app-button>
             <app-button
               variant="ghost"
@@ -98,7 +103,7 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
               (click)="runDevAlerts()"
               data-testid="inbox-dev-run-alerts"
             >
-              Dev: run alerts
+              Проверить уведомления
             </app-button>
             <app-button
               variant="ghost"
@@ -107,7 +112,7 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
               (click)="seedServerRule()"
               data-testid="inbox-seed-server-rule"
             >
-              Seed server rule
+              Добавить пример правила
             </app-button>
           </div>
           @if (serverErr(); as se) {
@@ -130,10 +135,10 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
             tab() === 'feed' && !items().length && !serverRows().length && !reminderRows().length
           "
           title="Нет событий"
-          subtitle="Итерация 5.2: Inbox + Rules. Пока это локальный MVP. Добавьте sample или создайте rule."
+          subtitle="Пока тихо. Можно добавить пример или настроить правило — и лента оживёт."
         >
-          <app-button variant="secondary" (click)="svc.addSample()">Add sample</app-button>
-          <app-button variant="ghost" routerLink="/notifications">Релиз‑уведомления</app-button>
+          <app-button variant="secondary" (click)="svc.addSample()">Показать пример</app-button>
+          <app-button variant="ghost" routerLink="/notifications">Подписки на релизы</app-button>
         </app-empty-state>
 
         <div class="list" *ngIf="tab() === 'feed' && reminderRows().length">
@@ -160,7 +165,7 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
         </div>
 
         <div class="list" *ngIf="tab() === 'feed' && serverRows().length">
-          <p class="muted" style="margin: 0 0 0.5rem">Server inbox</p>
+          <p class="muted" style="margin: 0 0 0.5rem">Синхронизированные события</p>
           <app-card
             *ngFor="let it of serverRows(); trackBy: trackByServerId"
             [title]="it.title"
@@ -178,11 +183,11 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
                 [disabled]="serverBusy() || !!it.readAt"
                 (click)="markServerRead(it)"
               >
-                Read
+                Прочитано
               </app-button>
               @if (it.tmdbId != null) {
                 <app-button variant="ghost" [routerLink]="['/movie', it.tmdbId]"
-                  >Open movie</app-button
+                  >Открыть фильм</app-button
                 >
               }
             </div>
@@ -196,7 +201,7 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
             }
             @if (it.explain?.length) {
               <details class="why">
-                <summary class="why__sum">Why this?</summary>
+                <summary class="why__sum">Почему я это вижу?</summary>
                 <ul class="why__list">
                   <li *ngFor="let e of it.explain">
                     <b>{{ e.label }}</b>
@@ -209,11 +214,11 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
             }
 
             <div class="actions">
-              <app-button variant="secondary" (click)="svc.markRead(it.id)">Read</app-button>
-              <app-button variant="ghost" (click)="svc.remove(it.id)">Remove</app-button>
+              <app-button variant="secondary" (click)="svc.markRead(it.id)">Прочитано</app-button>
+              <app-button variant="ghost" (click)="svc.remove(it.id)">Убрать</app-button>
               @if (it.tmdbId != null) {
                 <app-button variant="ghost" [routerLink]="['/movie', it.tmdbId]"
-                  >Open movie</app-button
+                  >Открыть фильм</app-button
                 >
               }
             </div>
@@ -222,10 +227,10 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
 
         <app-empty-state
           *ngIf="tab() === 'rules' && !rules().length"
-          title="Rules пусты"
-          subtitle="Создайте правило: пока MVP с базовыми фильтрами и каналами доставки."
+          title="Правил пока нет"
+          subtitle="Создай правило — и мы будем приносить в ленту то, что тебе действительно нужно."
         >
-          <app-button variant="secondary" (click)="openRuleCreate()">New rule</app-button>
+          <app-button variant="secondary" (click)="openRuleCreate()">Новое правило</app-button>
         </app-empty-state>
 
         <div class="list" *ngIf="tab() === 'rules' && rules().length">

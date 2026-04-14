@@ -77,14 +77,13 @@ import {
         </div>
 
         <section class="account-block" id="account-data" aria-labelledby="account-data-title">
-          <h2 class="account-block__title" id="account-data-title">Данные (server)</h2>
+          <h2 class="account-block__title" id="account-data-title">Данные</h2>
           <p class="muted">
-            MVP: вставь JWT от backend. Дальше можно скачать экспорт в CSV/JSON и открыть /import
-            wizard.
+            Здесь можно выгрузить свои данные и при необходимости импортировать их обратно.
           </p>
           <div class="card">
             <label class="field">
-              <span>Server JWT token</span>
+              <span>Код подключения (опционально)</span>
               <textarea
                 class="input"
                 rows="2"
@@ -94,12 +93,12 @@ import {
             </label>
 
             <div class="actions" style="margin-top: 0">
-              <button class="btn" type="button" [routerLink]="['/import']">Open Import</button>
+              <button class="btn" type="button" [routerLink]="['/import']">Импорт</button>
             </div>
 
             <div class="actions" style="align-items: flex-end">
               <label class="field" style="margin-bottom: 0; flex: 1 1 180px; max-width: 220px">
-                <span>Kind</span>
+                <span>Раздел</span>
                 <select class="input" [formControl]="exportKind">
                   <option value="diary">diary</option>
                   <option value="watch_state">watch_state</option>
@@ -107,7 +106,7 @@ import {
                 </select>
               </label>
               <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 200px">
-                <span>Format</span>
+                <span>Формат</span>
                 <select class="input" [formControl]="exportFormat">
                   <option value="csv">csv</option>
                   <option value="json">json</option>
@@ -119,7 +118,7 @@ import {
                 (click)="downloadExport()"
                 [disabled]="busy()"
               >
-                Download export
+                Скачать
               </button>
             </div>
 

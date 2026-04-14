@@ -37,15 +37,18 @@ import { DiaryService } from './diary.service';
     <section class="page">
       <header class="head">
         <h1 class="title">{{ i18n.t('nav.diary') }}</h1>
-        <p class="sub">Purpose: сохранять историю просмотров, оценку и заметки.</p>
         <p class="sub">
-          Как пользоваться: нажми “Добавить запись”, выбери дату и поставь оценку (опционально).
+          Твоя история просмотров — чтобы помнить “что было классно” и не пересматривать случайно.
+        </p>
+        <p class="sub">
+          Как пользоваться: нажми “Добавить запись” → выбери дату → (по желанию) поставь ★ и добавь
+          пару слов.
         </p>
       </header>
 
       <app-section title="Записи">
         <div sectionActions>
-          <app-button (click)="openCreate()">Log watch</app-button>
+          <app-button (click)="openCreate()">Добавить запись</app-button>
         </div>
 
         <div class="stats" *ngIf="stats() as s">
@@ -64,10 +67,10 @@ import { DiaryService } from './diary.service';
         <app-empty-state
           *ngIf="!entries().length"
           title="Пока пусто"
-          subtitle="Добавьте первую запись — появятся статистика, фильтры и экспорт."
+          subtitle="Добавь первую запись — и дневник начнёт “помнить” за тебя."
         >
           <app-button variant="secondary" (click)="openCreate()">Добавить запись</app-button>
-          <app-button variant="ghost" routerLink="/">Открыть поиск</app-button>
+          <app-button variant="ghost" routerLink="/">Найти фильм</app-button>
         </app-empty-state>
 
         <div class="list" *ngIf="entries().length">
@@ -91,8 +94,8 @@ import { DiaryService } from './diary.service';
             }
 
             <div class="actions">
-              <app-button variant="secondary" (click)="openEdit(e)">Edit</app-button>
-              <app-button variant="danger" (click)="remove(e)">Delete</app-button>
+              <app-button variant="secondary" (click)="openEdit(e)">Изменить</app-button>
+              <app-button variant="danger" (click)="remove(e)">Удалить</app-button>
             </div>
           </app-card>
         </div>
