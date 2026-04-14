@@ -260,6 +260,29 @@ export class MoviesService {
     return { ok: true, tmdbId, updatedAt };
   }
 
+  async refreshMovieFeaturesBatch(
+    tmdbIds: readonly number[],
+    opts?: { language?: string | undefined },
+  ): Promise<{
+    ok: true;
+    items: { tmdbId: number; ok: true; updatedAt: string }[];
+    errors: { tmdbId: number; error: string }[];
+  }> {
+    // Keep sequential to avoid rate-limit spikes and to keep DB writes predictable.
+    const items: { tmdbId: number; ok: true; updatedAt: string }[] = [];
+    const errors: { tmdbId: number; error: string }[] = [];
+    for (const id of tmdbIds) {
+      try {
+        const r = await this.refreshMovieFeatures(id, opts);
+        items.push({ tmdbId: r.tmdbId, ok: true, updatedAt: r.updatedAt });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        errors.push({ tmdbId: id, error: msg });
+      }
+    }
+    return { ok: true, items, errors };
+  }
+
   /**
    * Edition list: TMDB release-type heuristics from cached release_dates snapshot,
    * merged with optional `movie_editions` manual rows (same edition_key overrides label/sort).

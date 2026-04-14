@@ -104,6 +104,77 @@ describe('Movies releases (e2e)', () => {
       .expect(400);
   });
 
+  it('supports features refresh batch (TMDB mocked)', async () => {
+    const prev = process.env.TMDB_API_KEY;
+    process.env.TMDB_API_KEY = 'test_key';
+
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    const appKey = moduleFixture.createNestApplication();
+    appKey.setGlobalPrefix('api');
+    await appKey.init();
+
+    const token = await registerAndGetToken(appKey as INestApplication<App>);
+    const tmdbIds = [
+      7_700_000 + Math.floor(Math.random() * 10_000),
+      7_800_000 + Math.floor(Math.random() * 10_000),
+    ];
+
+    const fetchSpy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation((input: RequestInfo | URL) => {
+        const u =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : input.url;
+        const m = u.match(/\/movie\/(\d+)(\/credits|\/keywords)?/);
+        const id = Number(m?.[1] ?? 0);
+        const suffix = m?.[2] ?? '';
+        const body =
+          suffix === '/credits'
+            ? { id, cast: [], crew: [] }
+            : suffix === '/keywords'
+              ? { id, keywords: [] }
+              : {
+                  id,
+                  title: `T${id}`,
+                  overview: 'O',
+                  original_language: 'en',
+                  genres: [],
+                };
+        return Promise.resolve(
+          new Response(JSON.stringify(body), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+        );
+      });
+
+    const res = await request(appKey.getHttpServer() as App)
+      .post('/api/movies/features/refresh-batch')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ tmdbIds, language: 'en' })
+      .expect(201);
+
+    const b = res.body as {
+      ok: true;
+      items: { tmdbId: number; ok: true; updatedAt: string }[];
+      errors: { tmdbId: number; error: string }[];
+    };
+    expect(b.ok).toBe(true);
+    expect(b.errors).toHaveLength(0);
+    expect(b.items.map((x) => x.tmdbId).sort()).toEqual([...tmdbIds].sort());
+    expect(fetchSpy).toHaveBeenCalled();
+
+    fetchSpy.mockRestore();
+    process.env.TMDB_API_KEY = prev;
+    await appKey.close();
+  });
+
   it('returns editions from release snapshot (heuristic)', async () => {
     const token = await registerAndGetToken(app);
     const tmdbId = 8_100_000 + Math.floor(Math.random() * 99_000);
@@ -172,6 +243,21 @@ describe('Movies releases (e2e)', () => {
       .get('/api/movies/999999/features/refresh')
       .set('Authorization', `Bearer ${token}`)
       .expect(503);
+
+    const batch = await request(appNoKey.getHttpServer() as App)
+      .post('/api/movies/features/refresh-batch')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ tmdbIds: [999999] })
+      .expect(201);
+
+    const bb = batch.body as {
+      ok: true;
+      items: unknown[];
+      errors: { tmdbId: number; error: string }[];
+    };
+    expect(bb.ok).toBe(true);
+    expect(bb.items).toHaveLength(0);
+    expect(bb.errors).toHaveLength(1);
 
     process.env.TMDB_API_KEY = prev;
     await appNoKey.close();

@@ -28,3 +28,12 @@ export const RefreshFeaturesQuerySchema = zodSchema(
     })
     .strict(),
 );
+
+export const RefreshFeaturesBatchSchema = zodSchema(
+  z
+    .object({
+      tmdbIds: z.array(z.number().int().positive()).min(1).max(50),
+      language: z.string().trim().optional().default(''),
+    })
+    .strict(),
+);

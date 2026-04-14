@@ -1,4 +1,12 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { z } from 'zod';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -6,6 +14,7 @@ import { ZodBodyPipe } from '../common/zod-body.pipe';
 import {
   MovieReleasesQuerySchema,
   MoviesTmdbIdParamSchema,
+  RefreshFeaturesBatchSchema,
   RefreshFeaturesQuerySchema,
 } from './movies.schemas';
 import { MoviesService } from './movies.service';
@@ -24,6 +33,16 @@ export class MoviesController {
   ) {
     return await this.svc.refreshMovieFeatures(p.tmdbId, {
       language: q.language || undefined,
+    });
+  }
+
+  @Post('features/refresh-batch')
+  async refreshFeaturesBatch(
+    @Body(new ZodBodyPipe(RefreshFeaturesBatchSchema))
+    body: z.infer<typeof RefreshFeaturesBatchSchema>,
+  ) {
+    return await this.svc.refreshMovieFeaturesBatch(body.tmdbIds, {
+      language: body.language || undefined,
     });
   }
 
