@@ -18,7 +18,10 @@ export class MovieFeatureJobsRunnerService {
   async runEmbeddingsJob(
     userId: string,
     jobId: string,
-  ): Promise<{ ok: true; status: 'failed' | 'running' | 'completed' }> {
+  ): Promise<{
+    ok: true;
+    status: 'queued' | 'failed' | 'running' | 'completed';
+  }> {
     const started = await this.jobs.markRunning(userId, jobId);
     if (!started.ok) {
       const job = await this.jobs.getJob(userId, jobId);
