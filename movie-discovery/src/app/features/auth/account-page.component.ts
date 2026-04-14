@@ -191,6 +191,15 @@ import {
                 История задач генерации эмбеддингов для ANN-рекомендаций.
               </p>
               <div class="actions" style="margin-top: 0">
+                <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 220px">
+                  <span>Limit</span>
+                  <select class="input" [formControl]="embeddingsLimit">
+                    <option [ngValue]="20">20</option>
+                    <option [ngValue]="50">50</option>
+                    <option [ngValue]="100">100</option>
+                    <option [ngValue]="200">200</option>
+                  </select>
+                </label>
                 <button
                   class="btn btn--primary"
                   type="button"
@@ -208,6 +217,7 @@ import {
                   Load jobs
                 </button>
               </div>
+              <p class="ok" *ngIf="jobsOk()" style="margin-bottom: 0">{{ jobsOk() }}</p>
               <p class="err" *ngIf="jobsErr()" style="margin-bottom: 0">{{ jobsErr() }}</p>
               <div class="subs-grid" *ngIf="jobs().length" style="margin-top: 0.65rem">
                 <article class="subCard" *ngFor="let j of jobs(); trackBy: trackByJobId">
@@ -790,8 +800,10 @@ export class AccountPageComponent {
   readonly featuresLanguage = new FormControl('', { nonNullable: true });
 
   readonly jobsBusy = signal(false);
+  readonly jobsOk = signal<string | null>(null);
   readonly jobsErr = signal<string | null>(null);
   readonly jobs = signal<readonly EmbeddingsJobItem[]>([]);
+  readonly embeddingsLimit = new FormControl<number>(50, { nonNullable: true });
 
   readonly ppSlug = new FormControl('', { nonNullable: true });
   readonly ppEnabled = new FormControl(false, { nonNullable: true });
@@ -1017,6 +1029,7 @@ export class AccountPageComponent {
   }
 
   createAndRunMyEmbeddingsJob(): void {
+    this.jobsOk.set(null);
     this.jobsErr.set(null);
     const token = this.serverJwt.value.trim();
     if (!token) {
@@ -1025,13 +1038,15 @@ export class AccountPageComponent {
     }
     this.storage.set('server.jwt.token.v1', token);
     this.jobsBusy.set(true);
-    this.cinemaApi.createMyEmbeddingsJob({ limit: 50 }).subscribe({
+    const limit = this.embeddingsLimit.value;
+    this.cinemaApi.createMyEmbeddingsJob({ limit }).subscribe({
       next: (r) => {
         if (!r?.ok) {
           this.jobsBusy.set(false);
           this.jobsErr.set('Request failed');
           return;
         }
+        this.jobsOk.set(`Created job ${r.id.slice(0, 8)} with ${r.tmdbIds.length} tmdbId(s)`);
         this.cinemaApi.runEmbeddingsJob(r.id).subscribe({
           next: () => {
             this.jobsBusy.set(false);
