@@ -25,7 +25,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { ConfigService } from '@core/config.service';
-import { pickRandomSlice, pickSubsPreview, shuffleInPlace } from '@core/release-list.util';
+import { pickSubsPreview, shuffleInPlace } from '@core/release-list.util';
 import { friendlyHttpErrorMessage } from '@core/http-error.util';
 import { AuthService } from '@features/auth/auth.service';
 import { ReleaseSubscriptionsService } from '@features/notifications/release-subscriptions.service';
@@ -1168,7 +1168,11 @@ export class MovieSearchPageComponent {
   readonly subsCount = computed(() => this._subsAll().length);
   readonly favCount = computed(() => this._favAll().length);
   readonly subsPreview = computed(() => pickSubsPreview(this._subsAll(), 5));
-  readonly favoritesPreview = computed(() => pickRandomSlice(this._favAll(), 9));
+  readonly favoritesPreview = computed(() => {
+    const list = [...this._favAll()];
+    shuffleInPlace(list);
+    return list;
+  });
   readonly showSubsSeeAll = computed(() => this.subsCount() > 5);
   readonly showFavSeeAll = computed(() => this.favCount() > 5);
   readonly isAuthed = computed(() => this.auth.isAuthenticated());
