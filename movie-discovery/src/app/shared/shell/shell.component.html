@@ -61,6 +61,16 @@
         >
       </div>
       <div class="header-actions">
+        <a
+          class="server-pill"
+          [class.server-pill--on]="serverConnected()"
+          routerLink="/account"
+          [attr.aria-label]="'Server: ' + (serverConnected() ? 'connected' : 'disconnected')"
+          [attr.title]="serverConnected() ? 'Server connected' : 'Server disconnected'"
+        >
+          <span class="server-pill__dot" aria-hidden="true"></span>
+          <span class="server-pill__label">Server</span>
+        </a>
         <button
           class="theme-btn"
           type="button"

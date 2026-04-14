@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   signal,
@@ -11,6 +12,8 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { readThemePreference, writeThemePreference } from '@core/browser-prefs';
 import { localeToFlagEmoji } from '@core/locale-flag.util';
+import { ServerCinemaApiService } from '@core/server-cinema-api.service';
+import { ServerSessionService } from '@core/server-session.service';
 import { TmdbConfigurationService } from '@core/tmdb-configuration.service';
 import { ErrorBannerComponent } from '@shared/ui/error-banner/error-banner.component';
 import { ToastViewportComponent } from '@shared/ui/toast/toast-viewport.component';
@@ -35,14 +38,20 @@ import { I18nService } from '@shared/i18n/i18n.service';
 export class ShellComponent {
   private readonly tmdbCfg = inject(TmdbConfigurationService);
   readonly i18n = inject(I18nService);
+  readonly serverSession = inject(ServerSessionService);
+  private readonly cinemaApi = inject(ServerCinemaApiService);
 
   readonly isDark = signal(true);
+  readonly serverConnected = computed(() => Boolean(this.serverSession.me()));
 
   /** Подписи локалей для `<select>` (как список primary_translations на TMDB). */
   readonly localeOptions = signal<readonly { code: string; label: string; flag: string }[]>([]);
 
   constructor() {
     inject(ReleaseReminderService);
+    if (this.cinemaApi.hasToken()) {
+      this.serverSession.refreshMe({ silent: true });
+    }
     const theme = readThemePreference();
     const dark = theme !== 'light';
     this.isDark.set(dark);

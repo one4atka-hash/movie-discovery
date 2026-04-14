@@ -177,6 +177,63 @@
   flex-shrink: 0;
 }
 
+.server-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 36px;
+  padding: 0.32rem 0.75rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-elevated) 50%, transparent);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.server-pill:hover {
+  background: color-mix(in srgb, var(--bg-elevated) 85%, transparent);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  color: var(--text);
+}
+
+.server-pill:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.server-pill:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.server-pill__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--text-muted) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-muted) 12%, transparent);
+}
+
+.server-pill--on {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent-secondary) 45%, var(--border-subtle));
+  background: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+}
+
+.server-pill--on .server-pill__dot {
+  border-color: color-mix(in srgb, var(--accent-secondary) 65%, var(--border-subtle));
+  background: color-mix(in srgb, var(--accent-secondary) 80%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-secondary) 14%, transparent);
+}
+
 .theme-btn,
 .lang-btn {
   border-radius: var(--radius-full);
