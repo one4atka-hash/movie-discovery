@@ -29,6 +29,8 @@ import { pickRandomSlice, pickSubsPreview, shuffleInPlace } from '@core/release-
 import { friendlyHttpErrorMessage } from '@core/http-error.util';
 import { AuthService } from '@features/auth/auth.service';
 import { ReleaseSubscriptionsService } from '@features/notifications/release-subscriptions.service';
+import { DiaryService } from '@features/diary/diary.service';
+import { WatchStateService } from '@features/watchlist/watch-state.service';
 import { Movie, MovieSearchResponse } from '../data-access/models/movie.model';
 import { MovieService } from '../data-access/services/movie.service';
 import { FavoritesService } from '../data-access/services/favorites.service';
@@ -1026,6 +1028,8 @@ export class MovieSearchPageComponent {
   private readonly auth = inject(AuthService);
   private readonly subsSvc = inject(ReleaseSubscriptionsService);
   private readonly fav = inject(FavoritesService);
+  private readonly watch = inject(WatchStateService);
+  private readonly diary = inject(DiaryService);
   private readonly reactions = inject(MovieReactionsService);
   private readonly recsFeedback = inject(RecommendationsFeedbackService);
   private readonly prefs = inject(StreamingPrefsService);
@@ -1298,6 +1302,19 @@ export class MovieSearchPageComponent {
     return tmdbPosterSrcSet(path);
   }
 
+  private watchedIdsSnapshot(): Set<number> {
+    const out = new Set<number>();
+    for (const it of this.watch.items()) {
+      if (it.status !== 'watched') continue;
+      if (Number.isFinite(it.tmdbId) && it.tmdbId > 0) out.add(it.tmdbId);
+    }
+    for (const e of this.diary.entries()) {
+      const id = e.tmdbId ?? null;
+      if (typeof id === 'number' && Number.isFinite(id) && id > 0) out.add(id);
+    }
+    return out;
+  }
+
   private reloadAfterLocaleChange(): void {
     this.loadNowPlaying();
     this.loadRecommendations();
@@ -1403,6 +1420,7 @@ export class MovieSearchPageComponent {
     this._recsLoading.set(true);
     this._recsError.set(null);
 
+    const watched = this.watchedIdsSnapshot();
     const favorites = this._favAll();
     if (!favorites.length) {
       this._recs.set([]);
@@ -1424,14 +1442,17 @@ export class MovieSearchPageComponent {
       return;
     }
 
+    // Pull a wider pool so filtering (watched/liked/subscribed) doesn't empty the list.
     forkJoin(
-      seedIds.map((id) =>
-        this.api.getMovieRecommendations(id, 1).pipe(
-          catchError((err: unknown) => {
-            // Keep a single readable error, but don't fail the whole block.
-            this._recsError.set(friendlyHttpErrorMessage(err, 'Рекомендации'));
-            return of(EMPTY_SEARCH_RESPONSE);
-          }),
+      seedIds.flatMap((id) =>
+        [1, 2].map((page) =>
+          this.api.getMovieRecommendations(id, page).pipe(
+            catchError((err: unknown) => {
+              // Keep a single readable error, but don't fail the whole block.
+              this._recsError.set(friendlyHttpErrorMessage(err, 'Рекомендации'));
+              return of(EMPTY_SEARCH_RESPONSE);
+            }),
+          ),
         ),
       ),
     )
@@ -1451,6 +1472,7 @@ export class MovieSearchPageComponent {
           for (const m of res.results ?? []) {
             if (!m?.id || banned.has(m.id) || seen.has(m.id)) continue;
             if (liked.has(m.id) || subbed.has(m.id)) continue;
+            if (watched.has(m.id)) continue;
             seen.add(m.id);
             out.push(m);
           }
