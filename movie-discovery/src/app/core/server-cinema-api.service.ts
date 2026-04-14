@@ -36,6 +36,12 @@ export interface MePublicProfile {
   };
 }
 
+export interface RefreshMyMovieFeaturesResponse {
+  readonly ok: true;
+  readonly items: { readonly tmdbId: number; readonly ok: true; readonly updatedAt: string }[];
+  readonly errors: { readonly tmdbId: number; readonly error: string }[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ServerCinemaApiService {
   private readonly http = inject(HttpClient);
@@ -120,6 +126,18 @@ export class ServerCinemaApiService {
     if (!h) return of(null);
     return this.http
       .put<{ ok: boolean }>('/api/me/public-profile', body, { headers: h })
+      .pipe(catchError(() => of(null)));
+  }
+
+  refreshMyMovieFeatures(limit = 30): Observable<RefreshMyMovieFeaturesResponse | null> {
+    const h = this.authHeaders();
+    if (!h) return of(null);
+    return this.http
+      .post<RefreshMyMovieFeaturesResponse>(
+        '/api/me/movie-features/refresh',
+        { limit },
+        { headers: h },
+      )
       .pipe(catchError(() => of(null)));
   }
 

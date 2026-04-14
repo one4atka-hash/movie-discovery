@@ -139,6 +139,25 @@ import {
               <p class="ok" *ngIf="emailDevOk()">{{ emailDevOk() }}</p>
               <p class="err" *ngIf="emailDevErr()" style="margin-bottom: 0">{{ emailDevErr() }}</p>
             </div>
+
+            <div class="field" style="margin-top: 0.35rem">
+              <span>Movie features cache (server)</span>
+              <p class="muted" style="margin: 0.35rem 0 0">
+                Прогреть кэш TMDB фич (title/overview/credits/keywords) для твоих favorites/likes.
+              </p>
+              <div class="actions" style="margin-top: 0">
+                <button
+                  class="btn"
+                  type="button"
+                  (click)="refreshMyMovieFeatures()"
+                  [disabled]="featuresBusy()"
+                >
+                  Refresh movie features
+                </button>
+              </div>
+              <p class="ok" *ngIf="featuresOk()">{{ featuresOk() }}</p>
+              <p class="err" *ngIf="featuresErr()" style="margin-bottom: 0">{{ featuresErr() }}</p>
+            </div>
           </div>
         </section>
 
@@ -678,6 +697,10 @@ export class AccountPageComponent {
   readonly emailDevOk = signal<string | null>(null);
   readonly emailDevErr = signal<string | null>(null);
 
+  readonly featuresBusy = signal(false);
+  readonly featuresOk = signal<string | null>(null);
+  readonly featuresErr = signal<string | null>(null);
+
   readonly ppSlug = new FormControl('', { nonNullable: true });
   readonly ppEnabled = new FormControl(false, { nonNullable: true });
   readonly ppVisibility = new FormControl<'private' | 'unlisted' | 'public'>('private', {
@@ -813,6 +836,38 @@ export class AccountPageComponent {
       error: () => {
         this.emailDevBusy.set(false);
         this.emailDevErr.set(this.i18n.t('account.emailDev.failed'));
+      },
+    });
+  }
+
+  refreshMyMovieFeatures(): void {
+    this.featuresOk.set(null);
+    this.featuresErr.set(null);
+    const token = this.serverJwt.value.trim();
+    if (!token) {
+      this.featuresErr.set(this.i18n.t('account.publicProfile.needJwt'));
+      return;
+    }
+    this.storage.set('server.jwt.token.v1', token);
+    this.featuresBusy.set(true);
+    this.cinemaApi.refreshMyMovieFeatures(30).subscribe({
+      next: (r) => {
+        this.featuresBusy.set(false);
+        if (!r) {
+          this.featuresErr.set('Request failed');
+          return;
+        }
+        const okN = r.items.length;
+        const errN = r.errors.length;
+        if (errN) {
+          this.featuresErr.set(`Done with errors: ok=${okN}, errors=${errN}`);
+          return;
+        }
+        this.featuresOk.set(`Done: refreshed ${okN}`);
+      },
+      error: () => {
+        this.featuresBusy.set(false);
+        this.featuresErr.set('Request failed');
       },
     });
   }
