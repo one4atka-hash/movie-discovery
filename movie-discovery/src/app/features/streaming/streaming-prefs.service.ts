@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
+import { inferLocaleFromEnvironment } from '@core/infer-locale-from-environment';
 import { StorageService } from '@core/storage.service';
 import type { StreamingPrefs } from './streaming-prefs.model';
 
@@ -50,13 +51,14 @@ export class StreamingPrefsService {
   private load(): StreamingPrefs {
     const raw = this.storage.get<unknown>(STORAGE_KEY, null);
     if (!raw || typeof raw !== 'object') {
-      return { region: 'US', providers: [] };
+      const region = inferLocaleFromEnvironment().split('-')[1] ?? 'US';
+      return { region, providers: [] };
     }
     const r = raw as Partial<StreamingPrefs>;
     const region =
       typeof r.region === 'string' && /^[A-Za-z]{2}$/.test(r.region.trim())
         ? r.region.trim().toUpperCase()
-        : 'US';
+        : (inferLocaleFromEnvironment().split('-')[1] ?? 'US');
     const providers = Array.isArray(r.providers)
       ? uniq(
           (r.providers as unknown[])
