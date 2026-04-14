@@ -9,7 +9,6 @@ import {
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
 
 import { sortSubscriptionsByRelease } from '@core/release-list.util';
 import { AuthService } from './auth.service';
@@ -22,6 +21,7 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
 import { BadgeComponent } from '@shared/ui/badge/badge.component';
 import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.component';
 import { ChipComponent } from '@shared/ui/chip/chip.component';
+import { ServerConnectComponent } from '@shared/ui/server-connect/server-connect.component';
 import { StreamingCatalogService } from '@features/streaming/streaming-catalog.service';
 import { StorageService } from '@core/storage.service';
 import {
@@ -47,6 +47,7 @@ import {
     BadgeComponent,
     BottomSheetComponent,
     ChipComponent,
+    ServerConnectComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -95,97 +96,10 @@ import {
             Здесь можно выгрузить свои данные и при необходимости импортировать их обратно.
           </p>
           <div class="card">
-            <div class="field">
-              <span>Подключение к серверу (опционально)</span>
-              <p class="muted" style="margin: 0.35rem 0 0">
-                Войдите или зарегистрируйтесь, чтобы включить серверные функции (import/export,
-                inbox, recommendations, embeddings).
-              </p>
-
-              <ng-container *ngIf="serverMe() as me; else connectTpl">
-                <p class="ok" style="margin: 0.5rem 0 0">
-                  Connected as <b>{{ me.email }}</b>
-                </p>
-                <div class="actions" style="margin-top: 0.5rem">
-                  <button
-                    class="btn"
-                    type="button"
-                    (click)="disconnectServer()"
-                    [disabled]="serverAuthBusy()"
-                  >
-                    Disconnect
-                  </button>
-                  <button
-                    class="btn"
-                    type="button"
-                    (click)="serverSession.refreshMe()"
-                    [disabled]="serverAuthBusy()"
-                  >
-                    Refresh status
-                  </button>
-                </div>
-              </ng-container>
-
-              <ng-template #connectTpl>
-                <div class="actions" style="margin-top: 0.5rem; align-items: flex-end">
-                  <label class="field" style="margin-bottom: 0; flex: 1 1 220px; max-width: 320px">
-                    <span>Email</span>
-                    <input class="input" [formControl]="serverEmail" autocomplete="email" />
-                  </label>
-                  <label class="field" style="margin-bottom: 0; flex: 1 1 180px; max-width: 260px">
-                    <span>Password</span>
-                    <input
-                      class="input"
-                      type="password"
-                      [formControl]="serverPassword"
-                      autocomplete="current-password"
-                    />
-                  </label>
-                </div>
-                <div class="actions" style="margin-top: 0.5rem">
-                  <button
-                    class="btn btn--primary"
-                    type="button"
-                    (click)="connectServerLogin()"
-                    [disabled]="serverAuthBusy()"
-                  >
-                    Connect (login)
-                  </button>
-                  <button
-                    class="btn"
-                    type="button"
-                    (click)="connectServerRegister()"
-                    [disabled]="serverAuthBusy()"
-                  >
-                    Create account
-                  </button>
-                  <button
-                    class="btn"
-                    type="button"
-                    (click)="showAdvancedServerToken.set(!showAdvancedServerToken())"
-                    [disabled]="serverAuthBusy()"
-                  >
-                    {{ showAdvancedServerToken() ? 'Hide advanced' : 'Advanced' }}
-                  </button>
-                </div>
-                <p class="err" *ngIf="serverAuthErr()" style="margin-bottom: 0">
-                  {{ serverAuthErr() }}
-                </p>
-              </ng-template>
-            </div>
-
-            <details *ngIf="showAdvancedServerToken()" class="why" style="margin-top: 0.65rem">
-              <summary class="why__sum">Advanced: raw server token</summary>
-              <label class="field" style="margin-top: 0.5rem">
-                <span>JWT</span>
-                <textarea
-                  class="input"
-                  rows="2"
-                  [formControl]="serverJwt"
-                  placeholder="eyJhbGciOi..."
-                ></textarea>
-              </label>
-            </details>
+            <app-server-connect
+              label="Подключение к серверу (опционально)"
+              hint="Войдите или зарегистрируйтесь, чтобы включить серверные функции (import/export, inbox, recommendations, embeddings)."
+            />
 
             <div class="actions" style="margin-top: 0">
               <button class="btn" type="button" [routerLink]="['/import']">Импорт</button>
@@ -893,12 +807,6 @@ export class AccountPageComponent {
   readonly regEmail = new FormControl('', { nonNullable: true });
   readonly regPassword = new FormControl('', { nonNullable: true });
 
-  readonly serverJwt = new FormControl(this.storage.get<string>('server.jwt.token.v1', '') ?? '', {
-    nonNullable: true,
-  });
-  readonly showAdvancedServerToken = signal(false);
-  readonly serverEmail = new FormControl('', { nonNullable: true });
-  readonly serverPassword = new FormControl('', { nonNullable: true });
   readonly serverMe = this.serverSession.me;
   readonly serverAuthBusy = this.serverSession.busy;
   readonly serverAuthErr = this.serverSession.err;
@@ -950,58 +858,22 @@ export class AccountPageComponent {
   readonly favorites = computed(() => this.fav.favorites());
 
   constructor() {
-    // If server token is already persisted, try to resolve /auth/me for status UI.
-    if (this.serverJwt.value.trim()) this.serverSession.refreshMe({ silent: true });
-
-    // If JWT is already persisted, pre-load jobs immediately.
-    if (this.serverJwt.value.trim()) {
+    if (this.cinemaApi.hasToken()) {
+      this.serverSession.refreshMe({ silent: true });
       this.loadEmbeddingsJobs({ silent: true });
     }
 
-    // Auto-load jobs when JWT becomes available/changes.
-    this.serverJwt.valueChanges.pipe(debounceTime(250), distinctUntilChanged()).subscribe(() => {
-      const token = this.serverJwt.value.trim();
-      if (!token) {
-        this.storage.remove('server.jwt.token.v1');
-        this.serverSession.disconnect();
-        return;
-      }
-      this.storage.set('server.jwt.token.v1', token);
-      this.serverSession.refreshMe({ silent: true });
-      this.loadEmbeddingsJobs({ silent: true });
-    });
-
     this.destroyRef.onDestroy(() => this.stopJobsPolling());
-  }
-
-  connectServerLogin(): void {
-    this.serverSession.login(this.serverEmail.value, this.serverPassword.value);
-    const tok = this.storage.get<string>('server.jwt.token.v1', '')?.trim();
-    if (tok) this.serverJwt.setValue(tok);
-    this.showAdvancedServerToken.set(false);
-  }
-
-  connectServerRegister(): void {
-    this.serverSession.register(this.serverEmail.value, this.serverPassword.value);
-    const tok = this.storage.get<string>('server.jwt.token.v1', '')?.trim();
-    if (tok) this.serverJwt.setValue(tok);
-    this.showAdvancedServerToken.set(false);
-  }
-
-  disconnectServer(): void {
-    this.serverSession.disconnect();
-    this.serverJwt.setValue('');
   }
 
   loadServerPublicProfile(): void {
     this.ppErr.set(null);
     this.ppOk.set(null);
-    const token = this.serverJwt.value.trim();
+    const token = this.cinemaApi.getToken();
     if (!token) {
       this.ppErr.set(this.i18n.t('account.publicProfile.needJwt'));
       return;
     }
-    this.storage.set('server.jwt.token.v1', token);
     this.cinemaApi.getMePublicProfile().subscribe({
       next: (p) => {
         if (!p) {
@@ -1021,12 +893,11 @@ export class AccountPageComponent {
   saveServerPublicProfile(): void {
     this.ppErr.set(null);
     this.ppOk.set(null);
-    const token = this.serverJwt.value.trim();
+    const token = this.cinemaApi.getToken();
     if (!token) {
       this.ppErr.set(this.i18n.t('account.publicProfile.needJwt'));
       return;
     }
-    this.storage.set('server.jwt.token.v1', token);
     const slugRaw = this.ppSlug.value.trim().toLowerCase();
     const slug = slugRaw.length ? slugRaw : null;
     const body: MePublicProfile = {
@@ -1052,12 +923,11 @@ export class AccountPageComponent {
 
   downloadExport(): void {
     this.exportError.set(null);
-    const token = this.serverJwt.value.trim();
+    const token = this.cinemaApi.getToken();
     if (!token) {
       this.exportError.set('JWT token обязателен.');
       return;
     }
-    this.storage.set('server.jwt.token.v1', token);
 
     this._busy.set(true);
     const kind = this.exportKind.value;
@@ -1084,12 +954,11 @@ export class AccountPageComponent {
   sendDevTestEmail(): void {
     this.emailDevOk.set(null);
     this.emailDevErr.set(null);
-    const token = this.serverJwt.value.trim();
+    const token = this.cinemaApi.getToken();
     if (!token) {
       this.emailDevErr.set(this.i18n.t('account.publicProfile.needJwt'));
       return;
     }
-    this.storage.set('server.jwt.token.v1', token);
     this.emailDevBusy.set(true);
     this.cinemaApi.devEmailSendTest().subscribe({
       next: (r) => {
@@ -1116,12 +985,11 @@ export class AccountPageComponent {
     this.featuresOk.set(null);
     this.featuresErr.set(null);
     this.featuresErrors.set([]);
-    const token = this.serverJwt.value.trim();
+    const token = this.cinemaApi.getToken();
     if (!token) {
       this.featuresErr.set(this.i18n.t('account.publicProfile.needJwt'));
       return;
     }
-    this.storage.set('server.jwt.token.v1', token);
     this.featuresBusy.set(true);
     const limit = this.featuresLimit.value;
     const language = this.featuresLanguage.value.trim();
@@ -1179,14 +1047,13 @@ export class AccountPageComponent {
     if (!opts?.silent) {
       this.jobsErr.set(null);
     }
-    const token = this.serverJwt.value.trim();
+    const token = this.cinemaApi.getToken();
     if (!token) {
       if (!opts?.silent) {
         this.jobsErr.set(this.i18n.t('account.publicProfile.needJwt'));
       }
       return;
     }
-    this.storage.set('server.jwt.token.v1', token);
     if (!opts?.silent) {
       this.jobsBusy.set(true);
     }
@@ -1217,12 +1084,11 @@ export class AccountPageComponent {
 
   runEmbeddingsJob(id: string): void {
     this.jobsErr.set(null);
-    const token = this.serverJwt.value.trim();
+    const token = this.cinemaApi.getToken();
     if (!token) {
       this.jobsErr.set(this.i18n.t('account.publicProfile.needJwt'));
       return;
     }
-    this.storage.set('server.jwt.token.v1', token);
     this.jobsBusy.set(true);
     this.cinemaApi.runEmbeddingsJob(id).subscribe({
       next: () => {
@@ -1240,12 +1106,11 @@ export class AccountPageComponent {
     this.jobsOk.set(null);
     this.jobsErr.set(null);
     this.seeds.set([]);
-    const token = this.serverJwt.value.trim();
+    const token = this.cinemaApi.getToken();
     if (!token) {
       this.jobsErr.set(this.i18n.t('account.publicProfile.needJwt'));
       return;
     }
-    this.storage.set('server.jwt.token.v1', token);
     this.jobsBusy.set(true);
     const limit = this.embeddingsLimit.value;
     this.cinemaApi.createMyEmbeddingsJob({ limit }).subscribe({
@@ -1278,12 +1143,11 @@ export class AccountPageComponent {
   previewMyEmbeddingsSeeds(): void {
     this.jobsOk.set(null);
     this.jobsErr.set(null);
-    const token = this.serverJwt.value.trim();
+    const token = this.cinemaApi.getToken();
     if (!token) {
       this.jobsErr.set(this.i18n.t('account.publicProfile.needJwt'));
       return;
     }
-    this.storage.set('server.jwt.token.v1', token);
     this.jobsBusy.set(true);
     const limit = this.embeddingsLimit.value;
     this.cinemaApi.previewMyEmbeddingsSeeds({ limit }).subscribe({

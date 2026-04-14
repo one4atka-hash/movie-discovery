@@ -13,6 +13,7 @@ import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.compo
 import { SectionComponent } from '@shared/ui/section/section.component';
 import { SegmentedControlComponent } from '@shared/ui/segmented-control/segmented-control.component';
 import { ChipComponent } from '@shared/ui/chip/chip.component';
+import { ServerConnectComponent } from '@shared/ui/server-connect/server-connect.component';
 import { I18nService } from '@shared/i18n/i18n.service';
 import { ToastService } from '@shared/ui/toast/toast.service';
 import type { AlertRule, InboxExplain, InboxItem } from './inbox.model';
@@ -32,8 +33,6 @@ import { firstValueFrom, forkJoin } from 'rxjs';
 import { MovieService } from '@features/movies/data-access/services/movie.service';
 import type { Movie } from '@features/movies/data-access/models/movie.model';
 
-const SERVER_JWT_KEY = 'server.jwt.token.v1';
-
 @Component({
   selector: 'app-inbox-page',
   standalone: true,
@@ -49,6 +48,7 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
     BottomSheetComponent,
     FormFieldComponent,
     ChipComponent,
+    ServerConnectComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -79,139 +79,52 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
           <app-button variant="secondary" (click)="openRuleCreate()">Новое правило</app-button>
         </div>
 
-        <app-card>
-          <app-form-field
-            label="Подключение к серверу (опционально)"
-            hint="Войдите или зарегистрируйтесь, чтобы включить серверные уведомления/правила/напоминания."
+        <app-server-connect
+          label="Подключение к серверу (опционально)"
+          hint="Войдите или зарегистрируйтесь, чтобы включить серверные уведомления/правила/напоминания."
+        />
+        <div class="actions" style="margin-top: 0.5rem">
+          <app-button
+            variant="secondary"
+            [loading]="serverBusy()"
+            [disabled]="serverBusy() || !cinemaApi.hasToken()"
+            (click)="loadServerFeed()"
+            data-testid="inbox-load-server-feed"
           >
-            @if (serverMe(); as me) {
-              <p class="muted" style="margin: 0 0 0.5rem">
-                Connected as <b>{{ me.email }}</b>
-              </p>
-              <div class="actions" style="margin-top: 0.5rem">
-                <app-button
-                  variant="secondary"
-                  [loading]="serverAuthBusy()"
-                  [disabled]="serverAuthBusy()"
-                  (click)="disconnectServer()"
-                >
-                  Disconnect
-                </app-button>
-                <app-button
-                  variant="ghost"
-                  [loading]="serverAuthBusy()"
-                  [disabled]="serverAuthBusy()"
-                  (click)="serverSession.refreshMe()"
-                >
-                  Refresh status
-                </app-button>
-                <app-button
-                  variant="ghost"
-                  [disabled]="serverAuthBusy()"
-                  (click)="showAdvancedServerToken.set(!showAdvancedServerToken())"
-                >
-                  {{ showAdvancedServerToken() ? 'Hide advanced' : 'Advanced' }}
-                </app-button>
-              </div>
-            } @else {
-              <div class="actions" style="align-items: flex-end">
-                <app-form-field label="Email">
-                  <input class="input" [(ngModel)]="serverEmail" autocomplete="email" />
-                </app-form-field>
-                <app-form-field label="Password">
-                  <input
-                    class="input"
-                    type="password"
-                    [(ngModel)]="serverPassword"
-                    autocomplete="current-password"
-                  />
-                </app-form-field>
-              </div>
-              <div class="actions" style="margin-top: 0.5rem">
-                <app-button
-                  variant="secondary"
-                  [loading]="serverAuthBusy()"
-                  [disabled]="serverAuthBusy()"
-                  (click)="connectServerLogin()"
-                >
-                  Connect (login)
-                </app-button>
-                <app-button
-                  variant="ghost"
-                  [loading]="serverAuthBusy()"
-                  [disabled]="serverAuthBusy()"
-                  (click)="connectServerRegister()"
-                >
-                  Create account
-                </app-button>
-                <app-button
-                  variant="ghost"
-                  [disabled]="serverAuthBusy()"
-                  (click)="showAdvancedServerToken.set(!showAdvancedServerToken())"
-                >
-                  {{ showAdvancedServerToken() ? 'Hide advanced' : 'Advanced' }}
-                </app-button>
-              </div>
-              @if (serverAuthErr(); as err) {
-                <p class="muted" role="alert" style="margin-top: 0.65rem">{{ err }}</p>
-              }
-            }
-
-            @if (showAdvancedServerToken()) {
-              <details style="margin-top: 0.65rem" open>
-                <summary>Advanced: raw server token</summary>
-                <textarea
-                  [(ngModel)]="serverToken"
-                  rows="2"
-                  placeholder="eyJhbGciOi..."
-                  data-testid="inbox-server-jwt"
-                ></textarea>
-              </details>
-            }
-          </app-form-field>
+            Загрузить ленту
+          </app-button>
+          <app-button
+            variant="ghost"
+            [loading]="serverBusy()"
+            [disabled]="serverBusy() || !cinemaApi.hasToken()"
+            (click)="runDevAlerts()"
+            data-testid="inbox-dev-run-alerts"
+          >
+            Проверить уведомления
+          </app-button>
+          <app-button
+            variant="ghost"
+            [loading]="serverBusy()"
+            [disabled]="serverBusy() || !cinemaApi.hasToken()"
+            (click)="seedServerRule()"
+            data-testid="inbox-seed-server-rule"
+          >
+            Добавить пример правила
+          </app-button>
+        </div>
+        @if (serverErr(); as se) {
+          <p class="muted" role="alert" style="margin-top: 0.65rem">{{ se }}</p>
           <div class="actions" style="margin-top: 0.5rem">
             <app-button
               variant="secondary"
               [loading]="serverBusy()"
-              [disabled]="serverBusy() || !serverToken.trim()"
-              (click)="loadServerFeed()"
-              data-testid="inbox-load-server-feed"
+              [disabled]="serverBusy() || !cinemaApi.hasToken()"
+              (click)="retryServerFeed()"
             >
-              Загрузить ленту
-            </app-button>
-            <app-button
-              variant="ghost"
-              [loading]="serverBusy()"
-              [disabled]="serverBusy() || !serverToken.trim()"
-              (click)="runDevAlerts()"
-              data-testid="inbox-dev-run-alerts"
-            >
-              Проверить уведомления
-            </app-button>
-            <app-button
-              variant="ghost"
-              [loading]="serverBusy()"
-              [disabled]="serverBusy() || !serverToken.trim()"
-              (click)="seedServerRule()"
-              data-testid="inbox-seed-server-rule"
-            >
-              Добавить пример правила
+              {{ i18n.t('common.retry') }}
             </app-button>
           </div>
-          @if (serverErr(); as se) {
-            <p class="muted" role="alert" style="margin-top: 0.65rem">{{ se }}</p>
-            <div class="actions" style="margin-top: 0.5rem">
-              <app-button
-                variant="secondary"
-                [loading]="serverBusy()"
-                [disabled]="serverBusy() || !serverToken.trim()"
-                (click)="retryServerFeed()"
-              >
-                {{ i18n.t('common.retry') }}
-              </app-button>
-            </div>
-          }
-        </app-card>
+        }
 
         <app-empty-state
           *ngIf="
@@ -271,7 +184,7 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
               @if (it.ruleId) {
                 <app-button
                   variant="ghost"
-                  [disabled]="serverBusy() || !serverToken.trim()"
+                  [disabled]="serverBusy() || !cinemaApi.hasToken()"
                   (click)="downloadRuleCalendar(it.ruleId)"
                 >
                   Calendar (.ics)
@@ -359,7 +272,7 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
           </app-card>
         </div>
 
-        <div class="list" *ngIf="tab() === 'rules' && serverToken.trim() && serverRules().length">
+        <div class="list" *ngIf="tab() === 'rules' && cinemaApi.hasToken() && serverRules().length">
           <p class="muted" style="margin: 0 0 0.5rem">Server rules</p>
           <app-card
             *ngFor="let r of serverRules(); trackBy: trackByServerRuleId"
@@ -665,16 +578,9 @@ export class InboxPageComponent {
   private readonly movies = inject(MovieService);
   private readonly storage = inject(StorageService);
   private readonly alertsApi = inject(AlertsApiService);
-  private readonly cinemaApi = inject(ServerCinemaApiService);
+  readonly cinemaApi = inject(ServerCinemaApiService);
   readonly serverSession = inject(ServerSessionService);
 
-  readonly showAdvancedServerToken = signal(false);
-  readonly serverAuthBusy = this.serverSession.busy;
-  readonly serverAuthErr = this.serverSession.err;
-  readonly serverMe = this.serverSession.me;
-  serverEmail = '';
-  serverPassword = '';
-  serverToken = this.storage.get<string>(SERVER_JWT_KEY, '') ?? '';
   private readonly _serverRows = signal<ServerNotificationItem[]>([]);
   readonly serverRows = this._serverRows.asReadonly();
   private readonly _serverRules = signal<ServerAlertRuleItem[]>([]);
@@ -695,44 +601,15 @@ export class InboxPageComponent {
   readonly items = computed(() => this.svc.itemsSorted());
   readonly rules = computed(() => this.svc.rulesSorted());
 
-  constructor() {
-    const t = this.serverToken.trim();
-    if (!t) return;
-    this.cinemaApi.setToken(t);
-    this.serverSession.refreshMe({ silent: true });
-  }
+  constructor() {}
 
   retryServerFeed(): void {
     this.loadServerFeed();
   }
 
-  connectServerLogin(): void {
-    this.serverSession.login(this.serverEmail, this.serverPassword);
-    const tok = this.storage.get<string>(SERVER_JWT_KEY, '')?.trim();
-    if (tok) this.serverToken = tok;
-    this.showAdvancedServerToken.set(false);
-  }
-
-  connectServerRegister(): void {
-    this.serverSession.register(this.serverEmail, this.serverPassword);
-    const tok = this.storage.get<string>(SERVER_JWT_KEY, '')?.trim();
-    if (tok) this.serverToken = tok;
-    this.showAdvancedServerToken.set(false);
-  }
-
-  disconnectServer(): void {
-    this.serverSession.disconnect();
-    this.serverToken = '';
-    this._serverRows.set([]);
-    this._serverRules.set([]);
-    this._reminderRows.set([]);
-  }
-
   loadServerFeed(): void {
-    const t = this.serverToken.trim();
+    const t = this.cinemaApi.getToken();
     if (!t) return;
-    this.storage.set(SERVER_JWT_KEY, t);
-    this.cinemaApi.setToken(t);
     this._serverErr.set(null);
     this._serverBusy.set(true);
     forkJoin({
@@ -751,9 +628,8 @@ export class InboxPageComponent {
   }
 
   runDevAlerts(): void {
-    const t = this.serverToken.trim();
+    const t = this.cinemaApi.getToken();
     if (!t) return;
-    this.storage.set(SERVER_JWT_KEY, t);
     this._serverErr.set(null);
     this._serverBusy.set(true);
     this.alertsApi.runDevAlerts(t).subscribe({
@@ -770,9 +646,8 @@ export class InboxPageComponent {
   }
 
   seedServerRule(): void {
-    const t = this.serverToken.trim();
+    const t = this.cinemaApi.getToken();
     if (!t) return;
-    this.storage.set(SERVER_JWT_KEY, t);
     this._serverErr.set(null);
     this._serverBusy.set(true);
     this.alertsApi
@@ -798,7 +673,7 @@ export class InboxPageComponent {
   }
 
   markServerRead(it: ServerNotificationItem): void {
-    const t = this.serverToken.trim();
+    const t = this.cinemaApi.getToken();
     if (!t) return;
     this._serverErr.set(null);
     this._serverBusy.set(true);
@@ -809,7 +684,7 @@ export class InboxPageComponent {
   }
 
   async downloadRuleCalendar(ruleId: string): Promise<void> {
-    const t = this.serverToken.trim();
+    const t = this.cinemaApi.getToken();
     if (!t) return;
     this._serverErr.set(null);
     this._serverBusy.set(true);

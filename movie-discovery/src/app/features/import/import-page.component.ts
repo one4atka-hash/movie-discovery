@@ -5,15 +5,14 @@ import { FormsModule } from '@angular/forms';
 
 import { StorageService } from '@core/storage.service';
 import { ServerCinemaApiService } from '@core/server-cinema-api.service';
-import { ServerSessionService } from '@core/server-session.service';
 import { ButtonComponent } from '@shared/ui/button/button.component';
 import { CardComponent } from '@shared/ui/card/card.component';
 import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
 import { SectionComponent } from '@shared/ui/section/section.component';
+import { ServerConnectComponent } from '@shared/ui/server-connect/server-connect.component';
 
 import { ImportApiService, type ImportFormat, type ImportKind } from './import-api.service';
 
-const TOKEN_KEY = 'server.jwt.token.v1';
 const HIDE_RESOLVED_KEY = 'import.hideResolved.v1';
 
 @Component({
@@ -26,96 +25,17 @@ const HIDE_RESOLVED_KEY = 'import.hideResolved.v1';
     FormFieldComponent,
     ButtonComponent,
     CardComponent,
+    ServerConnectComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-section title="Импорт данных">
       <app-card>
         <div class="grid">
-          <app-form-field
+          <app-server-connect
             label="Подключение к серверу (опционально)"
             hint="Войдите или зарегистрируйтесь, чтобы импортировать данные на сервер."
-          >
-            @if (serverMe(); as me) {
-              <p class="muted" style="margin: 0 0 0.5rem">
-                Connected as <b>{{ me.email }}</b>
-              </p>
-              <div class="actions" style="margin-top: 0.5rem">
-                <app-button
-                  variant="secondary"
-                  [loading]="serverAuthBusy()"
-                  [disabled]="serverAuthBusy()"
-                  (click)="disconnectServer()"
-                >
-                  Disconnect
-                </app-button>
-                <app-button
-                  variant="ghost"
-                  [loading]="serverAuthBusy()"
-                  [disabled]="serverAuthBusy()"
-                  (click)="serverSession.refreshMe()"
-                >
-                  Refresh status
-                </app-button>
-                <app-button
-                  variant="ghost"
-                  [disabled]="serverAuthBusy()"
-                  (click)="showAdvancedServerToken.set(!showAdvancedServerToken())"
-                >
-                  {{ showAdvancedServerToken() ? 'Hide advanced' : 'Advanced' }}
-                </app-button>
-              </div>
-            } @else {
-              <div class="row2">
-                <app-form-field label="Email">
-                  <input class="input" [(ngModel)]="serverEmail" autocomplete="email" />
-                </app-form-field>
-                <app-form-field label="Password">
-                  <input
-                    class="input"
-                    type="password"
-                    [(ngModel)]="serverPassword"
-                    autocomplete="current-password"
-                  />
-                </app-form-field>
-              </div>
-              <div class="actions" style="margin-top: 0.5rem">
-                <app-button
-                  variant="secondary"
-                  [loading]="serverAuthBusy()"
-                  [disabled]="serverAuthBusy()"
-                  (click)="connectServerLogin()"
-                >
-                  Connect (login)
-                </app-button>
-                <app-button
-                  variant="ghost"
-                  [loading]="serverAuthBusy()"
-                  [disabled]="serverAuthBusy()"
-                  (click)="connectServerRegister()"
-                >
-                  Create account
-                </app-button>
-                <app-button
-                  variant="ghost"
-                  [disabled]="serverAuthBusy()"
-                  (click)="showAdvancedServerToken.set(!showAdvancedServerToken())"
-                >
-                  {{ showAdvancedServerToken() ? 'Hide advanced' : 'Advanced' }}
-                </app-button>
-              </div>
-              @if (serverAuthErr(); as err) {
-                <p class="muted" role="alert" style="margin-top: 0.65rem">{{ err }}</p>
-              }
-            }
-
-            @if (showAdvancedServerToken()) {
-              <details style="margin-top: 0.65rem" open>
-                <summary>Advanced: raw server token</summary>
-                <textarea [(ngModel)]="token" rows="2" placeholder="eyJhbGciOi..."></textarea>
-              </details>
-            }
-          </app-form-field>
+          />
 
           <div class="row2">
             <app-form-field label="Что импортируем">
@@ -484,15 +404,6 @@ export class ImportPageComponent {
   private readonly api = inject(ImportApiService);
   private readonly storage = inject(StorageService);
   private readonly cinemaApi = inject(ServerCinemaApiService);
-  readonly serverSession = inject(ServerSessionService);
-
-  token = this.storage.get<string>(TOKEN_KEY, '') ?? '';
-  readonly showAdvancedServerToken = signal(false);
-  readonly serverAuthBusy = this.serverSession.busy;
-  readonly serverAuthErr = this.serverSession.err;
-  readonly serverMe = this.serverSession.me;
-  serverEmail = '';
-  serverPassword = '';
   kind: ImportKind = 'favorites';
   format: ImportFormat = 'json';
   payload = '';
@@ -564,7 +475,7 @@ export class ImportPageComponent {
   resolveStatus: 'ok' | 'error' | 'pending' | 'conflict' = 'ok';
   resolveMappedText = '';
 
-  readonly canSend = computed(() => Boolean(this.token.trim()));
+  readonly canSend = computed(() => this.cinemaApi.hasToken());
   readonly canRowsPrev = computed(() => this._rowsOffset() > 0);
   readonly canRowsNext = computed(() => this._rowsOffset() + this._rowsLimit() < this._rowsTotal());
   readonly canConflictsPrev = computed(() => this._conflictsOffset() > 0);
@@ -573,40 +484,16 @@ export class ImportPageComponent {
   );
 
   constructor() {
-    const t = this.token.trim();
-    if (!t) return;
-    this.cinemaApi.setToken(t);
-    this.serverSession.refreshMe({ silent: true });
-  }
-
-  connectServerLogin(): void {
-    this.serverSession.login(this.serverEmail, this.serverPassword);
-    const tok = this.storage.get<string>(TOKEN_KEY, '')?.trim();
-    if (tok) this.token = tok;
-    this.showAdvancedServerToken.set(false);
-  }
-
-  connectServerRegister(): void {
-    this.serverSession.register(this.serverEmail, this.serverPassword);
-    const tok = this.storage.get<string>(TOKEN_KEY, '')?.trim();
-    if (tok) this.token = tok;
-    this.showAdvancedServerToken.set(false);
-  }
-
-  disconnectServer(): void {
-    this.serverSession.disconnect();
-    this.token = '';
+    // Token + /auth/me handled by <app-server-connect>.
   }
 
   createJob(): void {
     this._err.set(null);
-    const token = this.token.trim();
+    const token = this.cinemaApi.getToken();
     if (!token) {
       this._err.set('JWT token обязателен.');
       return;
     }
-    this.storage.set(TOKEN_KEY, token);
-    this.cinemaApi.setToken(token);
     this._busy.set(true);
     this.api
       .create(token, { kind: this.kind, format: this.format, payload: this.payload })
@@ -629,10 +516,9 @@ export class ImportPageComponent {
 
   preview(): void {
     this._err.set(null);
-    const token = this.token.trim();
+    const token = this.cinemaApi.getToken();
     const id = this._jobId();
     if (!token || !id) return;
-    this.storage.set(TOKEN_KEY, token);
     this._busy.set(true);
     this.api.preview(token, id).subscribe({
       next: (r) => {
@@ -653,10 +539,9 @@ export class ImportPageComponent {
 
   loadRows(): void {
     this._err.set(null);
-    const token = this.token.trim();
+    const token = this.cinemaApi.getToken();
     const id = this._jobId();
     if (!token || !id) return;
-    this.storage.set(TOKEN_KEY, token);
     this._busy.set(true);
     this.api.rows(token, id, { offset: this._rowsOffset(), limit: this._rowsLimit() }).subscribe({
       next: (r) => {
@@ -683,10 +568,9 @@ export class ImportPageComponent {
 
   loadConflicts(): void {
     this._err.set(null);
-    const token = this.token.trim();
+    const token = this.cinemaApi.getToken();
     const id = this._jobId();
     if (!token || !id) return;
-    this.storage.set(TOKEN_KEY, token);
     this._busy.set(true);
     this.api
       .conflicts(token, id, { offset: this._conflictsOffset(), limit: this._conflictsLimit() })
@@ -721,14 +605,13 @@ export class ImportPageComponent {
 
   quickResolve(rowN: number | null, mapped: unknown): void {
     this._err.set(null);
-    const token = this.token.trim();
+    const token = this.cinemaApi.getToken();
     const id = this._jobId();
     if (!token || !id) return;
     if (!rowN) {
       this._err.set('Row number неизвестен (нет rowN).');
       return;
     }
-    this.storage.set(TOKEN_KEY, token);
     this._busy.set(true);
     this.api.resolveRow(token, id, rowN, { status: 'ok', mapped }).subscribe({
       next: () => {
@@ -742,10 +625,9 @@ export class ImportPageComponent {
 
   apply(): void {
     this._err.set(null);
-    const token = this.token.trim();
+    const token = this.cinemaApi.getToken();
     const id = this._jobId();
     if (!token || !id) return;
-    this.storage.set(TOKEN_KEY, token);
     this._busy.set(true);
     this.api.apply(token, id).subscribe({
       next: () => {
@@ -771,7 +653,7 @@ export class ImportPageComponent {
 
   submitResolve(): void {
     this._err.set(null);
-    const token = this.token.trim();
+    const token = this.cinemaApi.getToken();
     const id = this._jobId();
     const rowN = this._resolveRowN();
     if (!token || !id || !rowN) {
