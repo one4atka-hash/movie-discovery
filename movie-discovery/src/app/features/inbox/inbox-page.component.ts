@@ -26,8 +26,8 @@ import {
 import {
   ServerCinemaApiService,
   type ServerReleaseReminderItem,
-  type ServerAuthedUser,
 } from '@core/server-cinema-api.service';
+import { ServerSessionService } from '@core/server-session.service';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { MovieService } from '@features/movies/data-access/services/movie.service';
 import type { Movie } from '@features/movies/data-access/models/movie.model';
@@ -101,7 +101,7 @@ const SERVER_JWT_KEY = 'server.jwt.token.v1';
                   variant="ghost"
                   [loading]="serverAuthBusy()"
                   [disabled]="serverAuthBusy()"
-                  (click)="refreshServerMe()"
+                  (click)="serverSession.refreshMe()"
                 >
                   Refresh status
                 </app-button>
@@ -666,11 +666,12 @@ export class InboxPageComponent {
   private readonly storage = inject(StorageService);
   private readonly alertsApi = inject(AlertsApiService);
   private readonly cinemaApi = inject(ServerCinemaApiService);
+  readonly serverSession = inject(ServerSessionService);
 
   readonly showAdvancedServerToken = signal(false);
-  readonly serverAuthBusy = signal(false);
-  readonly serverAuthErr = signal<string | null>(null);
-  readonly serverMe = signal<ServerAuthedUser | null>(null);
+  readonly serverAuthBusy = this.serverSession.busy;
+  readonly serverAuthErr = this.serverSession.err;
+  readonly serverMe = this.serverSession.me;
   serverEmail = '';
   serverPassword = '';
   serverToken = this.storage.get<string>(SERVER_JWT_KEY, '') ?? '';
@@ -698,89 +699,30 @@ export class InboxPageComponent {
     const t = this.serverToken.trim();
     if (!t) return;
     this.cinemaApi.setToken(t);
-    this.refreshServerMe({ silent: true });
+    this.serverSession.refreshMe({ silent: true });
   }
 
   retryServerFeed(): void {
     this.loadServerFeed();
   }
 
-  refreshServerMe(input?: { silent?: boolean }): void {
-    if (!input?.silent) this.serverAuthErr.set(null);
-    this.serverAuthBusy.set(true);
-    this.cinemaApi.authMe().subscribe({
-      next: (me) => {
-        this.serverMe.set(me);
-        if (!me && !input?.silent) {
-          this.serverAuthErr.set('Not connected (invalid token or server unavailable).');
-        }
-      },
-      error: () => {
-        this.serverMe.set(null);
-        if (!input?.silent) this.serverAuthErr.set('Failed to check server status.');
-      },
-      complete: () => this.serverAuthBusy.set(false),
-    });
-  }
-
   connectServerLogin(): void {
-    this.serverAuthErr.set(null);
-    const email = this.serverEmail.trim();
-    const password = this.serverPassword;
-    if (!email || !password) {
-      this.serverAuthErr.set('Email and password are required.');
-      return;
-    }
-    this.serverAuthBusy.set(true);
-    this.cinemaApi.authLogin(email, password).subscribe({
-      next: (res) => {
-        if (!res?.token) {
-          this.serverAuthErr.set('Login failed.');
-          return;
-        }
-        this.serverToken = res.token;
-        this.storage.set(SERVER_JWT_KEY, res.token);
-        this.cinemaApi.setToken(res.token);
-        this.serverMe.set(res.user ?? null);
-        this.showAdvancedServerToken.set(false);
-      },
-      error: () => this.serverAuthErr.set('Login failed.'),
-      complete: () => this.serverAuthBusy.set(false),
-    });
+    this.serverSession.login(this.serverEmail, this.serverPassword);
+    const tok = this.storage.get<string>(SERVER_JWT_KEY, '')?.trim();
+    if (tok) this.serverToken = tok;
+    this.showAdvancedServerToken.set(false);
   }
 
   connectServerRegister(): void {
-    this.serverAuthErr.set(null);
-    const email = this.serverEmail.trim();
-    const password = this.serverPassword;
-    if (!email || !password) {
-      this.serverAuthErr.set('Email and password are required.');
-      return;
-    }
-    this.serverAuthBusy.set(true);
-    this.cinemaApi.authRegister(email, password).subscribe({
-      next: (res) => {
-        if (!res?.token) {
-          this.serverAuthErr.set('Registration failed.');
-          return;
-        }
-        this.serverToken = res.token;
-        this.storage.set(SERVER_JWT_KEY, res.token);
-        this.cinemaApi.setToken(res.token);
-        this.serverMe.set(res.user ?? null);
-        this.showAdvancedServerToken.set(false);
-      },
-      error: () => this.serverAuthErr.set('Registration failed.'),
-      complete: () => this.serverAuthBusy.set(false),
-    });
+    this.serverSession.register(this.serverEmail, this.serverPassword);
+    const tok = this.storage.get<string>(SERVER_JWT_KEY, '')?.trim();
+    if (tok) this.serverToken = tok;
+    this.showAdvancedServerToken.set(false);
   }
 
   disconnectServer(): void {
-    this.serverAuthErr.set(null);
-    this.serverMe.set(null);
+    this.serverSession.disconnect();
     this.serverToken = '';
-    this.storage.remove(SERVER_JWT_KEY);
-    this.cinemaApi.clearToken();
     this._serverRows.set([]);
     this._serverRules.set([]);
     this._reminderRows.set([]);

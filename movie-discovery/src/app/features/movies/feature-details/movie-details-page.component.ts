@@ -1280,9 +1280,7 @@ export class MovieDetailsPageComponent {
     return pickDefaultRegionCode(this.providers(), this.i18n.lang());
   });
 
-  readonly serverJwtPresent = computed(() =>
-    Boolean(this.storage.get<string>('server.jwt.token.v1', '')?.trim()),
-  );
+  readonly serverJwtPresent = computed(() => this.cinemaApi.hasToken());
 
   readonly movieReleases = signal<MovieReleasesResponse | null | undefined>(undefined);
   readonly movieReleasesErr = signal<string | null>(null);
@@ -1302,7 +1300,7 @@ export class MovieDetailsPageComponent {
 
   private readonly syncServerSide = effect(() => {
     const m = this.movie();
-    const tok = this.storage.get<string>('server.jwt.token.v1', '')?.trim();
+    const tok = this.cinemaApi.getToken();
     const region = this.effectiveRegion();
     if (m === undefined || m === null || !tok) {
       untracked(() => {

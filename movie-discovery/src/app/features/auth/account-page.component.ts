@@ -28,8 +28,8 @@ import {
   ServerCinemaApiService,
   type EmbeddingsJobItem,
   type MePublicProfile,
-  type ServerAuthedUser,
 } from '@core/server-cinema-api.service';
+import { ServerSessionService } from '@core/server-session.service';
 import {
   ExportsApiService,
   type ExportFormat,
@@ -118,7 +118,7 @@ import {
                   <button
                     class="btn"
                     type="button"
-                    (click)="refreshServerMe()"
+                    (click)="serverSession.refreshMe()"
                     [disabled]="serverAuthBusy()"
                   >
                     Refresh status
@@ -883,6 +883,7 @@ export class AccountPageComponent {
   private readonly storage = inject(StorageService);
   private readonly exportsApi = inject(ExportsApiService);
   private readonly cinemaApi = inject(ServerCinemaApiService);
+  readonly serverSession = inject(ServerSessionService);
   readonly i18n = inject(I18nService);
 
   readonly user = this.auth.user;
@@ -898,9 +899,9 @@ export class AccountPageComponent {
   readonly showAdvancedServerToken = signal(false);
   readonly serverEmail = new FormControl('', { nonNullable: true });
   readonly serverPassword = new FormControl('', { nonNullable: true });
-  readonly serverAuthBusy = signal(false);
-  readonly serverAuthErr = signal<string | null>(null);
-  readonly serverMe = signal<ServerAuthedUser | null>(null);
+  readonly serverMe = this.serverSession.me;
+  readonly serverAuthBusy = this.serverSession.busy;
+  readonly serverAuthErr = this.serverSession.err;
   readonly exportKind = new FormControl<ExportKind>('diary', { nonNullable: true });
   readonly exportFormat = new FormControl<ExportFormat>('csv', { nonNullable: true });
   readonly exportError = signal<string | null>(null);
@@ -950,9 +951,7 @@ export class AccountPageComponent {
 
   constructor() {
     // If server token is already persisted, try to resolve /auth/me for status UI.
-    if (this.serverJwt.value.trim()) {
-      this.refreshServerMe({ silent: true });
-    }
+    if (this.serverJwt.value.trim()) this.serverSession.refreshMe({ silent: true });
 
     // If JWT is already persisted, pre-load jobs immediately.
     if (this.serverJwt.value.trim()) {
@@ -964,94 +963,34 @@ export class AccountPageComponent {
       const token = this.serverJwt.value.trim();
       if (!token) {
         this.storage.remove('server.jwt.token.v1');
-        this.serverMe.set(null);
+        this.serverSession.disconnect();
         return;
       }
       this.storage.set('server.jwt.token.v1', token);
-      this.refreshServerMe({ silent: true });
+      this.serverSession.refreshMe({ silent: true });
       this.loadEmbeddingsJobs({ silent: true });
     });
 
     this.destroyRef.onDestroy(() => this.stopJobsPolling());
   }
 
-  refreshServerMe(input?: { silent?: boolean }): void {
-    if (!input?.silent) {
-      this.serverAuthErr.set(null);
-    }
-    this.serverAuthBusy.set(true);
-    this.cinemaApi.authMe().subscribe({
-      next: (me) => {
-        this.serverMe.set(me);
-        if (!me && !input?.silent) {
-          this.serverAuthErr.set('Not connected (invalid token or server unavailable).');
-        }
-      },
-      error: () => {
-        this.serverMe.set(null);
-        if (!input?.silent) {
-          this.serverAuthErr.set('Failed to check server status.');
-        }
-      },
-      complete: () => this.serverAuthBusy.set(false),
-    });
-  }
-
   connectServerLogin(): void {
-    this.serverAuthErr.set(null);
-    const email = this.serverEmail.value.trim();
-    const password = this.serverPassword.value;
-    if (!email || !password) {
-      this.serverAuthErr.set('Email and password are required.');
-      return;
-    }
-    this.serverAuthBusy.set(true);
-    this.cinemaApi.authLogin(email, password).subscribe({
-      next: (res) => {
-        if (!res?.token) {
-          this.serverAuthErr.set('Login failed.');
-          return;
-        }
-        this.cinemaApi.setToken(res.token);
-        this.serverJwt.setValue(res.token);
-        this.serverMe.set(res.user ?? null);
-        this.showAdvancedServerToken.set(false);
-      },
-      error: () => this.serverAuthErr.set('Login failed.'),
-      complete: () => this.serverAuthBusy.set(false),
-    });
+    this.serverSession.login(this.serverEmail.value, this.serverPassword.value);
+    const tok = this.storage.get<string>('server.jwt.token.v1', '')?.trim();
+    if (tok) this.serverJwt.setValue(tok);
+    this.showAdvancedServerToken.set(false);
   }
 
   connectServerRegister(): void {
-    this.serverAuthErr.set(null);
-    const email = this.serverEmail.value.trim();
-    const password = this.serverPassword.value;
-    if (!email || !password) {
-      this.serverAuthErr.set('Email and password are required.');
-      return;
-    }
-    this.serverAuthBusy.set(true);
-    this.cinemaApi.authRegister(email, password).subscribe({
-      next: (res) => {
-        if (!res?.token) {
-          this.serverAuthErr.set('Registration failed.');
-          return;
-        }
-        this.cinemaApi.setToken(res.token);
-        this.serverJwt.setValue(res.token);
-        this.serverMe.set(res.user ?? null);
-        this.showAdvancedServerToken.set(false);
-      },
-      error: () => this.serverAuthErr.set('Registration failed.'),
-      complete: () => this.serverAuthBusy.set(false),
-    });
+    this.serverSession.register(this.serverEmail.value, this.serverPassword.value);
+    const tok = this.storage.get<string>('server.jwt.token.v1', '')?.trim();
+    if (tok) this.serverJwt.setValue(tok);
+    this.showAdvancedServerToken.set(false);
   }
 
   disconnectServer(): void {
-    this.serverAuthErr.set(null);
-    this.cinemaApi.clearToken();
+    this.serverSession.disconnect();
     this.serverJwt.setValue('');
-    this.serverMe.set(null);
   }
 
   loadServerPublicProfile(): void {

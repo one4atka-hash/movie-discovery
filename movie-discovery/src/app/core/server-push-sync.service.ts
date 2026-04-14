@@ -2,9 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { StorageService } from './storage.service';
-
-const SERVER_JWT_KEY = 'server.jwt.token.v1';
+import { ServerCinemaApiService } from './server-cinema-api.service';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -20,14 +18,14 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 @Injectable({ providedIn: 'root' })
 export class ServerPushSyncService {
   private readonly http = inject(HttpClient);
-  private readonly storage = inject(StorageService);
+  private readonly cinemaApi = inject(ServerCinemaApiService);
 
   /**
    * If Server JWT + VAPID public key are available, register SW, subscribe, POST /api/push/subscribe.
    * No-op otherwise; errors are swallowed (local release reminders keep working).
    */
   async registerIfPossible(): Promise<void> {
-    const token = this.storage.get<string>(SERVER_JWT_KEY, '')?.trim();
+    const token = this.cinemaApi.getToken();
     if (!token) return;
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 

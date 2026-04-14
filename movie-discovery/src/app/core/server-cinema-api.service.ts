@@ -73,6 +73,15 @@ export class ServerCinemaApiService {
   private readonly http = inject(HttpClient);
   private readonly storage = inject(StorageService);
 
+  getToken(): string | null {
+    const t = this.storage.get<string>(SERVER_JWT_KEY, '')?.trim();
+    return t || null;
+  }
+
+  hasToken(): boolean {
+    return Boolean(this.getToken());
+  }
+
   setToken(token: string): void {
     this.storage.set(SERVER_JWT_KEY, token.trim());
   }
@@ -82,8 +91,7 @@ export class ServerCinemaApiService {
   }
 
   private token(): string | null {
-    const t = this.storage.get<string>(SERVER_JWT_KEY, '')?.trim();
-    return t || null;
+    return this.getToken();
   }
 
   private authHeaders(): HttpHeaders | null {
