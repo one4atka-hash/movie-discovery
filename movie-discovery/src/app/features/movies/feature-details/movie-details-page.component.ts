@@ -486,6 +486,15 @@ import type { WatchStatus } from '@features/watchlist/watch-state.model';
                   <strong>{{ i18n.t('details.trailer.title') }}</strong>
                   <span class="muted">{{ t.name || '—' }}</span>
                 </div>
+                <button
+                  *ngIf="embedUrl(t)"
+                  class="btn btn--primary"
+                  type="button"
+                  (click)="enableTrailerEmbed()"
+                  [disabled]="trailerEmbedEnabled()"
+                >
+                  {{ trailerEmbedEnabled() ? 'Ок' : 'Загрузить трейлер' }}
+                </button>
                 <a
                   *ngIf="externalTrailerUrl(t) as href"
                   class="btn"
@@ -498,14 +507,25 @@ import type { WatchStatus } from '@features/watchlist/watch-state.model';
               </div>
 
               <div class="player__frame">
-                <iframe
-                  *ngIf="embedUrl(t) as url; else noTrailerTpl"
-                  [src]="url"
-                  [title]="i18n.t('details.trailer.title')"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerpolicy="no-referrer"
-                  allowfullscreen
-                ></iframe>
+                <ng-container *ngIf="trailerEmbedEnabled(); else clickToLoadTpl">
+                  <iframe
+                    *ngIf="embedUrl(t) as url; else noTrailerTpl"
+                    [src]="url"
+                    [title]="i18n.t('details.trailer.title')"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerpolicy="origin"
+                    allowfullscreen
+                  ></iframe>
+                </ng-container>
+
+                <ng-template #clickToLoadTpl>
+                  <div class="player__empty" role="status">
+                    <p class="player__empty-title">
+                      YouTube может быть заблокирован или запрещать встраивание (ошибка 153). Нажми
+                      “Загрузить трейлер” или открой источник.
+                    </p>
+                  </div>
+                </ng-template>
 
                 <ng-template #noTrailerTpl>
                   <div class="player__empty" role="status">
@@ -1360,6 +1380,12 @@ export class MovieDetailsPageComponent {
     if (pick && !isYoutubeSite(pick.site)) return pick;
     return pick ?? nonYoutube[0] ?? youtube[0] ?? null;
   });
+
+  readonly trailerEmbedEnabled = signal(false);
+
+  enableTrailerEmbed(): void {
+    this.trailerEmbedEnabled.set(true);
+  }
 
   setWatchRegion(code: string): void {
     this.regionChoice.set(code);
