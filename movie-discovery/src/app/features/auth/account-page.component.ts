@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 
 import { sortSubscriptionsByRelease } from '@core/release-list.util';
 import { AuthService } from './auth.service';
@@ -850,6 +851,18 @@ export class AccountPageComponent {
   readonly subsSorted = computed(() => sortSubscriptionsByRelease(this.subsSvc.mySubscriptions()));
   readonly favorites = computed(() => this.fav.favorites());
 
+  constructor() {
+    // Auto-load jobs when JWT becomes available/changes.
+    this.serverJwt.valueChanges.pipe(debounceTime(250), distinctUntilChanged()).subscribe(() => {
+      const token = this.serverJwt.value.trim();
+      if (!token) return;
+      this.storage.set('server.jwt.token.v1', token);
+      this.loadEmbeddingsJobs({ silent: true });
+    });
+
+    this.destroyRef.onDestroy(() => this.stopJobsPolling());
+  }
+
   loadServerPublicProfile(): void {
     this.ppErr.set(null);
     this.ppOk.set(null);
@@ -1112,6 +1125,7 @@ export class AccountPageComponent {
           this.jobsErr.set('Request failed');
           return;
         }
+        this.seeds.set(r.tmdbIds ?? []);
         this.jobsOk.set(`Created job ${r.id.slice(0, 8)} with ${r.tmdbIds.length} tmdbId(s)`);
         this.cinemaApi.runEmbeddingsJob(r.id).subscribe({
           next: () => {
