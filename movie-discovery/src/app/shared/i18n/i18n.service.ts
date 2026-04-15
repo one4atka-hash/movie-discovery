@@ -299,11 +299,27 @@ const RU: Dict = {
   'account.section.data': 'Данные и приватность',
   'account.section.dataHint':
     'Экспорт и импорт — чтобы забрать данные с собой или перенести на другой девайс.',
+  'account.section.connections': 'Подключения',
+  'account.section.connectionsHint':
+    'Подключите синхронизацию и уведомления, чтобы правила и подписки работали на всех устройствах.',
   'account.serverConnect.label': 'Подключение к серверу (опционально)',
   'account.serverConnect.hint':
     'Войдите или зарегистрируйтесь, чтобы включить синхронизацию (import/export, inbox, recommendations).',
   'account.serverConnect.required':
     'Нужно подключить синхронизацию (войдите или зарегистрируйтесь в блоке «Сервер» выше).',
+  'account.webPush.title': 'Web Push уведомления',
+  'account.webPush.hint':
+    'Включите push — и мы сможем присылать уведомления в браузер (если сервер настроен).',
+  'account.webPush.enable': 'Включить Web Push',
+  'account.webPush.refresh': 'Обновить статус',
+  'account.webPush.disableAll': 'Отключить',
+  'account.webPush.connected': 'Подключено',
+  'account.webPush.notConnected': 'Не подключено',
+  'account.webPush.unsupported': 'Этот браузер не поддерживает Web Push.',
+  'account.webPush.permissionDenied': 'Нужно разрешение на уведомления.',
+  'account.webPush.enableFailed': 'Не удалось включить Web Push.',
+  'account.webPush.enabledOk': 'Web Push включён.',
+  'account.webPush.disabledOk': 'Web Push отключён.',
   'account.data.import': 'Импорт',
   'account.data.exportKind': 'Раздел',
   'account.data.exportFormat': 'Формат',
@@ -789,10 +805,26 @@ const EN: Dict = {
   'account.section.data': 'Data & privacy',
   'account.section.dataHint':
     'Export and import — to take your data with you or move to another device.',
+  'account.section.connections': 'Connections',
+  'account.section.connectionsHint':
+    'Enable sync and notifications so rules and subscriptions work across devices.',
   'account.serverConnect.label': 'Server connection (optional)',
   'account.serverConnect.hint':
     'Sign in or create an account to enable sync (import/export, inbox, recommendations).',
   'account.serverConnect.required': 'Connect sync first (use the Server block above).',
+  'account.webPush.title': 'Web Push notifications',
+  'account.webPush.hint':
+    'Enable push to receive browser notifications (when the server is configured).',
+  'account.webPush.enable': 'Enable Web Push',
+  'account.webPush.refresh': 'Refresh status',
+  'account.webPush.disableAll': 'Disable',
+  'account.webPush.connected': 'Connected',
+  'account.webPush.notConnected': 'Not connected',
+  'account.webPush.unsupported': 'This browser does not support Web Push.',
+  'account.webPush.permissionDenied': 'Notification permission is required.',
+  'account.webPush.enableFailed': 'Could not enable Web Push.',
+  'account.webPush.enabledOk': 'Web Push enabled.',
+  'account.webPush.disabledOk': 'Web Push disabled.',
   'account.data.import': 'Import',
   'account.data.exportKind': 'Kind',
   'account.data.exportFormat': 'Format',

@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 
 import { sortSubscriptionsByRelease } from '@core/release-list.util';
 import { AuthService } from './auth.service';
@@ -31,6 +32,7 @@ import {
   type MePublicProfile,
 } from '@core/server-cinema-api.service';
 import { ServerSessionService } from '@core/server-session.service';
+import { ServerPushSyncService } from '@core/server-push-sync.service';
 import {
   ExportsApiService,
   type ExportFormat,
@@ -93,17 +95,56 @@ import {
           </div>
         </div>
 
-        <section class="account-block" id="account-data" aria-labelledby="account-data-title">
-          <h2 class="account-block__title" id="account-data-title">
-            {{ i18n.t('account.section.data') }}
+        <section
+          class="account-block"
+          id="account-connections"
+          aria-labelledby="account-connections-title"
+        >
+          <h2 class="account-block__title" id="account-connections-title">
+            {{ i18n.t('account.section.connections') }}
           </h2>
-          <p class="muted">{{ i18n.t('account.section.dataHint') }}</p>
+          <p class="muted">{{ i18n.t('account.section.connectionsHint') }}</p>
           <div class="card">
             <app-server-connect
               [label]="i18n.t('account.serverConnect.label')"
               [hint]="i18n.t('account.serverConnect.hint')"
             />
 
+            <div style="margin-top: 0.75rem">
+              <p class="muted" style="margin: 0 0 0.5rem">{{ i18n.t('account.webPush.title') }}</p>
+              <p class="muted" style="margin: 0 0 0.65rem">{{ i18n.t('account.webPush.hint') }}</p>
+
+              <div class="actions" style="margin-top: 0">
+                <button class="btn btn--primary" type="button" (click)="enableWebPush()">
+                  {{ i18n.t('account.webPush.enable') }}
+                </button>
+                <button class="btn" type="button" (click)="loadPushSubs()">
+                  {{ i18n.t('account.webPush.refresh') }}
+                </button>
+                <button class="btn" type="button" (click)="disableWebPushAll()">
+                  {{ i18n.t('account.webPush.disableAll') }}
+                </button>
+              </div>
+
+              <p class="err" *ngIf="pushErr()" style="margin-top: 0.65rem">{{ pushErr() }}</p>
+              <p class="ok" *ngIf="pushOk()" style="margin-top: 0.65rem">{{ pushOk() }}</p>
+
+              <p class="muted" *ngIf="!pushBusy() && cinemaApi.hasToken() && pushSubs().length">
+                {{ i18n.t('account.webPush.connected') }}: {{ pushSubs().length }}
+              </p>
+              <p class="muted" *ngIf="!pushBusy() && cinemaApi.hasToken() && !pushSubs().length">
+                {{ i18n.t('account.webPush.notConnected') }}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="account-block" id="account-data" aria-labelledby="account-data-title">
+          <h2 class="account-block__title" id="account-data-title">
+            {{ i18n.t('account.section.data') }}
+          </h2>
+          <p class="muted">{{ i18n.t('account.section.dataHint') }}</p>
+          <div class="card">
             <div class="actions" style="margin-top: 0">
               <button class="btn" type="button" [routerLink]="['/import']">
                 {{ i18n.t('account.data.import') }}
@@ -812,7 +853,8 @@ export class AccountPageComponent {
   private readonly fav = inject(FavoritesService);
   private readonly storage = inject(StorageService);
   private readonly exportsApi = inject(ExportsApiService);
-  private readonly cinemaApi = inject(ServerCinemaApiService);
+  readonly cinemaApi = inject(ServerCinemaApiService);
+  private readonly serverPushSync = inject(ServerPushSyncService);
   readonly serverSession = inject(ServerSessionService);
   readonly i18n = inject(I18nService);
 
@@ -833,6 +875,11 @@ export class AccountPageComponent {
   readonly emailDevBusy = signal(false);
   readonly emailDevOk = signal<string | null>(null);
   readonly emailDevErr = signal<string | null>(null);
+
+  readonly pushBusy = signal(false);
+  readonly pushErr = signal<string | null>(null);
+  readonly pushOk = signal<string | null>(null);
+  readonly pushSubs = signal<readonly { id: string; endpoint: string; createdAt: string }[]>([]);
 
   readonly featuresBusy = signal(false);
   readonly featuresOk = signal<string | null>(null);
@@ -877,9 +924,84 @@ export class AccountPageComponent {
     if (this.cinemaApi.hasToken()) {
       this.serverSession.refreshMe({ silent: true });
       this.loadEmbeddingsJobs({ silent: true });
+      this.loadPushSubs({ silent: true });
     }
 
     this.destroyRef.onDestroy(() => this.stopJobsPolling());
+  }
+
+  loadPushSubs(opts?: { silent?: boolean }): void {
+    if (!opts?.silent) {
+      this.pushErr.set(null);
+      this.pushOk.set(null);
+    }
+    if (!this.cinemaApi.hasToken()) {
+      if (!opts?.silent) this.pushErr.set(this.i18n.t('account.serverConnect.required'));
+      this.pushSubs.set([]);
+      return;
+    }
+    this.pushBusy.set(true);
+    this.cinemaApi.listPushSubscriptions().subscribe({
+      next: (r) => {
+        this.pushBusy.set(false);
+        this.pushSubs.set(r?.items ?? []);
+      },
+      error: () => {
+        this.pushBusy.set(false);
+        if (!opts?.silent) this.pushErr.set('Request failed');
+      },
+    });
+  }
+
+  async enableWebPush(): Promise<void> {
+    this.pushErr.set(null);
+    this.pushOk.set(null);
+    if (!this.cinemaApi.hasToken()) {
+      this.pushErr.set(this.i18n.t('account.serverConnect.required'));
+      return;
+    }
+    if (!('Notification' in window)) {
+      this.pushErr.set(this.i18n.t('account.webPush.unsupported'));
+      return;
+    }
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        this.pushErr.set(this.i18n.t('account.webPush.permissionDenied'));
+        return;
+      }
+      await this.serverPushSync.registerIfPossible();
+      this.pushOk.set(this.i18n.t('account.webPush.enabledOk'));
+      this.loadPushSubs();
+    } catch {
+      this.pushErr.set(this.i18n.t('account.webPush.enableFailed'));
+    }
+  }
+
+  async disableWebPushAll(): Promise<void> {
+    this.pushErr.set(null);
+    this.pushOk.set(null);
+    if (!this.cinemaApi.hasToken()) {
+      this.pushErr.set(this.i18n.t('account.serverConnect.required'));
+      return;
+    }
+    const items = [...this.pushSubs()];
+    if (!items.length) {
+      this.pushOk.set(this.i18n.t('account.webPush.disabledOk'));
+      return;
+    }
+    this.pushBusy.set(true);
+    for (const it of items) {
+      try {
+        const r = await firstValueFrom(this.cinemaApi.deletePushSubscription(it.id));
+        void r;
+      } catch {
+        // ignore
+      }
+    }
+    this.pushBusy.set(false);
+    this.pushOk.set(this.i18n.t('account.webPush.disabledOk'));
+    this.loadPushSubs({ silent: true });
   }
 
   loadServerPublicProfile(): void {

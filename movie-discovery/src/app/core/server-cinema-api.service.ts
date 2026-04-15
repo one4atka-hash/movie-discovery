@@ -16,6 +16,12 @@ export interface ServerAuthResponse {
   readonly user: ServerAuthedUser;
 }
 
+export interface ServerPushSubscriptionItem {
+  readonly id: string;
+  readonly endpoint: string;
+  readonly createdAt: string;
+}
+
 export interface ServerReleaseReminderItem {
   readonly id: string;
   readonly tmdbId: number;
@@ -117,6 +123,26 @@ export class ServerCinemaApiService {
     if (!h) return of(null);
     return this.http
       .get<ServerAuthedUser>('/api/auth/me', { headers: h })
+      .pipe(catchError(() => of(null)));
+  }
+
+  listPushSubscriptions(): Observable<{ items: ServerPushSubscriptionItem[] } | null> {
+    const h = this.authHeaders();
+    if (!h) return of(null);
+    return this.http
+      .get<{ items: ServerPushSubscriptionItem[] }>('/api/push/subscriptions', { headers: h })
+      .pipe(catchError(() => of(null)));
+  }
+
+  deletePushSubscription(id: string): Observable<{ ok: boolean } | null> {
+    const h = this.authHeaders();
+    if (!h) return of(null);
+    const safe = (id ?? '').trim();
+    if (!safe) return of(null);
+    return this.http
+      .delete<{
+        ok: boolean;
+      }>(`/api/push/subscriptions/${encodeURIComponent(safe)}`, { headers: h })
       .pipe(catchError(() => of(null)));
   }
 
