@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.component';
 import { ButtonComponent } from '@shared/ui/button/button.component';
@@ -71,9 +71,22 @@ import { CollectionsService } from './collections.service';
         </div>
       </app-section>
 
+      @if (pendingQuickAdd && !selected()) {
+        <app-empty-state
+          [title]="i18n.t('lists.quickAdd.title')"
+          [subtitle]="i18n.t('lists.quickAdd.subtitle')"
+        >
+          <app-button variant="secondary" (click)="openCreate()">{{
+            i18n.t('lists.actions.newList')
+          }}</app-button>
+        </app-empty-state>
+      }
+
       <app-section title="Открытый список" *ngIf="selected() as s">
         <div sectionActions>
-          <app-button variant="secondary" (click)="openAddItem()">Добавить фильм</app-button>
+          <app-button variant="secondary" (click)="openAddItem()">
+            {{ i18n.t('lists.actions.addMovie') }}
+          </app-button>
           <app-button variant="ghost" (click)="selected.set(null)">Закрыть</app-button>
         </div>
 
@@ -82,7 +95,9 @@ import { CollectionsService } from './collections.service';
           title="Пусто"
           subtitle="Добавь первый фильм — можно по названию, а потом уточнить по TMDB."
         >
-          <app-button variant="secondary" (click)="openAddItem()">Добавить фильм</app-button>
+          <app-button variant="secondary" (click)="openAddItem()">{{
+            i18n.t('lists.actions.addMovie')
+          }}</app-button>
         </app-empty-state>
 
         <div class="list" *ngIf="s.items.length">
@@ -219,6 +234,7 @@ export class CollectionsPageComponent {
   readonly i18n = inject(I18nService);
   readonly toast = inject(ToastService);
   private readonly svc = inject(CollectionsService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly collections = computed(() => this.svc.sorted());
   readonly selected = signal<Collection | null>(null);
@@ -234,6 +250,16 @@ export class CollectionsPageComponent {
   draftItemTitle = '';
   draftItemTmdbId = '';
   draftItemNote = '';
+  pendingQuickAdd: { title: string; tmdbId: number | null } | null = null;
+
+  constructor() {
+    const qp = this.route.snapshot.queryParamMap;
+    const title = (qp.get('addTitle') ?? '').trim();
+    const tmdbRaw = (qp.get('addTmdbId') ?? '').trim();
+    const tmdbId = tmdbRaw ? Number(tmdbRaw) : NaN;
+    if (!title) return;
+    this.pendingQuickAdd = { title, tmdbId: Number.isFinite(tmdbId) && tmdbId > 0 ? tmdbId : null };
+  }
 
   openCreate(): void {
     this.editing.set(null);
@@ -274,6 +300,10 @@ export class CollectionsPageComponent {
   select(c: Collection): void {
     // Refresh from source of truth (service) in case it changed.
     this.selected.set(this.svc.getById(c.id));
+    if (this.pendingQuickAdd) {
+      this.openAddItem(this.pendingQuickAdd);
+      this.pendingQuickAdd = null;
+    }
   }
 
   remove(c: Collection): void {
@@ -282,9 +312,9 @@ export class CollectionsPageComponent {
     this.toast.show('info', 'Deleted', c.name);
   }
 
-  openAddItem(): void {
-    this.draftItemTitle = '';
-    this.draftItemTmdbId = '';
+  openAddItem(seed?: { title: string; tmdbId: number | null }): void {
+    this.draftItemTitle = seed?.title ?? '';
+    this.draftItemTmdbId = seed?.tmdbId != null ? String(seed.tmdbId) : '';
     this.draftItemNote = '';
     this.addItemOpen.set(true);
   }

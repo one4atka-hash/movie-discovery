@@ -103,6 +103,16 @@ const DEFAULT_RELEASE_CHANNELS = {
             {{ i18n.t('movieActions.logDiary') }}
           </app-button>
         </div>
+        <div class="row">
+          <app-button
+            variant="secondary"
+            [routerLink]="['/collections']"
+            [queryParams]="{ addTitle: m.title, addTmdbId: m.id }"
+            (click)="closed.emit()"
+          >
+            {{ i18n.t('movieActions.addToList') }}
+          </app-button>
+        </div>
       }
     </app-bottom-sheet>
   `,

@@ -245,7 +245,7 @@ Component tests:
 - [x] **Уведомления о релизах (MVP)**:
   - [x] Авторизация обязательна (профиль).
   - [x] Подписка на релиз фильма + выбор канала: in-app / web push / email / calendar (.ics).
-  - [x] Встроить entrypoint из карточки фильма: кнопка «Следить за релизом» → `/notifications?tmdbId=...`.
+  - [x] Встроить entrypoint из карточки фильма: действия “Follow release / Add to diary / Add to list” → через sheet + редиректы в Lists/Diary/Inbox.
 
 #### Итерация 3 — Extras (добавлено по ходу работ)
 
