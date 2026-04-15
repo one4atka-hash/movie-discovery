@@ -289,8 +289,9 @@ const RU: Dict = {
   'account.publicProfile.loadFailed': 'Не удалось загрузить настройки.',
   'account.publicProfile.saveFailed': 'Не удалось сохранить.',
   'account.publicProfile.saved': 'Сохранено на сервере.',
+  'account.emailDev.title': 'Email уведомления',
   'account.emailDev.hint':
-    'Проверка почты: отправим письмо на ваш адрес, чтобы убедиться, что уведомления доходят.',
+    'Отправим тестовое письмо на ваш адрес, чтобы убедиться, что уведомления доходят.',
   'account.emailDev.button': 'Проверить отправку письма',
   'account.emailDev.ok': 'Запрос принят — проверьте почту (и спам).',
   'account.emailDev.failed':
@@ -796,8 +797,8 @@ const EN: Dict = {
   'account.publicProfile.loadFailed': 'Could not load settings.',
   'account.publicProfile.saveFailed': 'Could not save.',
   'account.publicProfile.saved': 'Saved on server.',
-  'account.emailDev.hint':
-    'Email check: we’ll send a message to make sure notifications can reach you.',
+  'account.emailDev.title': 'Email notifications',
+  'account.emailDev.hint': 'We’ll send a test email to make sure notifications can reach you.',
   'account.emailDev.button': 'Send test email',
   'account.emailDev.ok': 'Request accepted — check your inbox (and spam).',
   'account.emailDev.failed': 'Request failed (no connection or sync not connected).',

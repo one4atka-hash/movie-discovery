@@ -126,6 +126,14 @@ export class ServerCinemaApiService {
       .pipe(catchError(() => of(null)));
   }
 
+  emailSendTest(): Observable<{ ok: boolean; error?: string } | null> {
+    const h = this.authHeaders();
+    if (!h) return of(null);
+    return this.http
+      .post<{ ok: boolean; error?: string }>('/api/email/send-test', {}, { headers: h })
+      .pipe(catchError(() => of(null)));
+  }
+
   listPushSubscriptions(): Observable<{ items: ServerPushSubscriptionItem[] } | null> {
     const h = this.authHeaders();
     if (!h) return of(null);

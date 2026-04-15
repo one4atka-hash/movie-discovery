@@ -722,9 +722,9 @@ Component tests:
 - [x] **M1 (FE‑only)**: перестроить страницу на блоки “Profile / Connections / Data & Privacy / Advanced”; dev‑утилиты и raw JWT спрятать в Advanced.
 - [x] **M2 (FE + server auth endpoints уже есть)**: “Connect to server” через `POST /api/auth/login`/`register` + silent storage токена + `GET /api/auth/me` для статуса (без textarea).
 - [x] **M3**: streaming prefs sync как progressive enhancement (local‑first → server‑sync при подключении).
-- [ ] **M4**: Notifications hub: Web Push connect/disconnect (VAPID) + user‑grade email setup (не dev‑endpoint).
+- [x] **M4**: Notifications hub: Web Push connect/disconnect (VAPID) + user‑grade email setup (не dev‑endpoint).
   - [x] Web Push connect/disconnect (VAPID): UI + subscribe/unsubscribe flow.
-  - [ ] Email setup (user‑grade, не dev‑endpoint).
+  - [x] Email setup (user‑grade, не dev‑endpoint).
 
 #### 6.8 Персональная страница пользователя + кастомные “луки” (темы/оформление) — **backlog**
 Цель: дать пользователю “домик” в сервисе — **вкус, планы и мысли**, которыми приятно делиться, и сделать интерфейс **настраиваемым под себя** (layout/фон/шрифты). Монетизация: “создать свой лук” — за символический донат, при этом оформление публичной страницы — бесплатно.

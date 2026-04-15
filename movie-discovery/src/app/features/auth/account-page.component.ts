@@ -136,6 +136,25 @@ import {
                 {{ i18n.t('account.webPush.notConnected') }}
               </p>
             </div>
+
+            <div style="margin-top: 0.9rem">
+              <p class="muted" style="margin: 0 0 0.5rem">{{ i18n.t('account.emailDev.title') }}</p>
+              <p class="muted" style="margin: 0 0 0.65rem">{{ i18n.t('account.emailDev.hint') }}</p>
+              <div class="actions" style="margin-top: 0">
+                <button
+                  class="btn"
+                  type="button"
+                  (click)="sendDevTestEmail()"
+                  [disabled]="emailDevBusy()"
+                >
+                  {{ i18n.t('account.emailDev.button') }}
+                </button>
+              </div>
+              <p class="ok" *ngIf="emailDevOk()" style="margin-top: 0.65rem">{{ emailDevOk() }}</p>
+              <p class="err" *ngIf="emailDevErr()" style="margin-top: 0.65rem">
+                {{ emailDevErr() }}
+              </p>
+            </div>
           </div>
         </section>
 
@@ -184,24 +203,6 @@ import {
               <p class="muted" style="margin: 0.35rem 0 0">
                 {{ i18n.t('account.advanced.hint') }}
               </p>
-
-              <div class="field" style="margin-top: 0.65rem">
-                <span>{{ i18n.t('account.emailDev.hint') }}</span>
-                <div class="actions" style="margin-top: 0">
-                  <button
-                    class="btn"
-                    type="button"
-                    (click)="sendDevTestEmail()"
-                    [disabled]="emailDevBusy()"
-                  >
-                    {{ i18n.t('account.emailDev.button') }}
-                  </button>
-                </div>
-                <p class="ok" *ngIf="emailDevOk()">{{ emailDevOk() }}</p>
-                <p class="err" *ngIf="emailDevErr()" style="margin-bottom: 0">
-                  {{ emailDevErr() }}
-                </p>
-              </div>
 
               <div class="field" style="margin-top: 0.75rem">
                 <span>Movie features cache (server)</span>
@@ -1094,11 +1095,11 @@ export class AccountPageComponent {
     this.emailDevErr.set(null);
     const token = this.cinemaApi.getToken();
     if (!token) {
-      this.emailDevErr.set(this.i18n.t('account.publicProfile.needJwt'));
+      this.emailDevErr.set(this.i18n.t('account.serverConnect.required'));
       return;
     }
     this.emailDevBusy.set(true);
-    this.cinemaApi.devEmailSendTest().subscribe({
+    this.cinemaApi.emailSendTest().subscribe({
       next: (r) => {
         this.emailDevBusy.set(false);
         if (!r) {

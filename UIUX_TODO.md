@@ -140,7 +140,7 @@
 
 ### M3 — “No tokens” и настоящий onboarding
 - [x] **Connect to server**: логин/регистрация на server через `/api/auth/*`, токен хранить скрыто.
-- [ ] **Connections UI**: Web Push connect/disconnect; Email setup (user‑grade, не dev endpoint).
+- [x] **Connections UI**: Web Push connect/disconnect; Email setup (user‑grade, не dev endpoint).
 - [ ] **Data & Privacy**: экспорт/импорт как понятный мастер (не “Open Import” без контекста).
 
 ### M4 — Персональная страница + оформление (“луки”)
