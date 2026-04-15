@@ -84,7 +84,7 @@ const EMPTY_SEARCH: MovieSearchResponse = {
 
       <app-section [title]="i18n.t('me.sectionWatchlist')">
         <div sectionActions>
-          <a class="link" routerLink="/watchlist">{{ i18n.t('me.seeAll') }}</a>
+          <a class="link" routerLink="/collections/statuses">{{ i18n.t('me.seeAll') }}</a>
         </div>
         <app-empty-state
           *ngIf="!watchPreview().length"
@@ -92,7 +92,7 @@ const EMPTY_SEARCH: MovieSearchResponse = {
           [subtitle]="i18n.t('me.emptyWatchlist')"
         >
           <app-button variant="primary" routerLink="/">{{ i18n.t('home.cta.search') }}</app-button>
-          <app-button variant="secondary" routerLink="/watchlist">{{
+          <app-button variant="secondary" routerLink="/collections/statuses">{{
             i18n.t('me.seeAll')
           }}</app-button>
         </app-empty-state>

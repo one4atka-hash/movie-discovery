@@ -181,6 +181,10 @@ const RU: Dict = {
     'Списки — чтобы не потерять «посмотреть потом» и собирать подборки под настроение.',
   'lists.instruction':
     'Создай список → добавляй фильмы из поиска → открывай список, чтобы редактировать.',
+  'lists.hub.title': 'Раздел',
+  'lists.hub.tabs.aria': 'Вкладки списков',
+  'lists.hub.tabs.statuses': 'Статусы',
+  'lists.hub.tabs.collections': 'Коллекции',
 
   'inbox.purpose': 'Напоминания и события — чтобы ничего важного не пролетело мимо.',
   'inbox.instruction': 'Открой ленту → отмечай прочитанное; в «Правилах» настрой, что присылать.',
@@ -666,6 +670,10 @@ const EN: Dict = {
 
   'lists.purpose': 'Lists help you save “watch later” picks and build mood-based collections.',
   'lists.instruction': 'Create a list → add movies from search → open the list to edit.',
+  'lists.hub.title': 'Section',
+  'lists.hub.tabs.aria': 'Lists tabs',
+  'lists.hub.tabs.statuses': 'Statuses',
+  'lists.hub.tabs.collections': 'Collections',
 
   'inbox.purpose': 'Reminders and events — so nothing important slips by.',
   'inbox.instruction': 'Open the feed → mark items as read; use Rules to control what you receive.',

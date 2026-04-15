@@ -134,7 +134,7 @@
 - [x] **Account**: перестроить на блоки Profile/Connections/Preferences/Data/Advanced (без изменения функционала).
 
 ### M2 — IA объединения (снятие дублей)
-- [ ] **Lists hub**: `/collections` → tabs “Статусы” + “Коллекции”; `/watchlist` → redirect.
+- [x] **Lists hub**: `/collections` → tabs “Статусы” + “Коллекции”; `/watchlist` → redirect.
 - [ ] **Inbox hub**: перенести release subscriptions management из `/notifications` в Inbox; `/notifications` → redirect.
 - [ ] **Movie actions**: единые entrypoints “Add to diary / Add to list / Follow release”.
 

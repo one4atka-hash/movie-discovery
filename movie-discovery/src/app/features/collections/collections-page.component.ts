@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { BottomSheetComponent } from '@shared/ui/bottom-sheet/bottom-sheet.component';
@@ -32,12 +32,14 @@ import { CollectionsService } from './collections.service';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="page">
-      <app-page-intro
-        [title]="i18n.t('nav.lists')"
-        [purpose]="i18n.t('lists.purpose')"
-        [instruction]="i18n.t('lists.instruction')"
-      />
+    <section class="page" [class.page--embedded]="embedded()">
+      @if (!embedded()) {
+        <app-page-intro
+          [title]="i18n.t('nav.lists')"
+          [purpose]="i18n.t('lists.purpose')"
+          [instruction]="i18n.t('lists.instruction')"
+        />
+      }
 
       <app-section title="Мои списки">
         <div sectionActions>
@@ -163,6 +165,9 @@ import { CollectionsService } from './collections.service';
       .page {
         padding: 1rem 0 2rem;
       }
+      .page--embedded {
+        padding: 0;
+      }
       .head {
         margin-bottom: 0.9rem;
       }
@@ -210,6 +215,7 @@ import { CollectionsService } from './collections.service';
   ],
 })
 export class CollectionsPageComponent {
+  readonly embedded = input(false);
   readonly i18n = inject(I18nService);
   readonly toast = inject(ToastService);
   private readonly svc = inject(CollectionsService);

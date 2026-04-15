@@ -19,14 +19,21 @@ export const routes: Routes = [
   {
     path: 'collections',
     loadComponent: () =>
-      import('./features/collections/collections-page.component').then(
-        (c) => c.CollectionsPageComponent,
+      import('./features/collections/lists-hub-page.component').then(
+        (c) => c.ListsHubPageComponent,
+      ),
+  },
+  {
+    path: 'collections/statuses',
+    loadComponent: () =>
+      import('./features/collections/lists-hub-page.component').then(
+        (c) => c.ListsHubPageComponent,
       ),
   },
   {
     path: 'watchlist',
-    loadComponent: () =>
-      import('./features/watchlist/watchlist-page.component').then((c) => c.WatchlistPageComponent),
+    pathMatch: 'full',
+    redirectTo: 'collections/statuses',
   },
   {
     path: 'inbox',

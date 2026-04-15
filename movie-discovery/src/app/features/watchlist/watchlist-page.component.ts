@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { I18nService } from '@shared/i18n/i18n.service';
@@ -30,13 +30,15 @@ type WatchTab = 'all' | WatchStatus;
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="page">
-      <a class="back" routerLink="/">← {{ i18n.t('nav.home') }}</a>
+    <section class="page" [class.page--embedded]="embedded()">
+      @if (!embedded()) {
+        <a class="back" routerLink="/">← {{ i18n.t('nav.home') }}</a>
 
-      <header class="head">
-        <h1 class="title">Watchlist</h1>
-        <p class="sub">Статусы: хочу / смотрю / посмотрел / брошено / скрыто.</p>
-      </header>
+        <header class="head">
+          <h1 class="title">Watchlist</h1>
+          <p class="sub">Статусы: хочу / смотрю / посмотрел / брошено / скрыто.</p>
+        </header>
+      }
 
       <app-section title="Статус">
         <div sectionActions class="watch-toolbar">
@@ -112,6 +114,9 @@ type WatchTab = 'all' | WatchStatus;
       .page {
         padding: 1rem 0 2rem;
       }
+      .page--embedded {
+        padding: 0;
+      }
       .back {
         display: inline-block;
         margin-bottom: 1rem;
@@ -175,6 +180,7 @@ type WatchTab = 'all' | WatchStatus;
   ],
 })
 export class WatchlistPageComponent {
+  readonly embedded = input(false);
   readonly i18n = inject(I18nService);
   readonly svc = inject(WatchStateService);
 
