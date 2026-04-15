@@ -491,7 +491,7 @@ export class ImportPageComponent {
     this._err.set(null);
     const token = this.cinemaApi.getToken();
     if (!token) {
-      this._err.set('JWT token обязателен.');
+      this._err.set('Подключите сервер, чтобы загрузить импорт.');
       return;
     }
     this._busy.set(true);

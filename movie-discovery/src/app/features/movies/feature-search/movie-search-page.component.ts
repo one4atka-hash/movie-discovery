@@ -111,6 +111,12 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                   >{{ i18n.t('home.subsSeeAll') }}</a
                 >
               </div>
+              <p class="railBlock__hint">
+                {{ i18n.t('home.block.subscriptions.purpose') }}
+                <span class="railBlock__hint2">{{
+                  i18n.t('home.block.subscriptions.instruction')
+                }}</span>
+              </p>
 
               <ng-container *ngIf="isAuthed(); else subsGuest">
                 <p class="railBlock__empty" *ngIf="!subsCount()">
@@ -165,6 +171,12 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                   >{{ i18n.t('home.favoritesSeeAll') }}</a
                 >
               </div>
+              <p class="railBlock__hint">
+                {{ i18n.t('home.block.favorites.purpose') }}
+                <span class="railBlock__hint2">{{
+                  i18n.t('home.block.favorites.instruction')
+                }}</span>
+              </p>
               <p class="railBlock__empty" *ngIf="!favCount()">
                 {{ i18n.t('home.favoritesEmptySubtitle') }}
               </p>
@@ -196,6 +208,12 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                   {{ i18n.t('home.section.newReleases') }}
                 </h2>
               </div>
+              <p class="muted" style="margin: 0 0 0.6rem">
+                {{ i18n.t('home.block.nowPlaying.purpose') }}
+                <span style="display: block">{{
+                  i18n.t('home.block.nowPlaying.instruction')
+                }}</span>
+              </p>
               <div class="spotlight__strip" *ngIf="nowPlayingLoading()">
                 <div
                   class="spotlight__skel"
@@ -270,6 +288,12 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                   </button>
                 </div>
               </div>
+              <p class="muted" style="margin: 0 0 0.6rem">
+                {{ i18n.t('home.block.recommendations.purpose') }}
+                <span style="display: block">{{
+                  i18n.t('home.block.recommendations.instruction')
+                }}</span>
+              </p>
               <div class="grid grid--random" *ngIf="recsLoading()">
                 <div
                   class="skeleton-card"
@@ -340,6 +364,10 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                   </a>
                 </div>
               </div>
+              <p class="muted" style="margin: 0 0 0.6rem">
+                {{ i18n.t('home.block.random.purpose') }}
+                <span style="display: block">{{ i18n.t('home.block.random.instruction') }}</span>
+              </p>
               <div class="grid grid--random" *ngIf="randomLoading()">
                 <div
                   class="skeleton-card"
@@ -596,6 +624,11 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
         font-size: 0.86rem;
         line-height: 1.45;
         color: var(--text-muted);
+      }
+      .railBlock__hint2 {
+        display: block;
+        margin-top: 0.15rem;
+        color: var(--text-faint);
       }
 
       .railBlock__btn {

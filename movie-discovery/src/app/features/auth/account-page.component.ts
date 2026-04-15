@@ -94,23 +94,25 @@ import {
         </div>
 
         <section class="account-block" id="account-data" aria-labelledby="account-data-title">
-          <h2 class="account-block__title" id="account-data-title">Данные</h2>
-          <p class="muted">
-            Здесь можно выгрузить свои данные и при необходимости импортировать их обратно.
-          </p>
+          <h2 class="account-block__title" id="account-data-title">
+            {{ i18n.t('account.section.data') }}
+          </h2>
+          <p class="muted">{{ i18n.t('account.section.dataHint') }}</p>
           <div class="card">
             <app-server-connect
-              label="Подключение к серверу (опционально)"
-              hint="Войдите или зарегистрируйтесь, чтобы включить серверные функции (import/export, inbox, recommendations, embeddings)."
+              [label]="i18n.t('account.serverConnect.label')"
+              [hint]="i18n.t('account.serverConnect.hint')"
             />
 
             <div class="actions" style="margin-top: 0">
-              <button class="btn" type="button" [routerLink]="['/import']">Импорт</button>
+              <button class="btn" type="button" [routerLink]="['/import']">
+                {{ i18n.t('account.data.import') }}
+              </button>
             </div>
 
             <div class="actions" style="align-items: flex-end">
               <label class="field" style="margin-bottom: 0; flex: 1 1 180px; max-width: 220px">
-                <span>Раздел</span>
+                <span>{{ i18n.t('account.data.exportKind') }}</span>
                 <select class="input" [formControl]="exportKind">
                   <option value="diary">diary</option>
                   <option value="watch_state">watch_state</option>
@@ -118,7 +120,7 @@ import {
                 </select>
               </label>
               <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 200px">
-                <span>Формат</span>
+                <span>{{ i18n.t('account.data.exportFormat') }}</span>
                 <select class="input" [formControl]="exportFormat">
                   <option value="csv">csv</option>
                   <option value="json">json</option>
@@ -130,157 +132,168 @@ import {
                 (click)="downloadExport()"
                 [disabled]="busy()"
               >
-                Скачать
+                {{ i18n.t('account.data.exportDownload') }}
               </button>
             </div>
 
             <p class="err" *ngIf="exportError()">{{ exportError() }}</p>
 
-            <div class="field" style="margin-top: 0.35rem">
-              <span>{{ i18n.t('account.emailDev.hint') }}</span>
-              <div class="actions" style="margin-top: 0">
-                <button
-                  class="btn"
-                  type="button"
-                  (click)="sendDevTestEmail()"
-                  [disabled]="emailDevBusy()"
-                >
-                  {{ i18n.t('account.emailDev.button') }}
-                </button>
-              </div>
-              <p class="ok" *ngIf="emailDevOk()">{{ emailDevOk() }}</p>
-              <p class="err" *ngIf="emailDevErr()" style="margin-bottom: 0">{{ emailDevErr() }}</p>
-            </div>
-
-            <div class="field" style="margin-top: 0.35rem">
-              <span>Movie features cache (server)</span>
+            <details class="why" style="margin-top: 0.75rem">
+              <summary class="why__sum">{{ i18n.t('account.advanced.title') }}</summary>
               <p class="muted" style="margin: 0.35rem 0 0">
-                Прогреть кэш TMDB фич (title/overview/credits/keywords) для твоих favorites/likes.
+                {{ i18n.t('account.advanced.hint') }}
               </p>
-              <div class="actions" style="margin-top: 0">
-                <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 200px">
-                  <span>Limit</span>
-                  <select class="input" [formControl]="featuresLimit">
-                    <option [ngValue]="10">10</option>
-                    <option [ngValue]="30">30</option>
-                    <option [ngValue]="50">50</option>
-                  </select>
-                </label>
-                <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 220px">
-                  <span>Language (optional)</span>
-                  <input class="input" [formControl]="featuresLanguage" placeholder="en" />
-                </label>
-              </div>
-              <div class="actions" style="margin-top: 0">
-                <button
-                  class="btn"
-                  type="button"
-                  (click)="refreshMyMovieFeatures()"
-                  [disabled]="featuresBusy()"
-                >
-                  Refresh movie features
-                </button>
-              </div>
-              <p class="ok" *ngIf="featuresOk()">{{ featuresOk() }}</p>
-              <p class="err" *ngIf="featuresErr()" style="margin-bottom: 0">{{ featuresErr() }}</p>
-              <details *ngIf="featuresErrors().length" class="why" style="margin-top: 0.65rem">
-                <summary class="why__sum">Ошибки ({{ featuresErrors().length }})</summary>
-                <ul class="why__list">
-                  <li *ngFor="let e of featuresErrors()">
-                    <b>TMDB {{ e.tmdbId }}</b> — {{ e.error }}
-                  </li>
-                </ul>
-              </details>
-            </div>
 
-            <div class="field" style="margin-top: 0.9rem">
-              <span>Embeddings jobs (server)</span>
-              <p class="muted" style="margin: 0.35rem 0 0">
-                История задач генерации эмбеддингов для ANN-рекомендаций.
-              </p>
-              <div class="actions" style="margin-top: 0">
-                <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 220px">
-                  <span>Limit</span>
-                  <select class="input" [formControl]="embeddingsLimit">
-                    <option [ngValue]="20">20</option>
-                    <option [ngValue]="50">50</option>
-                    <option [ngValue]="100">100</option>
-                    <option [ngValue]="200">200</option>
-                  </select>
-                </label>
-                <button
-                  class="btn"
-                  type="button"
-                  (click)="previewMyEmbeddingsSeeds()"
-                  [disabled]="jobsBusy()"
-                >
-                  Preview seeds
-                </button>
-                <button
-                  class="btn btn--primary"
-                  type="button"
-                  (click)="createAndRunMyEmbeddingsJob()"
-                  [disabled]="jobsBusy()"
-                >
-                  Create + Run (from my favorites/likes)
-                </button>
-                <button
-                  class="btn"
-                  type="button"
-                  (click)="loadEmbeddingsJobs()"
-                  [disabled]="jobsBusy()"
-                >
-                  Load jobs
-                </button>
-              </div>
-              <p class="ok" *ngIf="jobsOk()" style="margin-bottom: 0">{{ jobsOk() }}</p>
-              <p class="err" *ngIf="jobsErr()" style="margin-bottom: 0">{{ jobsErr() }}</p>
-              <details *ngIf="seeds().length" class="why" style="margin-top: 0.65rem">
-                <summary class="why__sum">Seeds preview ({{ seeds().length }})</summary>
-                <ul class="why__list">
-                  <li *ngFor="let id of seedsShown()">TMDB {{ id }}</li>
-                </ul>
-                <p
-                  class="muted"
-                  *ngIf="seeds().length > seedsShown().length"
-                  style="margin: 0.35rem 0 0"
-                >
-                  …и ещё {{ seeds().length - seedsShown().length }}
+              <div class="field" style="margin-top: 0.65rem">
+                <span>{{ i18n.t('account.emailDev.hint') }}</span>
+                <div class="actions" style="margin-top: 0">
+                  <button
+                    class="btn"
+                    type="button"
+                    (click)="sendDevTestEmail()"
+                    [disabled]="emailDevBusy()"
+                  >
+                    {{ i18n.t('account.emailDev.button') }}
+                  </button>
+                </div>
+                <p class="ok" *ngIf="emailDevOk()">{{ emailDevOk() }}</p>
+                <p class="err" *ngIf="emailDevErr()" style="margin-bottom: 0">
+                  {{ emailDevErr() }}
                 </p>
-              </details>
-              <div class="subs-grid" *ngIf="jobs().length" style="margin-top: 0.65rem">
-                <article class="subCard" *ngFor="let j of jobs(); trackBy: trackByJobId">
-                  <div class="subCard__head">
-                    <div class="subCard__left">
-                      <div class="subCard__t">
-                        <strong class="subCard__title">Job {{ j.id.slice(0, 8) }}</strong>
-                        <span class="subCard__date">
-                          {{ j.status }}
-                          · {{ j.progress.processed }}/{{ j.progress.total }}
-                          <ng-container *ngIf="j.progress.failed">
-                            · failed {{ j.progress.failed }}</ng-container
-                          >
-                        </span>
+              </div>
+
+              <div class="field" style="margin-top: 0.75rem">
+                <span>Movie features cache (server)</span>
+                <p class="muted" style="margin: 0.35rem 0 0">
+                  Прогреть кэш TMDB фич (title/overview/credits/keywords) для твоих favorites/likes.
+                </p>
+                <div class="actions" style="margin-top: 0">
+                  <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 200px">
+                    <span>Limit</span>
+                    <select class="input" [formControl]="featuresLimit">
+                      <option [ngValue]="10">10</option>
+                      <option [ngValue]="30">30</option>
+                      <option [ngValue]="50">50</option>
+                    </select>
+                  </label>
+                  <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 220px">
+                    <span>Language (optional)</span>
+                    <input class="input" [formControl]="featuresLanguage" placeholder="en" />
+                  </label>
+                </div>
+                <div class="actions" style="margin-top: 0">
+                  <button
+                    class="btn"
+                    type="button"
+                    (click)="refreshMyMovieFeatures()"
+                    [disabled]="featuresBusy()"
+                  >
+                    Refresh movie features
+                  </button>
+                </div>
+                <p class="ok" *ngIf="featuresOk()">{{ featuresOk() }}</p>
+                <p class="err" *ngIf="featuresErr()" style="margin-bottom: 0">
+                  {{ featuresErr() }}
+                </p>
+                <details *ngIf="featuresErrors().length" class="why" style="margin-top: 0.65rem">
+                  <summary class="why__sum">Ошибки ({{ featuresErrors().length }})</summary>
+                  <ul class="why__list">
+                    <li *ngFor="let e of featuresErrors()">
+                      <b>TMDB {{ e.tmdbId }}</b> — {{ e.error }}
+                    </li>
+                  </ul>
+                </details>
+              </div>
+
+              <div class="field" style="margin-top: 0.9rem">
+                <span>Embeddings jobs (server)</span>
+                <p class="muted" style="margin: 0.35rem 0 0">
+                  История задач генерации эмбеддингов для ANN-рекомендаций.
+                </p>
+                <div class="actions" style="margin-top: 0">
+                  <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 220px">
+                    <span>Limit</span>
+                    <select class="input" [formControl]="embeddingsLimit">
+                      <option [ngValue]="20">20</option>
+                      <option [ngValue]="50">50</option>
+                      <option [ngValue]="100">100</option>
+                      <option [ngValue]="200">200</option>
+                    </select>
+                  </label>
+                  <button
+                    class="btn"
+                    type="button"
+                    (click)="previewMyEmbeddingsSeeds()"
+                    [disabled]="jobsBusy()"
+                  >
+                    Preview seeds
+                  </button>
+                  <button
+                    class="btn btn--primary"
+                    type="button"
+                    (click)="createAndRunMyEmbeddingsJob()"
+                    [disabled]="jobsBusy()"
+                  >
+                    Create + Run (from my favorites/likes)
+                  </button>
+                  <button
+                    class="btn"
+                    type="button"
+                    (click)="loadEmbeddingsJobs()"
+                    [disabled]="jobsBusy()"
+                  >
+                    Load jobs
+                  </button>
+                </div>
+                <p class="ok" *ngIf="jobsOk()" style="margin-bottom: 0">{{ jobsOk() }}</p>
+                <p class="err" *ngIf="jobsErr()" style="margin-bottom: 0">{{ jobsErr() }}</p>
+                <details *ngIf="seeds().length" class="why" style="margin-top: 0.65rem">
+                  <summary class="why__sum">Seeds preview ({{ seeds().length }})</summary>
+                  <ul class="why__list">
+                    <li *ngFor="let id of seedsShown()">TMDB {{ id }}</li>
+                  </ul>
+                  <p
+                    class="muted"
+                    *ngIf="seeds().length > seedsShown().length"
+                    style="margin: 0.35rem 0 0"
+                  >
+                    …и ещё {{ seeds().length - seedsShown().length }}
+                  </p>
+                </details>
+                <div class="subs-grid" *ngIf="jobs().length" style="margin-top: 0.65rem">
+                  <article class="subCard" *ngFor="let j of jobs(); trackBy: trackByJobId">
+                    <div class="subCard__head">
+                      <div class="subCard__left">
+                        <div class="subCard__t">
+                          <strong class="subCard__title">Job {{ j.id.slice(0, 8) }}</strong>
+                          <span class="subCard__date">
+                            {{ j.status }}
+                            · {{ j.progress.processed }}/{{ j.progress.total }}
+                            <ng-container *ngIf="j.progress.failed">
+                              · failed {{ j.progress.failed }}</ng-container
+                            >
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <p class="muted" *ngIf="j.error" style="margin: 0">{{ j.error }}</p>
-                  <div class="subCard__actions">
-                    <button
-                      class="btn"
-                      type="button"
-                      (click)="runEmbeddingsJob(j.id)"
-                      [disabled]="jobsBusy() || j.status === 'running'"
-                    >
-                      {{ j.status === 'running' ? 'Running…' : 'Run' }}
-                    </button>
-                  </div>
-                </article>
+                    <p class="muted" *ngIf="j.error" style="margin: 0">{{ j.error }}</p>
+                    <div class="subCard__actions">
+                      <button
+                        class="btn"
+                        type="button"
+                        (click)="runEmbeddingsJob(j.id)"
+                        [disabled]="jobsBusy() || j.status === 'running'"
+                      >
+                        {{ j.status === 'running' ? 'Running…' : 'Run' }}
+                      </button>
+                    </div>
+                  </article>
+                </div>
+                <p class="muted" *ngIf="!jobsBusy() && !jobsErr() && !jobs().length">
+                  Пока нет задач. Создать можно через API или будущий UI.
+                </p>
               </div>
-              <p class="muted" *ngIf="!jobsBusy() && !jobsErr() && !jobs().length">
-                Пока нет задач. Создать можно через API или будущий UI.
-              </p>
-            </div>
+            </details>
           </div>
         </section>
 
@@ -928,7 +941,7 @@ export class AccountPageComponent {
     this.exportError.set(null);
     const token = this.cinemaApi.getToken();
     if (!token) {
-      this.exportError.set('JWT token обязателен.');
+      this.exportError.set(this.i18n.t('account.serverConnect.required'));
       return;
     }
 

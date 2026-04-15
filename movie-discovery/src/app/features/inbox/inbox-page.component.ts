@@ -61,24 +61,28 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
         [instruction]="i18n.t('inbox.instruction')"
       />
 
-      <app-section title="Inbox">
+      <app-section [title]="i18n.t('nav.inbox')">
         <div sectionActions>
           <app-segmented
-            ariaLabel="Inbox tab"
-            [options]="tabOptions"
+            [ariaLabel]="i18n.t('inbox.tabs.aria')"
+            [options]="tabOptions()"
             [value]="tab()"
             (select)="tab.set($event)"
           />
-          <app-button variant="secondary" (click)="svc.addSample()">Показать пример</app-button>
-          <app-button variant="ghost" (click)="svc.markAllRead()"
-            >Отметить всё прочитанным</app-button
-          >
-          <app-button variant="secondary" (click)="openRuleCreate()">Новое правило</app-button>
+          <app-button variant="secondary" (click)="svc.addSample()">{{
+            i18n.t('inbox.actions.addSample')
+          }}</app-button>
+          <app-button variant="ghost" (click)="svc.markAllRead()">{{
+            i18n.t('inbox.actions.markAllRead')
+          }}</app-button>
+          <app-button variant="secondary" (click)="openRuleCreate()">{{
+            i18n.t('inbox.actions.newRule')
+          }}</app-button>
         </div>
 
         <app-server-connect
-          label="Подключение к серверу (опционально)"
-          hint="Войдите или зарегистрируйтесь, чтобы включить серверные уведомления/правила/напоминания."
+          [label]="i18n.t('inbox.serverConnect.label')"
+          [hint]="i18n.t('inbox.serverConnect.hint')"
         />
         <div class="actions" style="margin-top: 0.5rem">
           <app-button
@@ -88,7 +92,7 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
             (click)="loadServerFeed()"
             data-testid="inbox-load-server-feed"
           >
-            Загрузить ленту
+            {{ i18n.t('inbox.serverActions.loadFeed') }}
           </app-button>
           <app-button
             variant="ghost"
@@ -97,7 +101,7 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
             (click)="runDevAlerts()"
             data-testid="inbox-dev-run-alerts"
           >
-            Проверить уведомления
+            {{ i18n.t('inbox.serverActions.runAlerts') }}
           </app-button>
           <app-button
             variant="ghost"
@@ -106,7 +110,7 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
             (click)="seedServerRule()"
             data-testid="inbox-seed-server-rule"
           >
-            Добавить пример правила
+            {{ i18n.t('inbox.serverActions.seedRule') }}
           </app-button>
         </div>
         @if (serverErr(); as se) {
@@ -127,11 +131,15 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
           *ngIf="
             tab() === 'feed' && !items().length && !serverRows().length && !reminderRows().length
           "
-          title="Нет событий"
-          subtitle="Пока тихо. Можно добавить пример или настроить правило — и лента оживёт."
+          [title]="i18n.t('inbox.empty.feed.title')"
+          [subtitle]="i18n.t('inbox.empty.feed.subtitle')"
         >
-          <app-button variant="secondary" (click)="svc.addSample()">Показать пример</app-button>
-          <app-button variant="ghost" routerLink="/notifications">Подписки на релизы</app-button>
+          <app-button variant="secondary" (click)="svc.addSample()">{{
+            i18n.t('inbox.actions.addSample')
+          }}</app-button>
+          <app-button variant="ghost" routerLink="/notifications">{{
+            i18n.t('inbox.actions.releaseSubscriptions')
+          }}</app-button>
         </app-empty-state>
 
         <div class="list" *ngIf="tab() === 'feed' && reminderRows().length">
@@ -150,15 +158,15 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
               <small>{{ it.createdAt }}</small>
             </p>
             <div class="actions">
-              <app-button variant="ghost" [routerLink]="['/movie', it.tmdbId]"
-                >Open movie</app-button
-              >
+              <app-button variant="ghost" [routerLink]="['/movie', it.tmdbId]">{{
+                i18n.t('common.open')
+              }}</app-button>
             </div>
           </app-card>
         </div>
 
         <div class="list" *ngIf="tab() === 'feed' && serverRows().length">
-          <p class="muted" style="margin: 0 0 0.5rem">Синхронизированные события</p>
+          <p class="muted" style="margin: 0 0 0.5rem">{{ i18n.t('inbox.serverFeed.title') }}</p>
           <app-card
             *ngFor="let it of serverRows(); trackBy: trackByServerId"
             [title]="it.title"
@@ -176,7 +184,7 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
                 [disabled]="serverBusy() || !!it.readAt"
                 (click)="markServerRead(it)"
               >
-                Прочитано
+                {{ i18n.t('inbox.actions.read') }}
               </app-button>
               @if (it.ruleId) {
                 <app-button
@@ -184,13 +192,13 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
                   [disabled]="serverBusy() || !cinemaApi.hasToken()"
                   (click)="downloadRuleCalendar(it.ruleId)"
                 >
-                  Calendar (.ics)
+                  {{ i18n.t('inbox.actions.downloadCalendar') }}
                 </app-button>
               }
               @if (it.tmdbId != null) {
-                <app-button variant="ghost" [routerLink]="['/movie', it.tmdbId]"
-                  >Открыть фильм</app-button
-                >
+                <app-button variant="ghost" [routerLink]="['/movie', it.tmdbId]">{{
+                  i18n.t('inbox.actions.openMovie')
+                }}</app-button>
               }
             </div>
           </app-card>
@@ -203,7 +211,7 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
             }
             @if (it.explain?.length) {
               <details class="why">
-                <summary class="why__sum">Почему я это вижу?</summary>
+                <summary class="why__sum">{{ i18n.t('inbox.why.title') }}</summary>
                 <ul class="why__list">
                   <li *ngFor="let e of it.explain">
                     <b>{{ e.label }}</b>
@@ -216,12 +224,16 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
             }
 
             <div class="actions">
-              <app-button variant="secondary" (click)="svc.markRead(it.id)">Прочитано</app-button>
-              <app-button variant="ghost" (click)="svc.remove(it.id)">Убрать</app-button>
+              <app-button variant="secondary" (click)="svc.markRead(it.id)">{{
+                i18n.t('inbox.actions.read')
+              }}</app-button>
+              <app-button variant="ghost" (click)="svc.remove(it.id)">{{
+                i18n.t('inbox.actions.remove')
+              }}</app-button>
               @if (it.tmdbId != null) {
-                <app-button variant="ghost" [routerLink]="['/movie', it.tmdbId]"
-                  >Открыть фильм</app-button
-                >
+                <app-button variant="ghost" [routerLink]="['/movie', it.tmdbId]">{{
+                  i18n.t('inbox.actions.openMovie')
+                }}</app-button>
               }
             </div>
           </app-card>
@@ -229,30 +241,33 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
 
         <app-empty-state
           *ngIf="tab() === 'rules' && !rules().length"
-          title="Правил пока нет"
-          subtitle="Создай правило — и мы будем приносить в ленту то, что тебе действительно нужно."
+          [title]="i18n.t('inbox.empty.rules.title')"
+          [subtitle]="i18n.t('inbox.empty.rules.subtitle')"
         >
-          <app-button variant="secondary" (click)="openRuleCreate()">Новое правило</app-button>
+          <app-button variant="secondary" (click)="openRuleCreate()">{{
+            i18n.t('inbox.actions.newRule')
+          }}</app-button>
         </app-empty-state>
 
         <div class="list" *ngIf="tab() === 'rules' && rules().length">
           <app-card *ngFor="let r of rules(); trackBy: trackByRuleId" [title]="r.name">
             <p class="muted">
-              {{ r.enabled ? 'Enabled' : 'Disabled' }} · inApp={{
-                r.channels.inApp ? 'on' : 'off'
+              {{ r.enabled ? i18n.t('inbox.rule.enabled') : i18n.t('inbox.rule.disabled') }}
+              · inApp={{ r.channels.inApp ? i18n.t('inbox.rule.on') : i18n.t('inbox.rule.off') }} ·
+              webPush={{
+                r.channels.webPush ? i18n.t('inbox.rule.on') : i18n.t('inbox.rule.off')
               }}
-              · webPush={{ r.channels.webPush ? 'on' : 'off' }} · email={{
-                r.channels.email ? 'on' : 'off'
+              · email={{ r.channels.email ? i18n.t('inbox.rule.on') : i18n.t('inbox.rule.off') }} ·
+              calendar={{
+                r.channels.calendar ? i18n.t('inbox.rule.on') : i18n.t('inbox.rule.off')
               }}
-              · calendar={{ r.channels.calendar ? 'on' : 'off' }}
             </p>
             <p class="muted">
-              Filters: minRating={{ r.filters.minRating ?? '—' }}, maxRuntime={{
-                r.filters.maxRuntime ?? '—'
-              }}
+              {{ i18n.t('inbox.rule.filters') }} minRating={{ r.filters.minRating ?? '—' }},
+              maxRuntime={{ r.filters.maxRuntime ?? '—' }}
             </p>
             <details class="why">
-              <summary class="why__sum">Why (clauses)</summary>
+              <summary class="why__sum">{{ i18n.t('inbox.rule.whyClauses') }}</summary>
               <ul class="why__list">
                 <li *ngFor="let e of explainForRule(r)">
                   <b>{{ e.label }}</b>
@@ -263,27 +278,33 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
               </ul>
             </details>
             <div class="actions">
-              <app-button variant="secondary" (click)="openRuleEdit(r)">Edit</app-button>
-              <app-button variant="danger" (click)="svc.removeRule(r.id)">Delete</app-button>
+              <app-button variant="secondary" (click)="openRuleEdit(r)">{{
+                i18n.t('inbox.actions.edit')
+              }}</app-button>
+              <app-button variant="danger" (click)="svc.removeRule(r.id)">{{
+                i18n.t('inbox.actions.delete')
+              }}</app-button>
             </div>
           </app-card>
         </div>
 
         <div class="list" *ngIf="tab() === 'rules' && cinemaApi.hasToken() && serverRules().length">
-          <p class="muted" style="margin: 0 0 0.5rem">Server rules</p>
+          <p class="muted" style="margin: 0 0 0.5rem">{{ i18n.t('inbox.serverRules.title') }}</p>
           <app-card
             *ngFor="let r of serverRules(); trackBy: trackByServerRuleId"
             [title]="r.name"
             class="inbox-server-row"
           >
             <p class="muted">
-              {{ r.enabled ? 'Enabled' : 'Disabled' }} · inApp={{
-                r.channels.inApp ? 'on' : 'off'
+              {{ r.enabled ? i18n.t('inbox.rule.enabled') : i18n.t('inbox.rule.disabled') }}
+              · inApp={{ r.channels.inApp ? i18n.t('inbox.rule.on') : i18n.t('inbox.rule.off') }} ·
+              webPush={{
+                r.channels.webPush ? i18n.t('inbox.rule.on') : i18n.t('inbox.rule.off')
               }}
-              · webPush={{ r.channels.webPush ? 'on' : 'off' }} · email={{
-                r.channels.email ? 'on' : 'off'
+              · email={{ r.channels.email ? i18n.t('inbox.rule.on') : i18n.t('inbox.rule.off') }} ·
+              calendar={{
+                r.channels.calendar ? i18n.t('inbox.rule.on') : i18n.t('inbox.rule.off')
               }}
-              · calendar={{ r.channels.calendar ? 'on' : 'off' }}
             </p>
             <div class="actions">
               @if (r.channels.calendar) {
@@ -292,7 +313,7 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
                   [disabled]="serverBusy()"
                   (click)="downloadRuleCalendar(r.id)"
                 >
-                  Download calendar (.ics)
+                  {{ i18n.t('inbox.actions.downloadCalendar') }}
                 </app-button>
               }
             </div>
@@ -302,21 +323,21 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
 
       <app-bottom-sheet
         [open]="ruleSheetOpen()"
-        [title]="editingRule() ? 'Edit rule' : 'New rule'"
-        ariaLabel="Rule editor"
+        [title]="editingRule() ? i18n.t('inbox.sheet.editRule') : i18n.t('inbox.sheet.newRule')"
+        [ariaLabel]="i18n.t('inbox.sheet.aria')"
         (closed)="closeRuleSheet()"
       >
         <form class="form" (submit)="saveRule($event)">
-          <app-form-field label="Name">
+          <app-form-field [label]="i18n.t('inbox.form.name')">
             <input [(ngModel)]="draftName" name="name" required />
           </app-form-field>
-          <app-form-field label="Enabled">
+          <app-form-field [label]="i18n.t('inbox.form.enabled')">
             <select [(ngModel)]="draftEnabled" name="enabled">
-              <option [ngValue]="true">Enabled</option>
-              <option [ngValue]="false">Disabled</option>
+              <option [ngValue]="true">{{ i18n.t('inbox.rule.enabled') }}</option>
+              <option [ngValue]="false">{{ i18n.t('inbox.rule.disabled') }}</option>
             </select>
           </app-form-field>
-          <app-form-field label="Filters: min rating">
+          <app-form-field [label]="i18n.t('inbox.form.minRating')">
             <input
               [(ngModel)]="draftMinRating"
               name="minRating"
@@ -328,8 +349,8 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
           </app-form-field>
 
           <app-form-field
-            label="Filters: genres (TMDB genre ids)"
-            hint="Пример: 28 (Action), 35 (Comedy)"
+            [label]="i18n.t('inbox.form.genres')"
+            [hint]="i18n.t('inbox.form.genresHint')"
           >
             <div class="chipsRow">
               <input
@@ -340,7 +361,9 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
                 step="1"
                 placeholder="28"
               />
-              <app-button variant="secondary" type="button" (click)="addGenre()">Add</app-button>
+              <app-button variant="secondary" type="button" (click)="addGenre()">{{
+                i18n.t('inbox.actions.add')
+              }}</app-button>
             </div>
             <div class="chips" *ngIf="draftGenres().length">
               <app-chip
@@ -352,7 +375,7 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
               </app-chip>
             </div>
           </app-form-field>
-          <app-form-field label="Filters: max runtime (min)">
+          <app-form-field [label]="i18n.t('inbox.form.maxRuntime')">
             <input
               [(ngModel)]="draftMaxRuntime"
               name="maxRuntime"
@@ -363,10 +386,15 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
             />
           </app-form-field>
 
-          <app-form-field label="Filters: languages" hint="ISO 639-1, напр. en, ru">
+          <app-form-field
+            [label]="i18n.t('inbox.form.languages')"
+            [hint]="i18n.t('inbox.form.languagesHint')"
+          >
             <div class="chipsRow">
               <input [(ngModel)]="draftLang" name="lang" placeholder="en" />
-              <app-button variant="secondary" type="button" (click)="addLang()">Add</app-button>
+              <app-button variant="secondary" type="button" (click)="addLang()">{{
+                i18n.t('inbox.actions.add')
+              }}</app-button>
             </div>
             <div class="chips" *ngIf="draftLangs().length">
               <app-chip
@@ -380,14 +408,14 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
           </app-form-field>
 
           <app-form-field
-            label="Filters: provider keys"
-            hint="MVP: free-form (используем позже на backend)"
+            [label]="i18n.t('inbox.form.providerKeys')"
+            [hint]="i18n.t('inbox.form.providerKeysHint')"
           >
             <div class="chipsRow">
               <input [(ngModel)]="draftProviderKey" name="providerKey" placeholder="netflix" />
-              <app-button variant="secondary" type="button" (click)="addProviderKey()"
-                >Add</app-button
-              >
+              <app-button variant="secondary" type="button" (click)="addProviderKey()">{{
+                i18n.t('inbox.actions.add')
+              }}</app-button>
             </div>
             <div class="chips" *ngIf="draftProviderKeys().length">
               <app-chip
@@ -399,7 +427,7 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
               </app-chip>
             </div>
           </app-form-field>
-          <app-form-field label="Channels">
+          <app-form-field [label]="i18n.t('inbox.form.channels')">
             <div class="row">
               <label class="check"
                 ><input type="checkbox" [(ngModel)]="chInApp" name="chInApp" /> In-app</label
@@ -417,7 +445,7 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
           </app-form-field>
 
           <div class="whyPreview">
-            <p class="muted whyPreview__ttl">Why (from clauses)</p>
+            <p class="muted whyPreview__ttl">{{ i18n.t('inbox.form.whyPreview') }}</p>
             <ul class="whyPreview__list">
               <li *ngFor="let e of whyPreviewLines(); trackBy: trackExplain">
                 <b>{{ e.label }}</b>
@@ -434,13 +462,15 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
               [loading]="previewLoading()"
               (click)="runPreview()"
             >
-              Preview
+              {{ i18n.t('inbox.actions.preview') }}
             </app-button>
           </div>
 
           <div class="formActions">
-            <app-button variant="ghost" type="button" (click)="closeRuleSheet()">Cancel</app-button>
-            <app-button type="submit">Save</app-button>
+            <app-button variant="ghost" type="button" (click)="closeRuleSheet()">{{
+              i18n.t('common.cancel')
+            }}</app-button>
+            <app-button type="submit">{{ i18n.t('common.save') }}</app-button>
           </div>
         </form>
       </app-bottom-sheet>
@@ -590,10 +620,10 @@ export class InboxPageComponent {
   readonly serverErr = this._serverErr.asReadonly();
 
   readonly tab = signal<'feed' | 'rules'>('feed');
-  readonly tabOptions = [
-    { value: 'feed' as const, label: 'Feed' },
-    { value: 'rules' as const, label: 'Rules' },
-  ];
+  readonly tabOptions = computed(() => [
+    { value: 'feed' as const, label: this.i18n.t('inbox.tabs.feed') },
+    { value: 'rules' as const, label: this.i18n.t('inbox.tabs.rules') },
+  ]);
 
   readonly items = computed(() => this.svc.itemsSorted());
   readonly rules = computed(() => this.svc.rulesSorted());
