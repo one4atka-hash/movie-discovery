@@ -33,6 +33,7 @@ import {
 } from '@core/server-cinema-api.service';
 import { ServerSessionService } from '@core/server-session.service';
 import { ServerPushSyncService } from '@core/server-push-sync.service';
+import { DataPrivacyWizardSheetComponent } from './data-privacy-wizard-sheet.component';
 import {
   ExportsApiService,
   type ExportFormat,
@@ -51,6 +52,7 @@ import {
     BottomSheetComponent,
     ChipComponent,
     ServerConnectComponent,
+    DataPrivacyWizardSheetComponent,
     PageIntroComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -165,34 +167,8 @@ import {
           <p class="muted">{{ i18n.t('account.section.dataHint') }}</p>
           <div class="card">
             <div class="actions" style="margin-top: 0">
-              <button class="btn" type="button" [routerLink]="['/import']">
-                {{ i18n.t('account.data.import') }}
-              </button>
-            </div>
-
-            <div class="actions" style="align-items: flex-end">
-              <label class="field" style="margin-bottom: 0; flex: 1 1 180px; max-width: 220px">
-                <span>{{ i18n.t('account.data.exportKind') }}</span>
-                <select class="input" [formControl]="exportKind">
-                  <option value="diary">diary</option>
-                  <option value="watch_state">watch_state</option>
-                  <option value="favorites">favorites</option>
-                </select>
-              </label>
-              <label class="field" style="margin-bottom: 0; flex: 1 1 140px; max-width: 200px">
-                <span>{{ i18n.t('account.data.exportFormat') }}</span>
-                <select class="input" [formControl]="exportFormat">
-                  <option value="csv">csv</option>
-                  <option value="json">json</option>
-                </select>
-              </label>
-              <button
-                class="btn btn--primary"
-                type="button"
-                (click)="downloadExport()"
-                [disabled]="busy()"
-              >
-                {{ i18n.t('account.data.exportDownload') }}
+              <button class="btn btn--primary" type="button" (click)="dataWizardOpen.set(true)">
+                {{ i18n.t('account.dataWizard.open') }}
               </button>
             </div>
 
@@ -338,6 +314,13 @@ import {
             </details>
           </div>
         </section>
+
+        <app-data-privacy-wizard-sheet
+          [open]="dataWizardOpen()"
+          [exportError]="exportError()"
+          (closed)="dataWizardOpen.set(false)"
+          (exportClick)="downloadExportFromWizard($event)"
+        />
 
         <section class="account-block" id="account-public" aria-labelledby="account-public-title">
           <h2 class="account-block__title" id="account-public-title">
@@ -872,6 +855,7 @@ export class AccountPageComponent {
   readonly exportKind = new FormControl<ExportKind>('diary', { nonNullable: true });
   readonly exportFormat = new FormControl<ExportFormat>('csv', { nonNullable: true });
   readonly exportError = signal<string | null>(null);
+  readonly dataWizardOpen = signal(false);
 
   readonly emailDevBusy = signal(false);
   readonly emailDevOk = signal<string | null>(null);
@@ -1088,6 +1072,12 @@ export class AccountPageComponent {
         this._busy.set(false);
       },
     });
+  }
+
+  downloadExportFromWizard(input: { kind: ExportKind; format: ExportFormat }): void {
+    this.exportKind.setValue(input.kind);
+    this.exportFormat.setValue(input.format);
+    this.downloadExport();
   }
 
   sendDevTestEmail(): void {

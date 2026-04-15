@@ -5,9 +5,11 @@ import { FormsModule } from '@angular/forms';
 
 import { StorageService } from '@core/storage.service';
 import { ServerCinemaApiService } from '@core/server-cinema-api.service';
+import { I18nService } from '@shared/i18n/i18n.service';
 import { ButtonComponent } from '@shared/ui/button/button.component';
 import { CardComponent } from '@shared/ui/card/card.component';
 import { FormFieldComponent } from '@shared/ui/form-field/form-field.component';
+import { PageIntroComponent } from '@shared/ui/page-intro/page-intro.component';
 import { SectionComponent } from '@shared/ui/section/section.component';
 import { ServerConnectComponent } from '@shared/ui/server-connect/server-connect.component';
 
@@ -26,252 +28,283 @@ const HIDE_RESOLVED_KEY = 'import.hideResolved.v1';
     ButtonComponent,
     CardComponent,
     ServerConnectComponent,
+    PageIntroComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-section title="Импорт данных">
-      <app-card>
-        <div class="grid">
-          <app-server-connect
-            label="Подключение к серверу (опционально)"
-            hint="Войдите или зарегистрируйтесь, чтобы импортировать данные на сервер."
-          />
+    <section class="page">
+      <app-page-intro
+        [title]="i18n.t('import.title')"
+        [purpose]="i18n.t('import.purpose')"
+        [instruction]="i18n.t('import.instruction')"
+      />
 
-          <div class="row2">
-            <app-form-field label="Что импортируем">
-              <select [(ngModel)]="kind">
-                <option value="diary">diary</option>
-                <option value="watch_state">watch_state</option>
-                <option value="favorites">favorites</option>
-              </select>
-            </app-form-field>
-            <app-form-field label="Формат">
-              <select [(ngModel)]="format">
-                <option value="json">json</option>
-                <option value="csv">csv</option>
-              </select>
-            </app-form-field>
-          </div>
-
-          <app-form-field
-            label="Данные"
-            hint="Вставь JSON/CSV. Если файл большой — лучше импортировать частями."
-          >
-            <textarea [(ngModel)]="payload" rows="8" placeholder='{"items":[...]}'></textarea>
-          </app-form-field>
-
-          <div class="actions">
-            <app-button variant="secondary" [disabled]="busy()" (click)="createJob()">
-              Подготовить
-            </app-button>
-            <app-button variant="secondary" [disabled]="busy() || !jobId()" (click)="preview()">
-              Предпросмотр
-            </app-button>
-            <app-button variant="primary" [disabled]="busy() || !jobId()" (click)="apply()">
-              Импортировать
-            </app-button>
-          </div>
-
-          @if (jobId(); as id) {
-            <p class="meta">
-              <b>Задача</b>: <code>{{ id }}</code>
-              @if (jobStatus(); as st) {
-                · <b>Статус</b>: {{ st }}
-              }
-            </p>
-          }
-
-          @if (previewSummary(); as s) {
-            <p class="meta">
-              <b>Preview</b>: total {{ s.totalRows }}, ok {{ s.okRows }}, conflict
-              {{ s.conflictRows }}, error {{ s.errorRows }}
-            </p>
-          }
-
-          @if (err(); as e) {
-            <p class="err" role="alert">{{ e }}</p>
-          }
-        </div>
-      </app-card>
-    </app-section>
-
-    <app-section title="Preview rows">
-      <div sectionActions>
-        <app-button variant="ghost" [disabled]="busy() || !jobId()" (click)="loadRows()"
-          >Refresh</app-button
-        >
-      </div>
-
-      @if (!jobId()) {
-        <p class="muted">Создай job и сделай Preview, чтобы увидеть строки.</p>
-      } @else {
+      <app-section [title]="i18n.t('import.section.setup')">
         <app-card>
-          <div class="rows-head">
-            <span class="muted"
-              >Total: <b>{{ rowsTotal() }}</b> · Showing: <b>{{ rows().length }}</b></span
-            >
-            <div class="pager">
-              <app-button variant="ghost" [disabled]="busy() || !canRowsPrev()" (click)="rowsPrev()"
-                >Prev</app-button
-              >
-              <span class="muted"
-                >Offset: <b>{{ rowsOffset() }}</b> · Limit: <b>{{ rowsLimit() }}</b></span
-              >
-              <app-button variant="ghost" [disabled]="busy() || !canRowsNext()" (click)="rowsNext()"
-                >Next</app-button
-              >
-            </div>
-          </div>
+          <div class="grid">
+            <app-server-connect
+              [label]="i18n.t('import.serverConnect.label')"
+              [hint]="i18n.t('import.serverConnect.hint')"
+            />
 
-          <div class="rows">
-            @for (r of rows(); track r.rowN) {
-              <div class="row">
-                <div class="row__meta">
-                  <span
-                    ><b>#{{ r.rowN }}</b></span
-                  >
-                  <span class="pill" [class.pill--bad]="r.status !== 'ok'">{{ r.status }}</span>
-                </div>
-                <pre class="row__json">{{ pretty(r.mapped) }}</pre>
-                @if (r.error) {
-                  <p class="row__err">{{ r.error }}</p>
+            <div class="row2">
+              <app-form-field [label]="i18n.t('import.form.kind')">
+                <select [(ngModel)]="kind">
+                  <option value="diary">diary</option>
+                  <option value="watch_state">watch_state</option>
+                  <option value="favorites">favorites</option>
+                </select>
+              </app-form-field>
+              <app-form-field [label]="i18n.t('import.form.format')">
+                <select [(ngModel)]="format">
+                  <option value="json">json</option>
+                  <option value="csv">csv</option>
+                </select>
+              </app-form-field>
+            </div>
+
+            <app-form-field
+              [label]="i18n.t('import.form.payload')"
+              [hint]="i18n.t('import.form.payloadHint')"
+            >
+              <textarea [(ngModel)]="payload" rows="8" placeholder='{"items":[...]}'></textarea>
+            </app-form-field>
+
+            <div class="actions">
+              <app-button
+                variant="secondary"
+                [disabled]="busy() || !canSend()"
+                (click)="createJob()"
+              >
+                {{ i18n.t('import.actions.prepare') }}
+              </app-button>
+              <app-button
+                variant="secondary"
+                [disabled]="busy() || !canSend() || !jobId()"
+                (click)="preview()"
+              >
+                {{ i18n.t('import.actions.preview') }}
+              </app-button>
+              <app-button
+                variant="primary"
+                [disabled]="busy() || !canSend() || !jobId()"
+                (click)="apply()"
+              >
+                {{ i18n.t('import.actions.apply') }}
+              </app-button>
+            </div>
+
+            @if (jobId(); as id) {
+              <p class="meta">
+                <b>{{ i18n.t('import.meta.job') }}</b
+                >: <code>{{ id }}</code>
+                @if (jobStatus(); as st) {
+                  · <b>{{ i18n.t('import.meta.status') }}</b
+                  >: {{ st }}
                 }
-                <div class="row__actions">
-                  <app-button variant="ghost" (click)="openResolve(r.rowN, r.mapped)"
-                    >Resolve</app-button
-                  >
-                </div>
-              </div>
+              </p>
+            }
+
+            @if (previewSummary(); as s) {
+              <p class="meta">
+                <b>{{ i18n.t('import.meta.preview') }}</b
+                >: total {{ s.totalRows }}, ok {{ s.okRows }}, conflict {{ s.conflictRows }}, error
+                {{ s.errorRows }}
+              </p>
+            }
+
+            @if (err(); as e) {
+              <p class="err" role="alert">{{ e }}</p>
             }
           </div>
         </app-card>
-      }
-    </app-section>
+      </app-section>
 
-    <app-section title="Conflicts">
-      <div sectionActions>
-        <app-button variant="ghost" [disabled]="busy() || !jobId()" (click)="loadConflicts()"
-          >Refresh</app-button
-        >
-        <app-button variant="ghost" [disabled]="busy()" (click)="toggleShowResolved()">
-          {{ hideResolved() ? 'Show resolved' : 'Hide resolved' }}
-        </app-button>
-      </div>
+      <app-section [title]="i18n.t('import.section.rows')">
+        <div sectionActions>
+          <app-button variant="ghost" [disabled]="busy() || !jobId()" (click)="loadRows()">{{
+            i18n.t('import.actions.refresh')
+          }}</app-button>
+        </div>
 
-      @if (!jobId()) {
-        <p class="muted">Сначала создай job и сделай Preview.</p>
-      } @else {
-        <app-card>
-          <div class="rows-head">
-            <span class="muted"
-              >Total: <b>{{ conflictsTotal() }}</b> · Showing:
-              <b>{{ visibleConflicts().length }}</b></span
-            >
-            <div class="pager">
-              <app-button
-                variant="ghost"
-                [disabled]="busy() || !canConflictsPrev()"
-                (click)="conflictsPrev()"
-                >Prev</app-button
-              >
+        @if (!jobId()) {
+          <p class="muted">{{ i18n.t('import.rows.empty') }}</p>
+        } @else {
+          <app-card>
+            <div class="rows-head">
               <span class="muted"
-                >Offset: <b>{{ conflictsOffset() }}</b> · Limit: <b>{{ conflictsLimit() }}</b></span
+                >Total: <b>{{ rowsTotal() }}</b> · Showing: <b>{{ rows().length }}</b></span
               >
-              <app-button
-                variant="ghost"
-                [disabled]="busy() || !canConflictsNext()"
-                (click)="conflictsNext()"
-                >Next</app-button
-              >
+              <div class="pager">
+                <app-button
+                  variant="ghost"
+                  [disabled]="busy() || !canRowsPrev()"
+                  (click)="rowsPrev()"
+                  >Prev</app-button
+                >
+                <span class="muted"
+                  >Offset: <b>{{ rowsOffset() }}</b> · Limit: <b>{{ rowsLimit() }}</b></span
+                >
+                <app-button
+                  variant="ghost"
+                  [disabled]="busy() || !canRowsNext()"
+                  (click)="rowsNext()"
+                  >Next</app-button
+                >
+              </div>
             </div>
-          </div>
 
-          @if (visibleConflicts().length === 0) {
-            <p class="muted">Пока конфликтов нет (MVP).</p>
-          } @else {
             <div class="rows">
-              @for (c of visibleConflicts(); track c.id) {
+              @for (r of rows(); track r.rowN) {
                 <div class="row">
                   <div class="row__meta">
                     <span
-                      ><b>{{ c.entity }}</b> · <code>{{ c.key }}</code></span
+                      ><b>#{{ r.rowN }}</b></span
                     >
-                    <span class="muted">
-                      {{ c.createdAt }}
-                      @if (c.resolution) {
-                        · <b>resolved</b>
-                      }
-                    </span>
+                    <span class="pill" [class.pill--bad]="r.status !== 'ok'">{{ r.status }}</span>
                   </div>
-                  <details class="details" open>
-                    <summary class="details__sum">Incoming</summary>
-                    <pre class="row__json">{{ pretty(c.incoming) }}</pre>
-                  </details>
-                  <details class="details">
-                    <summary class="details__sum">Server</summary>
-                    <pre class="row__json">{{ pretty(c.server) }}</pre>
-                  </details>
-                  @if (c.resolution) {
-                    <details class="details">
-                      <summary class="details__sum">Resolution</summary>
-                      <pre class="row__json">{{ pretty(c.resolution) }}</pre>
-                    </details>
+                  <pre class="row__json">{{ pretty(r.mapped) }}</pre>
+                  @if (r.error) {
+                    <p class="row__err">{{ r.error }}</p>
                   }
-                  <div class="row__actions" style="justify-content: space-between; gap: 0.5rem">
-                    <app-button
-                      variant="ghost"
-                      [disabled]="busy() || !!c.resolution"
-                      (click)="quickResolve(c.rowN, c.server)"
-                      >Use server</app-button
+                  <div class="row__actions">
+                    <app-button variant="ghost" (click)="openResolve(r.rowN, r.mapped)"
+                      >Resolve</app-button
                     >
-                    <app-button
-                      variant="ghost"
-                      [disabled]="busy() || !!c.resolution"
-                      (click)="quickResolve(c.rowN, c.incoming)"
-                      >Use incoming</app-button
-                    >
-                    @if (c.rowN) {
-                      <app-button
-                        variant="ghost"
-                        [disabled]="busy()"
-                        (click)="openResolve(c.rowN, c.incoming)"
-                        >Resolve row</app-button
-                      >
-                    }
                   </div>
                 </div>
               }
             </div>
-          }
-        </app-card>
-      }
-    </app-section>
+          </app-card>
+        }
+      </app-section>
 
-    @if (resolveOpen()) {
-      <div class="modal" (click)="closeResolve()">
-        <div class="modal__panel" (click)="$event.stopPropagation()">
-          <h3 class="modal__title">Resolve row #{{ resolveRowN() }}</h3>
-          <p class="muted">MVP: редактируем <code>mapped</code> JSON и отправляем resolve.</p>
-          <app-form-field label="Status">
-            <select [(ngModel)]="resolveStatus">
-              <option value="ok">ok</option>
-              <option value="error">error</option>
-              <option value="pending">pending</option>
-              <option value="conflict">conflict</option>
-            </select>
-          </app-form-field>
-          <app-form-field label="Mapped (JSON)">
-            <textarea [(ngModel)]="resolveMappedText" rows="8"></textarea>
-          </app-form-field>
-          <div class="actions">
-            <app-button variant="secondary" (click)="closeResolve()">Cancel</app-button>
-            <app-button variant="primary" [disabled]="busy()" (click)="submitResolve()"
-              >Save</app-button
-            >
+      <app-section title="Conflicts">
+        <div sectionActions>
+          <app-button variant="ghost" [disabled]="busy() || !jobId()" (click)="loadConflicts()"
+            >Refresh</app-button
+          >
+          <app-button variant="ghost" [disabled]="busy()" (click)="toggleShowResolved()">
+            {{ hideResolved() ? 'Show resolved' : 'Hide resolved' }}
+          </app-button>
+        </div>
+
+        @if (!jobId()) {
+          <p class="muted">Сначала создай job и сделай Preview.</p>
+        } @else {
+          <app-card>
+            <div class="rows-head">
+              <span class="muted"
+                >Total: <b>{{ conflictsTotal() }}</b> · Showing:
+                <b>{{ visibleConflicts().length }}</b></span
+              >
+              <div class="pager">
+                <app-button
+                  variant="ghost"
+                  [disabled]="busy() || !canConflictsPrev()"
+                  (click)="conflictsPrev()"
+                  >Prev</app-button
+                >
+                <span class="muted"
+                  >Offset: <b>{{ conflictsOffset() }}</b> · Limit:
+                  <b>{{ conflictsLimit() }}</b></span
+                >
+                <app-button
+                  variant="ghost"
+                  [disabled]="busy() || !canConflictsNext()"
+                  (click)="conflictsNext()"
+                  >Next</app-button
+                >
+              </div>
+            </div>
+
+            @if (visibleConflicts().length === 0) {
+              <p class="muted">Пока конфликтов нет (MVP).</p>
+            } @else {
+              <div class="rows">
+                @for (c of visibleConflicts(); track c.id) {
+                  <div class="row">
+                    <div class="row__meta">
+                      <span
+                        ><b>{{ c.entity }}</b> · <code>{{ c.key }}</code></span
+                      >
+                      <span class="muted">
+                        {{ c.createdAt }}
+                        @if (c.resolution) {
+                          · <b>resolved</b>
+                        }
+                      </span>
+                    </div>
+                    <details class="details" open>
+                      <summary class="details__sum">Incoming</summary>
+                      <pre class="row__json">{{ pretty(c.incoming) }}</pre>
+                    </details>
+                    <details class="details">
+                      <summary class="details__sum">Server</summary>
+                      <pre class="row__json">{{ pretty(c.server) }}</pre>
+                    </details>
+                    @if (c.resolution) {
+                      <details class="details">
+                        <summary class="details__sum">Resolution</summary>
+                        <pre class="row__json">{{ pretty(c.resolution) }}</pre>
+                      </details>
+                    }
+                    <div class="row__actions" style="justify-content: space-between; gap: 0.5rem">
+                      <app-button
+                        variant="ghost"
+                        [disabled]="busy() || !!c.resolution"
+                        (click)="quickResolve(c.rowN, c.server)"
+                        >Use server</app-button
+                      >
+                      <app-button
+                        variant="ghost"
+                        [disabled]="busy() || !!c.resolution"
+                        (click)="quickResolve(c.rowN, c.incoming)"
+                        >Use incoming</app-button
+                      >
+                      @if (c.rowN) {
+                        <app-button
+                          variant="ghost"
+                          [disabled]="busy()"
+                          (click)="openResolve(c.rowN, c.incoming)"
+                          >Resolve row</app-button
+                        >
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </app-card>
+        }
+      </app-section>
+
+      @if (resolveOpen()) {
+        <div class="modal" (click)="closeResolve()">
+          <div class="modal__panel" (click)="$event.stopPropagation()">
+            <h3 class="modal__title">Resolve row #{{ resolveRowN() }}</h3>
+            <p class="muted">MVP: редактируем <code>mapped</code> JSON и отправляем resolve.</p>
+            <app-form-field label="Status">
+              <select [(ngModel)]="resolveStatus">
+                <option value="ok">ok</option>
+                <option value="error">error</option>
+                <option value="pending">pending</option>
+                <option value="conflict">conflict</option>
+              </select>
+            </app-form-field>
+            <app-form-field label="Mapped (JSON)">
+              <textarea [(ngModel)]="resolveMappedText" rows="8"></textarea>
+            </app-form-field>
+            <div class="actions">
+              <app-button variant="secondary" (click)="closeResolve()">Cancel</app-button>
+              <app-button variant="primary" [disabled]="busy()" (click)="submitResolve()"
+                >Save</app-button
+              >
+            </div>
           </div>
         </div>
-      </div>
-    }
+      }
+    </section>
   `,
   styles: [
     `
@@ -404,6 +437,7 @@ export class ImportPageComponent {
   private readonly api = inject(ImportApiService);
   private readonly storage = inject(StorageService);
   private readonly cinemaApi = inject(ServerCinemaApiService);
+  readonly i18n = inject(I18nService);
   kind: ImportKind = 'favorites';
   format: ImportFormat = 'json';
   payload = '';
@@ -491,7 +525,7 @@ export class ImportPageComponent {
     this._err.set(null);
     const token = this.cinemaApi.getToken();
     if (!token) {
-      this._err.set('Подключите сервер, чтобы загрузить импорт.');
+      this._err.set(this.i18n.t('import.errNeedConnect'));
       return;
     }
     this._busy.set(true);
