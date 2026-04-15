@@ -44,39 +44,41 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
         [instruction]="i18n.t('decide.instruction')"
       />
 
-      <app-card title="Пожелания">
-        <p class="muted">
-          Выберите 1–2 пункта — и мы соберём аккуратный список вариантов. Если ничего не выбирать —
-          тоже ок: будет “как есть”, без лишних условий.
-        </p>
+      <app-card [title]="i18n.t('decide.constraints.title')">
+        <p class="muted">{{ i18n.t('decide.constraints.hint') }}</p>
 
         <div class="row">
-          <app-chip [selected]="maxMinutes() === 90" (clicked)="setMaxMinutes(90)"
-            >≤ 90 мин</app-chip
-          >
-          <app-chip [selected]="maxMinutes() === 110" (clicked)="setMaxMinutes(110)"
-            >≤ 110 мин</app-chip
-          >
-          <app-chip [selected]="maxMinutes() === 140" (clicked)="setMaxMinutes(140)"
-            >≤ 140 мин</app-chip
-          >
+          <app-chip [selected]="maxMinutes() === 90" (clicked)="setMaxMinutes(90)">{{
+            i18n.t('decide.constraints.runtime90')
+          }}</app-chip>
+          <app-chip [selected]="maxMinutes() === 110" (clicked)="setMaxMinutes(110)">{{
+            i18n.t('decide.constraints.runtime110')
+          }}</app-chip>
+          <app-chip [selected]="maxMinutes() === 140" (clicked)="setMaxMinutes(140)">{{
+            i18n.t('decide.constraints.runtime140')
+          }}</app-chip>
         </div>
+        <p class="muted muted--note">{{ i18n.t('decide.constraints.runtimeNote') }}</p>
 
         <div class="row" *ngIf="hasMyServices()">
           <app-chip [selected]="onlyMyServices()" (clicked)="toggleOnlyMyServices()">
-            Только на моих сервисах
+            {{ i18n.t('decide.constraints.onlyMyServices') }}
           </app-chip>
-          <a class="link" routerLink="/account" fragment="account-streaming">Настроить</a>
+          <a class="link" routerLink="/account" fragment="account-streaming">{{
+            i18n.t('decide.constraints.configure')
+          }}</a>
         </div>
 
         <div class="row">
           <app-chip [selected]="genre() === 'thriller'" (clicked)="setGenre('thriller')">
-            Триллер
+            {{ i18n.t('decide.constraints.genre.thriller') }}
           </app-chip>
           <app-chip [selected]="genre() === 'comedy'" (clicked)="setGenre('comedy')">
-            Комедия
+            {{ i18n.t('decide.constraints.genre.comedy') }}
           </app-chip>
-          <app-chip [selected]="genre() === 'drama'" (clicked)="setGenre('drama')">Драма</app-chip>
+          <app-chip [selected]="genre() === 'drama'" (clicked)="setGenre('drama')">{{
+            i18n.t('decide.constraints.genre.drama')
+          }}</app-chip>
         </div>
 
         <div class="actions" cardActions>
@@ -136,7 +138,7 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
         <div sectionActions>
           <app-segmented
             [ariaLabel]="i18n.t('decide.mode.aria')"
-            [options]="modeOptions"
+            [options]="modeOptions()"
             [value]="mode()"
             (select)="mode.set($event)"
           />
@@ -212,6 +214,11 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
         margin: 0 0 0.8rem;
         color: var(--text-muted);
         line-height: 1.5;
+      }
+      .muted--note {
+        margin-top: -0.25rem;
+        color: var(--text-faint);
+        font-size: 0.92rem;
       }
       .row {
         display: flex;
@@ -317,10 +324,10 @@ export class DecisionPageComponent {
 
   readonly hasMyServices = computed(() => this.streamingPrefs.providers().length > 0);
 
-  readonly modeOptions = [
-    { value: 'top5' as const, label: 'Top 5' },
-    { value: 'roulette' as const, label: 'Roulette' },
-  ];
+  readonly modeOptions = computed(() => [
+    { value: 'top5' as const, label: this.i18n.t('decide.mode.top5') },
+    { value: 'roulette' as const, label: this.i18n.t('decide.mode.roulette') },
+  ]);
 
   readonly constraints = computed<DecisionConstraints>(() => ({
     maxMinutes: this.maxMinutes(),

@@ -43,31 +43,37 @@ import { DiaryService } from './diary.service';
         [instruction]="i18n.t('diary.instruction')"
       />
 
-      <app-section title="Записи">
+      <app-section [title]="i18n.t('diary.section.entries')">
         <div sectionActions>
-          <app-button (click)="openCreate()">Добавить запись</app-button>
+          <app-button (click)="openCreate()">{{ i18n.t('diary.actions.addEntry') }}</app-button>
         </div>
 
         <div class="stats" *ngIf="stats() as s">
-          <app-badge variant="muted">Всего: {{ s.total }}</app-badge>
+          <app-badge variant="muted">{{ i18n.t('diary.stats.total') }}: {{ s.total }}</app-badge>
           @if (s.avgRating != null) {
             <app-badge variant="accent">★ {{ s.avgRating }}</app-badge>
           }
           @if (s.topTags.length) {
-            <app-badge>Теги: {{ s.topTags.join(', ') }}</app-badge>
+            <app-badge>{{ i18n.t('diary.stats.tags') }}: {{ s.topTags.join(', ') }}</app-badge>
           }
           @if (s.topLocations.length) {
-            <app-badge variant="muted">Где: {{ s.topLocations.join(' · ') }}</app-badge>
+            <app-badge variant="muted"
+              >{{ i18n.t('diary.stats.where') }}: {{ s.topLocations.join(' · ') }}</app-badge
+            >
           }
         </div>
 
         <app-empty-state
           *ngIf="!entries().length"
-          title="Пока пусто"
-          subtitle="Добавь первую запись — и дневник начнёт “помнить” за тебя."
+          [title]="i18n.t('diary.empty.title')"
+          [subtitle]="i18n.t('diary.empty.subtitle')"
         >
-          <app-button variant="secondary" (click)="openCreate()">Добавить запись</app-button>
-          <app-button variant="ghost" routerLink="/">Найти фильм</app-button>
+          <app-button variant="secondary" (click)="openCreate()">{{
+            i18n.t('diary.actions.addEntry')
+          }}</app-button>
+          <app-button variant="ghost" routerLink="/">{{
+            i18n.t('diary.actions.findMovie')
+          }}</app-button>
         </app-empty-state>
 
         <div class="list" *ngIf="entries().length">
@@ -91,8 +97,12 @@ import { DiaryService } from './diary.service';
             }
 
             <div class="actions">
-              <app-button variant="secondary" (click)="openEdit(e)">Изменить</app-button>
-              <app-button variant="danger" (click)="remove(e)">Удалить</app-button>
+              <app-button variant="secondary" (click)="openEdit(e)">{{
+                i18n.t('diary.actions.edit')
+              }}</app-button>
+              <app-button variant="danger" (click)="remove(e)">{{
+                i18n.t('diary.actions.delete')
+              }}</app-button>
             </div>
           </app-card>
         </div>
@@ -394,7 +404,7 @@ function computeStats(entries: readonly DiaryEntry[]): {
   }
   const topLocations = [...locCounts.entries()]
     .sort((a, b) => b[1] - a[1])
-    .map(([k]) => (k === 'cinema' ? 'Cinema' : k === 'streaming' ? 'Streaming' : 'Home'));
+    .map(([k]) => (k === 'cinema' ? 'Кинотеатр' : k === 'streaming' ? 'Стриминг' : 'Дома'));
 
   return { total, avgRating, topTags, topLocations };
 }
