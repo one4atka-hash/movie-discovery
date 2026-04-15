@@ -102,10 +102,13 @@ export const routes: Routes = [
   },
   {
     path: 'notifications',
+    pathMatch: 'full',
+    redirectTo: 'inbox/subscriptions',
+  },
+  {
+    path: 'inbox/subscriptions',
     loadComponent: () =>
-      import('./features/notifications/notifications-page.component').then(
-        (c) => c.NotificationsPageComponent,
-      ),
+      import('./features/inbox/inbox-page.component').then((c) => c.InboxPageComponent),
   },
   {
     path: 'favorites',

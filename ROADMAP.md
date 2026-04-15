@@ -695,7 +695,7 @@ Component tests:
 ##### 6.6.2 Объединение пересекающегося функционала (IA)
 - [x] **Lists ↔ Watchlist**: объединить в одну зону “Списки” (внутри: таб “Статусы” + “Коллекции”), `/watchlist` оставить как алиас/редирект.
 - [x] **Inbox ↔ Notifications**: сделать Inbox единым центром уведомлений:
-  - [x] release subscriptions management (сейчас `/notifications`)
+  - [x] release subscriptions management (перенесено в Inbox, `/inbox/subscriptions`)
   - [x] server notifications feed
   - [x] rules editor
   - [x] `/notifications` оставить как алиас/редирект на Inbox‑секцию.

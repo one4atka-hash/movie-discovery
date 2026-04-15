@@ -1,7 +1,14 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { NavigationEnd, RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import { StorageService } from '@core/storage.service';
@@ -33,6 +40,11 @@ import { ServerSessionService } from '@core/server-session.service';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { MovieService } from '@features/movies/data-access/services/movie.service';
 import type { Movie } from '@features/movies/data-access/models/movie.model';
+import { filter } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AuthService } from '@features/auth/auth.service';
+import { ReleaseSubscriptionsService } from '@features/notifications/release-subscriptions.service';
+import { sortSubscriptionsByRelease } from '@core/release-list.util';
 
 @Component({
   selector: 'app-inbox-page',
@@ -67,7 +79,7 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
             [ariaLabel]="i18n.t('inbox.tabs.aria')"
             [options]="tabOptions()"
             [value]="tab()"
-            (select)="tab.set($event)"
+            (select)="setTab($event)"
           />
           <app-button variant="secondary" (click)="svc.addSample()">{{
             i18n.t('inbox.actions.addSample')
@@ -137,7 +149,7 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
           <app-button variant="secondary" (click)="svc.addSample()">{{
             i18n.t('inbox.actions.addSample')
           }}</app-button>
-          <app-button variant="ghost" routerLink="/notifications">{{
+          <app-button variant="ghost" routerLink="/inbox/subscriptions">{{
             i18n.t('inbox.actions.releaseSubscriptions')
           }}</app-button>
         </app-empty-state>
@@ -316,6 +328,32 @@ import type { Movie } from '@features/movies/data-access/models/movie.model';
                   {{ i18n.t('inbox.actions.downloadCalendar') }}
                 </app-button>
               }
+            </div>
+          </app-card>
+        </div>
+
+        <app-empty-state
+          *ngIf="tab() === 'subs' && !isAuthed()"
+          [title]="i18n.t('account.login')"
+          [subtitle]="i18n.t('home.loginForSubs')"
+        />
+
+        <app-empty-state
+          *ngIf="tab() === 'subs' && isAuthed() && !subsSorted().length"
+          [title]="i18n.t('inbox.subs.title')"
+          [subtitle]="i18n.t('notifications.empty')"
+        />
+
+        <div class="list" *ngIf="tab() === 'subs' && isAuthed() && subsSorted().length">
+          <app-card *ngFor="let s of subsSorted(); trackBy: trackBySubId" [title]="s.title">
+            <p class="muted">{{ s.releaseDate || '—' }}</p>
+            <div class="actions">
+              <app-button variant="secondary" [routerLink]="['/movie', s.tmdbId]">{{
+                i18n.t('notifications.open')
+              }}</app-button>
+              <app-button variant="danger" (click)="removeSub(s.id)">{{
+                i18n.t('notifications.remove')
+              }}</app-button>
             </div>
           </app-card>
         </div>
@@ -607,6 +645,10 @@ export class InboxPageComponent {
   private readonly alertsApi = inject(AlertsApiService);
   readonly cinemaApi = inject(ServerCinemaApiService);
   readonly serverSession = inject(ServerSessionService);
+  private readonly auth = inject(AuthService);
+  private readonly subsSvc = inject(ReleaseSubscriptionsService);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly _serverRows = signal<ServerNotificationItem[]>([]);
   readonly serverRows = this._serverRows.asReadonly();
@@ -619,16 +661,60 @@ export class InboxPageComponent {
   private readonly _serverErr = signal<string | null>(null);
   readonly serverErr = this._serverErr.asReadonly();
 
-  readonly tab = signal<'feed' | 'rules'>('feed');
+  readonly tab = signal<'feed' | 'rules' | 'subs'>('feed');
   readonly tabOptions = computed(() => [
     { value: 'feed' as const, label: this.i18n.t('inbox.tabs.feed') },
     { value: 'rules' as const, label: this.i18n.t('inbox.tabs.rules') },
+    { value: 'subs' as const, label: this.i18n.t('inbox.tabs.subs') },
   ]);
 
   readonly items = computed(() => this.svc.itemsSorted());
   readonly rules = computed(() => this.svc.rulesSorted());
 
-  constructor() {}
+  readonly isAuthed = computed(() => this.auth.isAuthenticated());
+  readonly subsSorted = computed(() => sortSubscriptionsByRelease(this.subsSvc.mySubscriptions()));
+
+  constructor() {
+    this.syncTabFromUrl(this.router.url);
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({ next: (e) => this.syncTabFromUrl(e.urlAfterRedirects) });
+  }
+
+  setTab(t: 'feed' | 'rules' | 'subs'): void {
+    if (t === 'subs') {
+      void this.router.navigateByUrl('/inbox/subscriptions');
+      return;
+    }
+    if (this.router.url.includes('/inbox/subscriptions')) {
+      void this.router.navigateByUrl('/inbox');
+      return;
+    }
+    this.tab.set(t);
+  }
+
+  private syncTabFromUrl(url: string): void {
+    if (url.includes('/inbox/subscriptions')) {
+      this.tab.set('subs');
+      return;
+    }
+    if (this.tab() === 'subs') this.tab.set('feed');
+  }
+
+  trackBySubId(_: number, s: { id: string }): string {
+    return s.id;
+  }
+
+  removeSub(id: string): void {
+    try {
+      this.subsSvc.remove(id);
+    } catch {
+      /* ignore */
+    }
+  }
 
   retryServerFeed(): void {
     this.loadServerFeed();

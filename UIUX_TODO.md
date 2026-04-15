@@ -135,7 +135,7 @@
 
 ### M2 — IA объединения (снятие дублей)
 - [x] **Lists hub**: `/collections` → tabs “Статусы” + “Коллекции”; `/watchlist` → redirect.
-- [ ] **Inbox hub**: перенести release subscriptions management из `/notifications` в Inbox; `/notifications` → redirect.
+- [x] **Inbox hub**: перенести release subscriptions management из `/notifications` в Inbox; `/notifications` → redirect.
 - [ ] **Movie actions**: единые entrypoints “Add to diary / Add to list / Follow release”.
 
 ### M3 — “No tokens” и настоящий onboarding
