@@ -1,9 +1,19 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  EventEmitter,
+  computed,
+  inject,
+  input,
+  Output,
+} from '@angular/core';
 
 export interface SegmentedOption<T extends string> {
   readonly value: T;
   readonly label: string;
+  readonly disabled?: boolean;
 }
 
 @Component({
@@ -12,14 +22,19 @@ export interface SegmentedOption<T extends string> {
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="seg" role="group" [attr.aria-label]="ariaLabel()">
+    <div class="seg" role="radiogroup" [attr.aria-label]="ariaLabel()">
       <button
         class="seg__btn"
         type="button"
         *ngFor="let o of options(); trackBy: trackByValue"
         [class.seg__btn--active]="value() === o.value"
-        [attr.aria-pressed]="value() === o.value"
-        (click)="select.emit(o.value)"
+        [disabled]="o.disabled ?? false"
+        role="radio"
+        [attr.aria-checked]="value() === o.value"
+        [attr.tabindex]="tabIndexFor(o.value)"
+        [attr.data-seg-value]="o.value"
+        (click)="onSelect(o.value)"
+        (keydown)="onKeydown($event, o.value)"
       >
         {{ o.label }}
       </button>
@@ -58,22 +73,85 @@ export interface SegmentedOption<T extends string> {
         color: var(--text);
       }
 
+      .seg__btn:focus-visible {
+        outline: var(--focus-ring);
+        outline-offset: 2px;
+      }
+
       .seg__btn--active {
         color: var(--text);
         border-color: color-mix(in srgb, var(--accent-secondary) 45%, var(--border-subtle));
         background: color-mix(in srgb, var(--accent-secondary) 14%, transparent);
       }
+
+      .seg__btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+      }
     `,
   ],
 })
 export class SegmentedControlComponent<T extends string> {
+  private readonly host = inject(ElementRef<HTMLElement>);
+
   readonly ariaLabel = input<string>('Options');
   readonly options = input<readonly SegmentedOption<T>[]>([]);
   readonly value = input<T | null>(null);
+  readonly enabledOptions = computed(() => this.options().filter((o) => !(o.disabled ?? false)));
 
   @Output() readonly select = new EventEmitter<T>();
 
   trackByValue(_: number, o: SegmentedOption<T>): string {
     return o.value;
+  }
+
+  tabIndexFor(value: T): number {
+    const current = this.value();
+    if (current === value) return 0;
+    if (current == null) {
+      return this.enabledOptions()[0]?.value === value ? 0 : -1;
+    }
+    return -1;
+  }
+
+  onSelect(value: T): void {
+    const option = this.options().find((o) => o.value === value);
+    if (option?.disabled) return;
+    this.select.emit(value);
+  }
+
+  onKeydown(event: KeyboardEvent, value: T): void {
+    const enabled = this.enabledOptions();
+    if (!enabled.length) return;
+
+    if (event.key === ' ' || event.key === 'Enter') {
+      event.preventDefault();
+      this.onSelect(value);
+      return;
+    }
+
+    const currentIndex = enabled.findIndex((o) => o.value === value);
+    if (currentIndex === -1) return;
+
+    let nextIndex = currentIndex;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown')
+      nextIndex = (currentIndex + 1) % enabled.length;
+    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp')
+      nextIndex = (currentIndex - 1 + enabled.length) % enabled.length;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = enabled.length - 1;
+    else return;
+
+    event.preventDefault();
+    const next = enabled[nextIndex]!;
+    this.select.emit(next.value);
+    queueMicrotask(() => this.focusOption(next.value));
+  }
+
+  private focusOption(value: T): void {
+    const root = this.host.nativeElement as HTMLElement;
+    const button = root.querySelector(`[data-seg-value="${value}"]`) as HTMLButtonElement | null;
+    button?.focus();
   }
 }

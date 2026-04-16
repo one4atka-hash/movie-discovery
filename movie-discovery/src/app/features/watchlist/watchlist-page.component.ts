@@ -43,7 +43,7 @@ type WatchTab = 'all' | WatchStatus;
       <app-section title="Статус">
         <div sectionActions class="watch-toolbar">
           <app-segmented
-            ariaLabel="Watchlist filter"
+            [ariaLabel]="i18n.t('watchlist.filter.aria')"
             [options]="tabOptions"
             [value]="tab()"
             (select)="tab.set($event)"

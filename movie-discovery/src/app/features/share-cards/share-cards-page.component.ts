@@ -43,7 +43,7 @@ import {
 
       <div class="toolbar">
         <app-segmented
-          ariaLabel="Share template"
+          [ariaLabel]="i18n.t('share.template.aria')"
           [options]="templateOptions()"
           [value]="template()"
           (select)="template.set($event)"
