@@ -97,7 +97,11 @@
           [attr.aria-label]="i18n.t('looks.selectAria')"
           [attr.title]="i18n.t('looks.selectHint')"
         >
-          <option *ngFor="let l of looks(); trackBy: trackByLookId" [value]="l.id">
+          <option
+            *ngFor="let l of looks(); trackBy: trackByLookId"
+            [value]="l.id"
+            [selected]="l.id === activeLookId()"
+          >
             {{ l.name }}
           </option>
         </select>
