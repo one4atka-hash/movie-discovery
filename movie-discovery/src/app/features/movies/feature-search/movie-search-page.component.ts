@@ -10,7 +10,7 @@ import {
   untracked,
 } from '@angular/core';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   catchError,
   debounceTime,
@@ -82,19 +82,30 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
         <input
           class="searchBar__input"
           [formControl]="queryControl"
-          placeholder="Введите название фильма…"
+          [attr.placeholder]="i18n.t('home.searchPlaceholder')"
           autocomplete="off"
-          aria-label="Поиск фильма"
+          [attr.aria-label]="i18n.t('home.searchAria')"
+          data-testid="home-search-input"
         />
       </div>
 
-      <div class="filters" *ngIf="hasMyServices()">
-        <app-chip [selected]="onlyMyServices()" (clicked)="toggleOnlyMyServices()">
-          Только на моих сервисах
-        </app-chip>
-        <a class="filters__link" routerLink="/account/settings" [queryParams]="{ tab: 'streaming' }"
-          >Настроить</a
+      <div class="filters" data-testid="home-my-services-filter">
+        <app-chip
+          [selected]="onlyMyServices()"
+          [disabled]="!hasMyServices()"
+          (clicked)="toggleOnlyMyServices()"
         >
+          {{ i18n.t('home.myServices.toggle') }}
+        </app-chip>
+        <a
+          class="filters__link"
+          routerLink="/account/settings"
+          [queryParams]="{ tab: 'streaming' }"
+          >{{ i18n.t('home.myServices.configure') }}</a
+        >
+        <span class="filters__hint" *ngIf="!hasMyServices()">
+          {{ i18n.t('home.myServices.hint') }}
+        </span>
       </div>
 
       <div class="dashboard" *ngIf="showHero()">
@@ -314,9 +325,9 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                       class="whyBtn"
                       type="button"
                       (click)="openWhy(m)"
-                      aria-label="Why this?"
+                      [attr.aria-label]="i18n.t('home.why.aria')"
                     >
-                      Why?
+                      {{ i18n.t('home.why.short') }}
                     </button>
                     <button
                       type="button"
@@ -409,14 +420,14 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
 
       <app-empty-state
         *ngIf="!showHero() && !loading() && error()"
-        title="Ошибка запроса"
+        [title]="i18n.t('home.search.errorTitle')"
         [subtitle]="error()"
       />
 
       <app-empty-state
         *ngIf="!showHero() && !loading() && !error() && showEmpty()"
-        title="Ничего не найдено"
-        subtitle="Попробуйте другой запрос."
+        [title]="i18n.t('home.search.emptyTitle')"
+        [subtitle]="i18n.t('home.search.emptySubtitle')"
       />
 
       <div class="grid" *ngIf="!showHero() && !loading() && !error() && moviesVisible().length">
@@ -448,24 +459,30 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
 
       <app-bottom-sheet
         [open]="whyOpen()"
-        title="Why this?"
-        ariaLabel="Recommendation explanation"
+        [title]="i18n.t('home.why.title')"
+        [ariaLabel]="i18n.t('home.why.aria')"
         (closed)="closeWhy()"
       >
         @if (whyMovie(); as m) {
           <p class="muted">
-            Рекомендация построена на TMDB recommendations и ваших сигналах (избранное/реакции).
+            {{ i18n.t('home.why.body') }}
           </p>
           @if (recsSeeds().length) {
             <p class="muted">
-              Seeds из избранного:
+              {{ i18n.t('home.why.seedsLabel') }}
               <strong>{{ recsSeeds().map((x) => x.title).join(', ') }}</strong>
             </p>
           }
           <div class="whyActions">
-            <app-button variant="secondary" [routerLink]="['/movie', m.id]">Открыть</app-button>
-            <app-button variant="ghost" (click)="lessLikeThis(m.id)">Less like this</app-button>
-            <app-button variant="danger" (click)="hideRec(m.id)">Hide</app-button>
+            <app-button variant="secondary" [routerLink]="['/movie', m.id]">{{
+              i18n.t('common.open')
+            }}</app-button>
+            <app-button variant="ghost" (click)="lessLikeThis(m.id)">{{
+              i18n.t('home.why.lessLikeThis')
+            }}</app-button>
+            <app-button variant="danger" (click)="hideRec(m.id)">{{
+              i18n.t('home.why.hide')
+            }}</app-button>
           </div>
         }
       </app-bottom-sheet>
@@ -534,11 +551,18 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
         display: flex;
         align-items: center;
         gap: 0.75rem;
+        flex-wrap: wrap;
         margin: -0.35rem 0 0.75rem;
       }
 
+      .filters__hint {
+        color: var(--text-muted);
+        font-size: var(--font-size-caption);
+        line-height: 1.4;
+      }
+
       .filters__link {
-        color: var(--muted);
+        color: var(--text-muted);
         text-decoration: underline;
         text-underline-offset: 3px;
         font-size: 0.95rem;
@@ -1106,6 +1130,7 @@ export class MovieSearchPageComponent {
   private readonly config = inject(ConfigService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly subsSvc = inject(ReleaseSubscriptionsService);
   private readonly fav = inject(FavoritesService);
@@ -1271,7 +1296,13 @@ export class MovieSearchPageComponent {
     });
     this.queryControl.valueChanges
       .pipe(
-        tap((q) => this._draft.set(q)),
+        tap((q) => {
+          this._draft.set(q);
+          this.syncQueryParam(q);
+          if (q.trim().length < 2) {
+            this.resetSearchState();
+          }
+        }),
         debounceTime(350),
         distinctUntilChanged(),
         tap(() => {
@@ -1317,8 +1348,37 @@ export class MovieSearchPageComponent {
 
   private applySearchQueryParam(q: string | null | undefined): void {
     const v = (q ?? '').trim();
-    if (v.length < 2) return;
-    this.queryControl.setValue(v, { emitEvent: true });
+    if (this.queryControl.value !== v) {
+      this.queryControl.setValue(v, { emitEvent: v.length >= 2 });
+    }
+    this._draft.set(v);
+    if (v.length < 2) {
+      this.resetSearchState();
+    }
+  }
+
+  private syncQueryParam(q: string): void {
+    const next = q.trim();
+    const current = (this.route.snapshot.queryParamMap.get('q') ?? '').trim();
+    const normalizedNext = next.length >= 2 ? next : '';
+    if (current === normalizedNext) return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { q: normalizedNext || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private resetSearchState(): void {
+    this._query.set('');
+    this._hasSearched.set(false);
+    this._loading.set(false);
+    this._loadingMore.set(false);
+    this._error.set(null);
+    this._movies.set([]);
+    this._page.set(1);
+    this._totalPages.set(1);
   }
 
   loadNextPage(): void {
