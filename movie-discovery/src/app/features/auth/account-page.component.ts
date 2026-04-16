@@ -25,7 +25,6 @@ import { ChipComponent } from '@shared/ui/chip/chip.component';
 import { ServerConnectComponent } from '@shared/ui/server-connect/server-connect.component';
 import { StreamingCatalogService } from '@features/streaming/streaming-catalog.service';
 import { StorageService } from '@core/storage.service';
-import { PageIntroComponent } from '@shared/ui/page-intro/page-intro.component';
 import { LooksService, type Look } from '@core/looks.service';
 import {
   ServerCinemaApiService,
@@ -54,41 +53,103 @@ import {
     ChipComponent,
     ServerConnectComponent,
     DataPrivacyWizardSheetComponent,
-    PageIntroComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="page">
-      <a class="back" routerLink="/">← {{ i18n.t('nav.home') }}</a>
+    <section class="settings">
+      <nav class="tabs tabs--inner" [attr.aria-label]="i18n.t('account.title')">
+        <button
+          class="tabBtn"
+          type="button"
+          [class.is-active]="settingsTab() === 'overview'"
+          (click)="settingsTab.set('overview')"
+        >
+          {{ i18n.t('common.overview') }}
+        </button>
+        <button
+          class="tabBtn"
+          type="button"
+          [class.is-active]="settingsTab() === 'profile'"
+          (click)="settingsTab.set('profile')"
+        >
+          {{ i18n.t('account.publicProfile.title') }}
+        </button>
+        <button
+          class="tabBtn"
+          type="button"
+          [class.is-active]="settingsTab() === 'looks'"
+          (click)="settingsTab.set('looks')"
+        >
+          {{ i18n.t('account.looks.title') }}
+        </button>
+        <button
+          class="tabBtn"
+          type="button"
+          [class.is-active]="settingsTab() === 'server'"
+          (click)="settingsTab.set('server')"
+        >
+          {{ i18n.t('account.section.connections') }}
+        </button>
+        <button
+          class="tabBtn"
+          type="button"
+          [class.is-active]="settingsTab() === 'data'"
+          (click)="settingsTab.set('data')"
+        >
+          {{ i18n.t('account.section.data') }}
+        </button>
+        <button
+          class="tabBtn"
+          type="button"
+          [class.is-active]="settingsTab() === 'subs'"
+          (click)="settingsTab.set('subs')"
+        >
+          {{ i18n.t('account.section.subscriptions') }}
+        </button>
+        <button
+          class="tabBtn"
+          type="button"
+          [class.is-active]="settingsTab() === 'streaming'"
+          (click)="settingsTab.set('streaming')"
+        >
+          Мои сервисы
+        </button>
+        <button
+          class="tabBtn"
+          type="button"
+          [class.is-active]="settingsTab() === 'favorites'"
+          (click)="settingsTab.set('favorites')"
+        >
+          {{ i18n.t('account.section.favorites') }}
+        </button>
+      </nav>
 
-      <app-page-intro
-        [title]="i18n.t('account.title')"
-        [purpose]="i18n.t('account.subtitle')"
-        [instruction]="i18n.t('account.instruction')"
-      />
+      <section *ngIf="settingsTab() === 'overview'">
+        <section
+          class="account-block"
+          id="account-share-cards"
+          aria-labelledby="account-share-cards-title"
+        >
+          <h2 class="account-block__title" id="account-share-cards-title">
+            {{ i18n.t('account.shareCards.title') }}
+          </h2>
+          <p class="muted">{{ i18n.t('account.shareCards.hint') }}</p>
+          <a class="btn btn--primary" routerLink="/share">{{
+            i18n.t('account.shareCards.open')
+          }}</a>
+        </section>
 
-      <section
-        class="account-block"
-        id="account-share-cards"
-        aria-labelledby="account-share-cards-title"
-      >
-        <h2 class="account-block__title" id="account-share-cards-title">
-          {{ i18n.t('account.shareCards.title') }}
-        </h2>
-        <p class="muted">{{ i18n.t('account.shareCards.hint') }}</p>
-        <a class="btn btn--primary" routerLink="/share">{{ i18n.t('account.shareCards.open') }}</a>
-      </section>
-
-      <section class="account-block" id="account-me-hub" aria-labelledby="account-me-hub-title">
-        <h2 class="account-block__title" id="account-me-hub-title">
-          {{ i18n.t('account.meHub.title') }}
-        </h2>
-        <p class="muted">{{ i18n.t('account.meHub.hint') }}</p>
-        <a class="btn btn--primary" routerLink="/me">{{ i18n.t('account.meHub.open') }}</a>
+        <section class="account-block" id="account-me-hub" aria-labelledby="account-me-hub-title">
+          <h2 class="account-block__title" id="account-me-hub-title">
+            {{ i18n.t('account.meHub.title') }}
+          </h2>
+          <p class="muted">{{ i18n.t('account.meHub.hint') }}</p>
+          <a class="btn btn--primary" routerLink="/me">{{ i18n.t('account.meHub.open') }}</a>
+        </section>
       </section>
 
       <ng-container *ngIf="user() as u; else authTpl">
-        <div class="card card--who">
+        <div class="card card--who" *ngIf="settingsTab() === 'overview'">
           <p class="muted">{{ i18n.t('account.loggedInAs') }}</p>
           <strong>{{ u.email }}</strong>
           <div class="actions">
@@ -99,6 +160,7 @@ import {
         </div>
 
         <section
+          *ngIf="settingsTab() === 'server'"
           class="account-block"
           id="account-connections"
           aria-labelledby="account-connections-title"
@@ -161,7 +223,12 @@ import {
           </div>
         </section>
 
-        <section class="account-block" id="account-data" aria-labelledby="account-data-title">
+        <section
+          *ngIf="settingsTab() === 'data'"
+          class="account-block"
+          id="account-data"
+          aria-labelledby="account-data-title"
+        >
           <h2 class="account-block__title" id="account-data-title">
             {{ i18n.t('account.section.data') }}
           </h2>
@@ -323,7 +390,12 @@ import {
           (exportClick)="downloadExportFromWizard($event)"
         />
 
-        <section class="account-block" id="account-public" aria-labelledby="account-public-title">
+        <section
+          *ngIf="settingsTab() === 'profile'"
+          class="account-block"
+          id="account-public"
+          aria-labelledby="account-public-title"
+        >
           <h2 class="account-block__title" id="account-public-title">
             {{ i18n.t('account.publicProfile.title') }}
           </h2>
@@ -400,7 +472,12 @@ import {
           </div>
         </section>
 
-        <section class="account-block" id="account-looks" aria-labelledby="account-looks-title">
+        <section
+          *ngIf="settingsTab() === 'looks'"
+          class="account-block"
+          id="account-looks"
+          aria-labelledby="account-looks-title"
+        >
           <h2 class="account-block__title" id="account-looks-title">
             {{ i18n.t('account.looks.title') }}
           </h2>
@@ -476,7 +553,12 @@ import {
           </div>
         </section>
 
-        <section class="account-block" id="account-subs" aria-labelledby="account-subs-title">
+        <section
+          *ngIf="settingsTab() === 'subs'"
+          class="account-block"
+          id="account-subs"
+          aria-labelledby="account-subs-title"
+        >
           <h2 class="account-block__title" id="account-subs-title">
             {{ i18n.t('account.section.subscriptions') }}
           </h2>
@@ -572,6 +654,7 @@ import {
       </ng-template>
 
       <section
+        *ngIf="settingsTab() === 'streaming'"
         class="account-block"
         id="account-streaming"
         aria-labelledby="account-streaming-title"
@@ -694,7 +777,12 @@ import {
         </div>
       </app-bottom-sheet>
 
-      <section class="account-block" id="account-favorites" aria-labelledby="account-fav-title">
+      <section
+        *ngIf="settingsTab() === 'favorites'"
+        class="account-block"
+        id="account-favorites"
+        aria-labelledby="account-fav-title"
+      >
         <h2 class="account-block__title" id="account-fav-title">
           {{ i18n.t('account.section.favorites') }}
         </h2>
@@ -713,17 +801,39 @@ import {
   `,
   styles: [
     `
-      .page {
-        padding: 1rem 0 2rem;
+      .settings {
+        padding: 0 0 2rem;
       }
-      .back {
-        display: inline-block;
-        margin-bottom: 1rem;
-        text-decoration: none;
-        color: var(--text-muted);
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 0 0 1rem;
       }
-      .back:hover {
+      .tabBtn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem 0.85rem;
+        border-radius: 9999px;
+        border: 1px solid var(--border-subtle);
+        background: rgba(255, 255, 255, 0.04);
         color: var(--text);
+        cursor: pointer;
+        font: inherit;
+        transition:
+          transform 0.15s ease,
+          background 0.15s ease,
+          border-color 0.15s ease;
+      }
+      .tabBtn:hover {
+        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 0.07);
+        border-color: rgba(255, 255, 255, 0.14);
+      }
+      .tabBtn.is-active {
+        border-color: rgba(255, 195, 113, 0.45);
+        background: rgba(255, 195, 113, 0.12);
       }
       .head {
         margin-bottom: 0.9rem;
@@ -1026,6 +1136,10 @@ export class AccountPageComponent {
   private readonly serverPushSync = inject(ServerPushSyncService);
   readonly serverSession = inject(ServerSessionService);
   readonly i18n = inject(I18nService);
+
+  readonly settingsTab = signal<
+    'overview' | 'profile' | 'looks' | 'server' | 'data' | 'subs' | 'streaming' | 'favorites'
+  >('overview');
 
   readonly user = this.auth.user;
 

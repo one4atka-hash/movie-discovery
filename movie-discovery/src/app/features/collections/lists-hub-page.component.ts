@@ -92,10 +92,15 @@ export class ListsHubPageComponent {
   }
 
   setTab(t: ListsTab): void {
-    void this.router.navigateByUrl(t === 'statuses' ? '/collections/statuses' : '/collections');
+    const base = this.isAccountScoped(this.router.url) ? '/account/lists' : '/collections';
+    void this.router.navigateByUrl(t === 'statuses' ? `${base}/statuses` : base);
   }
 
   private syncTabFromUrl(url: string): void {
-    this._tab.set(url.includes('/collections/statuses') ? 'statuses' : 'collections');
+    this._tab.set(url.includes('/statuses') ? 'statuses' : 'collections');
+  }
+
+  private isAccountScoped(url: string): boolean {
+    return url.includes('/account/lists');
   }
 }

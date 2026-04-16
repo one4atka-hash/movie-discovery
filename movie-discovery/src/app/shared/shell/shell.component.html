@@ -10,22 +10,6 @@
         <span class="nav__icon" aria-hidden="true">🏠</span>
         <span class="nav__label">{{ i18n.t('nav.home') }}</span>
       </a>
-      <a routerLink="/decide" routerLinkActive="is-active">
-        <span class="nav__icon" aria-hidden="true">🎲</span>
-        <span class="nav__label">{{ i18n.t('nav.tonight') }}</span>
-      </a>
-      <a routerLink="/diary" routerLinkActive="is-active">
-        <span class="nav__icon" aria-hidden="true">📓</span>
-        <span class="nav__label">{{ i18n.t('nav.diary') }}</span>
-      </a>
-      <a routerLink="/collections" routerLinkActive="is-active">
-        <span class="nav__icon" aria-hidden="true">🗂️</span>
-        <span class="nav__label">{{ i18n.t('nav.lists') }}</span>
-      </a>
-      <a routerLink="/inbox" routerLinkActive="is-active">
-        <span class="nav__icon" aria-hidden="true">📥</span>
-        <span class="nav__label">{{ i18n.t('nav.inbox') }}</span>
-      </a>
       <a routerLink="/account" routerLinkActive="is-active">
         <span class="nav__icon" aria-hidden="true">👤</span>
         <span class="nav__label">{{ i18n.t('nav.account') }}</span>
@@ -64,7 +48,7 @@
         <a
           class="server-pill"
           [class.server-pill--on]="serverConnected()"
-          routerLink="/account"
+          routerLink="/account/settings"
           fragment="account-data"
           [attr.aria-label]="
             i18n.t('serverConnect.server') +

@@ -8,42 +8,37 @@ export const routes: Routes = [
   },
   {
     path: 'decide',
-    loadComponent: () =>
-      import('./features/decision/decision-page.component').then((c) => c.DecisionPageComponent),
+    pathMatch: 'full',
+    redirectTo: 'account/today',
   },
   {
     path: 'diary',
-    loadComponent: () =>
-      import('./features/diary/diary-page.component').then((c) => c.DiaryPageComponent),
+    pathMatch: 'full',
+    redirectTo: 'account/diary',
   },
   {
     path: 'collections',
-    loadComponent: () =>
-      import('./features/collections/lists-hub-page.component').then(
-        (c) => c.ListsHubPageComponent,
-      ),
+    pathMatch: 'full',
+    redirectTo: 'account/lists',
   },
   {
     path: 'collections/statuses',
-    loadComponent: () =>
-      import('./features/collections/lists-hub-page.component').then(
-        (c) => c.ListsHubPageComponent,
-      ),
+    pathMatch: 'full',
+    redirectTo: 'account/lists/statuses',
   },
   {
     path: 'watchlist',
     pathMatch: 'full',
-    redirectTo: 'collections/statuses',
+    redirectTo: 'account/lists/statuses',
   },
   {
     path: 'inbox',
-    loadComponent: () =>
-      import('./features/inbox/inbox-page.component').then((c) => c.InboxPageComponent),
+    pathMatch: 'full',
+    redirectTo: 'account/inbox',
   },
   {
     path: 'account',
-    loadComponent: () =>
-      import('./features/auth/account-page.component').then((c) => c.AccountPageComponent),
+    loadChildren: () => import('./features/auth/account.routes').then((r) => r.ACCOUNT_ROUTES),
   },
   {
     path: 'u/:slug',
@@ -107,8 +102,8 @@ export const routes: Routes = [
   },
   {
     path: 'inbox/subscriptions',
-    loadComponent: () =>
-      import('./features/inbox/inbox-page.component').then((c) => c.InboxPageComponent),
+    pathMatch: 'full',
+    redirectTo: 'account/inbox',
   },
   {
     path: 'favorites',
