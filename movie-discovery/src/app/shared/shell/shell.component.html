@@ -5,7 +5,7 @@
       <span class="brand__text">{{ i18n.t('app.brand') }}</span>
     </a>
 
-    <nav class="nav" aria-label="Основная навигация">
+    <nav class="nav" [attr.aria-label]="i18n.t('nav.primaryAria')">
       <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
         <span class="nav__icon" aria-hidden="true">🏠</span>
         <span class="nav__label">{{ i18n.t('nav.home') }}</span>
