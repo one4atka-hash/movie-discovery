@@ -1,4 +1,19 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, input, Output } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  EventEmitter,
+  effect,
+  inject,
+  input,
+  Output,
+  viewChild,
+} from '@angular/core';
+
+import { I18nService } from '@shared/i18n/i18n.service';
+
+let nextSheetTitleId = 0;
 
 @Component({
   selector: 'app-bottom-sheet',
@@ -8,19 +23,29 @@ import { ChangeDetectionStrategy, Component, EventEmitter, input, Output } from 
     @if (open()) {
       <div class="sheet" (click)="onBackdrop($event)" role="presentation">
         <div
+          #panel
           class="sheet__panel"
+          tabindex="-1"
           role="dialog"
           [attr.aria-modal]="true"
-          [attr.aria-label]="ariaLabel()"
+          [attr.aria-label]="title() ? null : ariaLabel()"
+          [attr.aria-labelledby]="title() ? titleId : null"
           (click)="$event.stopPropagation()"
+          (keydown)="onPanelKeydown($event)"
         >
           <header class="sheet__head">
             <div class="sheet__grab" aria-hidden="true"></div>
             <div class="sheet__titleRow">
               @if (title(); as t) {
-                <h2 class="sheet__title">{{ t }}</h2>
+                <h2 class="sheet__title" [id]="titleId">{{ t }}</h2>
               }
-              <button class="sheet__close" type="button" (click)="closed.emit()" aria-label="Close">
+              <button
+                #closeButton
+                class="sheet__close"
+                type="button"
+                (click)="closed.emit()"
+                [attr.aria-label]="closeLabel()"
+              >
                 ✕
               </button>
             </div>
@@ -108,14 +133,139 @@ import { ChangeDetectionStrategy, Component, EventEmitter, input, Output } from 
   ],
 })
 export class BottomSheetComponent {
+  private readonly doc = inject(DOCUMENT);
+  private readonly i18n = inject(I18nService);
+  private readonly panelRef = viewChild<ElementRef<HTMLElement>>('panel');
+  private readonly closeButtonRef = viewChild<ElementRef<HTMLButtonElement>>('closeButton');
+
   readonly open = input<boolean>(false);
   readonly title = input<string | null>(null);
   readonly ariaLabel = input<string>('Dialog');
+  readonly closeOnBackdrop = input<boolean>(true);
+  readonly closeOnEsc = input<boolean>(true);
+  readonly initialFocusSelector = input<string | null>(null);
+  readonly returnFocusTo = input<HTMLElement | null>(null);
 
   @Output() readonly closed = new EventEmitter<void>();
 
+  readonly titleId = `bottom-sheet-title-${++nextSheetTitleId}`;
+
+  private previousFocused: HTMLElement | null = null;
+  private previousBodyOverflow = '';
+
+  constructor() {
+    effect(() => {
+      if (this.open()) {
+        this.onOpen();
+        return;
+      }
+
+      this.onClose();
+    });
+  }
+
+  closeLabel(): string {
+    return this.i18n.t('common.close');
+  }
+
   onBackdrop(ev: MouseEvent): void {
     ev.preventDefault();
+    if (!this.closeOnBackdrop()) return;
     this.closed.emit();
+  }
+
+  onPanelKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && this.closeOnEsc()) {
+      event.preventDefault();
+      this.closed.emit();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusable = this.getFocusableElements();
+    if (!focusable.length) {
+      event.preventDefault();
+      this.panelRef()?.nativeElement.focus();
+      return;
+    }
+
+    const current = this.doc.activeElement as HTMLElement | null;
+    const first = focusable[0]!;
+    const last = focusable[focusable.length - 1]!;
+
+    if (event.shiftKey && current === first) {
+      event.preventDefault();
+      last.focus();
+      return;
+    }
+
+    if (!event.shiftKey && current === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  private onOpen(): void {
+    const active = this.doc.activeElement;
+    this.previousFocused = active instanceof HTMLElement ? active : null;
+
+    if (this.doc.body) {
+      this.previousBodyOverflow = this.doc.body.style.overflow;
+      this.doc.body.style.overflow = 'hidden';
+    }
+
+    queueMicrotask(() => this.focusInitialElement());
+  }
+
+  private onClose(): void {
+    if (this.doc.body) {
+      this.doc.body.style.overflow = this.previousBodyOverflow;
+    }
+
+    const target = this.returnFocusTo() ?? this.previousFocused;
+    if (target && this.doc.contains(target)) {
+      queueMicrotask(() => target.focus());
+    }
+  }
+
+  private focusInitialElement(): void {
+    const panel = this.panelRef()?.nativeElement;
+    if (!panel) return;
+
+    const selector = this.initialFocusSelector();
+    if (selector) {
+      const requested = panel.querySelector<HTMLElement>(selector);
+      if (requested) {
+        requested.focus();
+        return;
+      }
+    }
+
+    const closeButton = this.closeButtonRef()?.nativeElement;
+    if (closeButton) {
+      closeButton.focus();
+      return;
+    }
+
+    panel.focus();
+  }
+
+  private getFocusableElements(): HTMLElement[] {
+    const panel = this.panelRef()?.nativeElement;
+    if (!panel) return [];
+
+    const selectors = [
+      'a[href]',
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+
+    return [...panel.querySelectorAll<HTMLElement>(selectors)].filter(
+      (el) => !el.hasAttribute('disabled') && el.tabIndex !== -1,
+    );
   }
 }
