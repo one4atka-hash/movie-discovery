@@ -47,3 +47,20 @@ test('discover syncs search query with URL and clears it back to dashboard', asy
   await expect(page).toHaveURL('/');
   await expect(page.getByTestId('home-my-services-filter')).toBeVisible();
 });
+
+test('discover shows recent searches after returning to idle state', async ({ page, request }) => {
+  await ensureFrontend(page, request);
+
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  const search = page.getByTestId('home-search-input');
+  await search.fill('Arrival');
+  await expect(page).toHaveURL(/\/\?q=Arrival$/);
+  await page.waitForTimeout(500);
+
+  await search.fill('');
+  await expect(page).toHaveURL('/');
+  await expect(page.getByTestId('home-recent-searches')).toContainText('Arrival');
+});

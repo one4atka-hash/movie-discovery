@@ -27,6 +27,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ConfigService } from '@core/config.service';
 import { pickSubsPreview, shuffleInPlace } from '@core/release-list.util';
 import { friendlyHttpErrorMessage } from '@core/http-error.util';
+import { StorageService } from '@core/storage.service';
 import { AuthService } from '@features/auth/auth.service';
 import { ReleaseSubscriptionsService } from '@features/notifications/release-subscriptions.service';
 import { DiaryService } from '@features/diary/diary.service';
@@ -87,6 +88,18 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
           [attr.aria-label]="i18n.t('home.searchAria')"
           data-testid="home-search-input"
         />
+      </div>
+
+      <div class="recentSearches" *ngIf="showRecentSearches()" data-testid="home-recent-searches">
+        <p class="recentSearches__title">{{ i18n.t('search.recent.title') }}</p>
+        <div class="recentSearches__list">
+          <app-chip
+            *ngFor="let item of recentSearches(); trackBy: trackByRecentSearch"
+            (clicked)="applyRecentSearch(item)"
+          >
+            {{ item }}
+          </app-chip>
+        </div>
       </div>
 
       <div class="filters" data-testid="home-my-services-filter">
@@ -444,6 +457,17 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
         <app-loader />
       </div>
 
+      <div class="more" *ngIf="canLoadMore() && !loadingMore()">
+        <app-button
+          variant="secondary"
+          type="button"
+          data-testid="search-load-more"
+          (click)="loadNextPage()"
+        >
+          {{ i18n.t('search.loadMore') }}
+        </app-button>
+      </div>
+
       <div
         class="sentinel"
         appInfiniteScroll
@@ -545,6 +569,22 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
       }
       .searchBar__input:focus-visible {
         outline: none;
+      }
+
+      .recentSearches {
+        margin: -0.25rem 0 1rem;
+      }
+
+      .recentSearches__title {
+        margin: 0 0 0.5rem;
+        color: var(--text-muted);
+        font-size: var(--font-size-caption);
+      }
+
+      .recentSearches__list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
       }
 
       .filters {
@@ -1126,11 +1166,13 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
   ],
 })
 export class MovieSearchPageComponent {
+  private static readonly RECENT_SEARCHES_KEY = 'search.recent.v1';
   private readonly api = inject(MovieService);
   private readonly config = inject(ConfigService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly storage = inject(StorageService);
   private readonly auth = inject(AuthService);
   private readonly subsSvc = inject(ReleaseSubscriptionsService);
   private readonly fav = inject(FavoritesService);
@@ -1162,6 +1204,7 @@ export class MovieSearchPageComponent {
   private readonly _page = signal(1);
   private readonly _totalPages = signal(1);
   private readonly _draft = signal('');
+  private readonly _recentSearches = signal<string[]>(this.readRecentSearches());
 
   private readonly _nowPlaying = signal<Movie[]>([]);
   private readonly _nowPlayingLoading = signal(true);
@@ -1181,6 +1224,7 @@ export class MovieSearchPageComponent {
   readonly loading = computed(() => this._loading());
   readonly loadingMore = computed(() => this._loadingMore());
   readonly error = computed(() => this._error());
+  readonly recentSearches = computed(() => this._recentSearches());
   readonly nowPlaying = computed(() => this._nowPlaying());
   readonly nowPlayingLoading = computed(() => this._nowPlayingLoading());
   readonly nowPlayingError = computed(() => this._nowPlayingError());
@@ -1243,6 +1287,9 @@ export class MovieSearchPageComponent {
 
   readonly showHero = computed(() => this._draft().trim().length < 2);
   readonly showEmpty = computed(() => this._hasSearched() && this._movies().length === 0);
+  readonly showRecentSearches = computed(
+    () => this.showHero() && this._recentSearches().length > 0 && this._draft().trim().length < 2,
+  );
 
   readonly recsExpanded = signal(false);
   readonly randomExpanded = signal(false);
@@ -1316,22 +1363,24 @@ export class MovieSearchPageComponent {
         }),
         switchMap((q) =>
           this.api.searchMovies(q.trim(), 1).pipe(
+            map((res) => ({ query: q.trim(), res })),
             catchError((err: unknown) => {
               this._error.set(friendlyHttpErrorMessage(err, 'Поиск'));
               this._loading.set(false);
-              return of(EMPTY_SEARCH_RESPONSE);
+              return of({ query: q.trim(), res: EMPTY_SEARCH_RESPONSE });
             }),
           ),
         ),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (res) => {
+        next: ({ query, res }) => {
           this._movies.set(res.results ?? []);
-          this._query.set(this.queryControl.value.trim());
+          this._query.set(query);
           this._page.set(res.page ?? 1);
           this._totalPages.set(res.total_pages ?? 1);
           this._loading.set(false);
+          this.rememberRecentSearch(query);
           this.ensureProvidersForIds((res.results ?? []).map((m) => m.id));
         },
       });
@@ -1381,6 +1430,25 @@ export class MovieSearchPageComponent {
     this._totalPages.set(1);
   }
 
+  private readRecentSearches(): string[] {
+    const stored = this.storage.get<unknown>(MovieSearchPageComponent.RECENT_SEARCHES_KEY, []);
+    if (!Array.isArray(stored)) return [];
+    return stored.filter(
+      (item): item is string => typeof item === 'string' && item.trim().length >= 2,
+    );
+  }
+
+  private rememberRecentSearch(query: string): void {
+    const normalized = query.trim();
+    if (normalized.length < 2) return;
+    const next = [
+      normalized,
+      ...this._recentSearches().filter((item) => item !== normalized),
+    ].slice(0, 6);
+    this._recentSearches.set(next);
+    this.storage.set(MovieSearchPageComponent.RECENT_SEARCHES_KEY, next);
+  }
+
   loadNextPage(): void {
     if (!this.canLoadMore()) return;
     const nextPage = this._page() + 1;
@@ -1406,6 +1474,10 @@ export class MovieSearchPageComponent {
       )
       .subscribe({
         next: (res) => {
+          if (this._query() !== query || nextPage !== this._page() + 1) {
+            this._loadingMore.set(false);
+            return;
+          }
           this._movies.set([...this._movies(), ...(res.results ?? [])]);
           this._page.set(res.page ?? nextPage);
           this._totalPages.set(res.total_pages ?? this._totalPages());
@@ -1431,8 +1503,16 @@ export class MovieSearchPageComponent {
     return s.id;
   }
 
+  trackByRecentSearch(_: number, value: string): string {
+    return value;
+  }
+
   trackByIndex(i: number): number {
     return i;
+  }
+
+  applyRecentSearch(value: string): void {
+    this.queryControl.setValue(value);
   }
 
   posterUrl(path: string): string {
