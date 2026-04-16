@@ -406,6 +406,28 @@ import {
           </h2>
           <p class="muted">{{ i18n.t('account.looks.hint') }}</p>
           <div class="card">
+            <div class="actions" style="margin-top: 0">
+              <button class="btn btn--primary" type="button" (click)="openNewLookEditor()">
+                {{ i18n.t('account.looks.new') }}
+              </button>
+              <button
+                class="btn"
+                type="button"
+                (click)="openEditActiveLook()"
+                [disabled]="!activeLook()"
+              >
+                {{ i18n.t('account.looks.edit') }}
+              </button>
+              <button
+                class="btn"
+                type="button"
+                (click)="deleteActiveLook()"
+                [disabled]="!activeLook() || activeLookBuiltin()"
+              >
+                {{ i18n.t('account.looks.delete') }}
+              </button>
+            </div>
+            <p class="err" *ngIf="looksErr()">{{ looksErr() }}</p>
             <div
               class="looks-grid"
               role="radiogroup"
@@ -607,6 +629,42 @@ import {
         </div>
 
         <p class="muted" *ngIf="!catalogError() && !catalogVisible().length">Ничего не найдено.</p>
+      </app-bottom-sheet>
+
+      <app-bottom-sheet
+        [open]="looksEditorOpen()"
+        [title]="i18n.t('account.looks.editorTitle')"
+        [ariaLabel]="i18n.t('account.looks.editorAria')"
+        (closed)="closeLooksEditor()"
+      >
+        <p class="muted">{{ i18n.t('account.looks.editorHint') }}</p>
+
+        <label class="field">
+          <span>{{ i18n.t('account.looks.name') }}</span>
+          <input class="input" [formControl]="lookName" maxlength="42" />
+        </label>
+
+        <div class="actions" style="margin-top: 0">
+          <label class="field" style="margin: 0; flex: 1 1 160px">
+            <span>{{ i18n.t('account.looks.accent') }}</span>
+            <input class="input" type="color" [formControl]="lookAccent" />
+          </label>
+          <label class="field" style="margin: 0; flex: 1 1 160px">
+            <span>{{ i18n.t('account.looks.secondary') }}</span>
+            <input class="input" type="color" [formControl]="lookSecondary" />
+          </label>
+        </div>
+
+        <p class="err" *ngIf="looksEditorErr()">{{ looksEditorErr() }}</p>
+
+        <div class="actions">
+          <button class="btn btn--primary" type="button" (click)="saveLooksEditor()">
+            {{ i18n.t('account.looks.save') }}
+          </button>
+          <button class="btn" type="button" (click)="closeLooksEditor()">
+            {{ i18n.t('common.cancel') }}
+          </button>
+        </div>
       </app-bottom-sheet>
 
       <section class="account-block" id="account-favorites" aria-labelledby="account-fav-title">
@@ -1009,6 +1067,20 @@ export class AccountPageComponent {
   readonly favorites = computed(() => this.fav.favorites());
   readonly looks = this.looksSvc.looks;
   readonly activeLookId = this.looksSvc.activeId;
+  readonly activeLook = computed(
+    () => this.looks().find((l) => l.id === this.activeLookId()) ?? null,
+  );
+  readonly activeLookBuiltin = computed(() =>
+    this.activeLookId() ? this.looksSvc.isBuiltin(this.activeLookId()) : true,
+  );
+  readonly looksErr = signal<string | null>(null);
+
+  readonly looksEditorOpen = signal(false);
+  readonly looksEditorErr = signal<string | null>(null);
+  private readonly looksEditingId = signal<string | null>(null);
+  readonly lookName = new FormControl('', { nonNullable: true });
+  readonly lookAccent = new FormControl('#ff5a5f', { nonNullable: true });
+  readonly lookSecondary = new FormControl('#e8b86d', { nonNullable: true });
 
   constructor() {
     if (this.cinemaApi.hasToken()) {
@@ -1432,6 +1504,7 @@ export class AccountPageComponent {
   }
 
   setActiveLook(id: string): void {
+    this.looksErr.set(null);
     this.looksSvc.setActive(id);
   }
 
@@ -1439,6 +1512,70 @@ export class AccountPageComponent {
     const a = l.vars['--accent'] ?? '#999';
     const b = l.vars['--accent-secondary'] ?? a;
     return `linear-gradient(145deg, ${a} 0%, ${b} 100%)`;
+  }
+
+  openNewLookEditor(): void {
+    this.looksErr.set(null);
+    this.looksEditorErr.set(null);
+    this.looksEditingId.set(null);
+    this.lookName.setValue('');
+    this.lookAccent.setValue('#ff5a5f');
+    this.lookSecondary.setValue('#e8b86d');
+    this.looksEditorOpen.set(true);
+  }
+
+  openEditActiveLook(): void {
+    this.looksErr.set(null);
+    this.looksEditorErr.set(null);
+    const cur = this.activeLook();
+    if (!cur) return;
+    const d = this.looksSvc.toDraft(cur);
+    this.looksEditingId.set(cur.id);
+    this.lookName.setValue(d.name);
+    this.lookAccent.setValue(d.accent);
+    this.lookSecondary.setValue(d.secondary);
+    this.looksEditorOpen.set(true);
+  }
+
+  closeLooksEditor(): void {
+    this.looksEditorOpen.set(false);
+    this.looksEditorErr.set(null);
+    this.looksEditingId.set(null);
+  }
+
+  saveLooksEditor(): void {
+    this.looksEditorErr.set(null);
+    const draft = {
+      name: this.lookName.value,
+      accent: this.lookAccent.value,
+      secondary: this.lookSecondary.value,
+    };
+    const id = this.looksEditingId();
+    if (id) {
+      const r = this.looksSvc.updateFromDraft(id, draft);
+      if (!r.ok) {
+        this.looksEditorErr.set(r.error);
+        return;
+      }
+      this.closeLooksEditor();
+      return;
+    }
+    const r = this.looksSvc.createFromDraft(draft);
+    if (!r.ok) {
+      this.looksEditorErr.set(r.error);
+      return;
+    }
+    this.closeLooksEditor();
+  }
+
+  deleteActiveLook(): void {
+    this.looksErr.set(null);
+    const cur = this.activeLook();
+    if (!cur) return;
+    const r = this.looksSvc.delete(cur.id);
+    if (!r.ok) {
+      this.looksErr.set(r.error);
+    }
   }
 
   removeSub(id: string): void {

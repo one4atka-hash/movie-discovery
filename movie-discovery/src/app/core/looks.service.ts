@@ -19,6 +19,12 @@ export type Look = {
   readonly vars: LookConfig;
 };
 
+export type LookDraft = {
+  readonly name: string;
+  readonly accent: string;
+  readonly secondary: string;
+};
+
 const DEFAULT_LOOKS: readonly Look[] = [
   {
     id: 'sunset',
@@ -58,6 +64,8 @@ const DEFAULT_LOOKS: readonly Look[] = [
   },
 ];
 
+const BUILTIN_IDS = new Set(DEFAULT_LOOKS.map((l) => l.id));
+
 function safeParseLooks(raw: string | null): Look[] | null {
   if (!raw) return null;
   try {
@@ -96,6 +104,41 @@ function safeParseLooks(raw: string | null): Look[] | null {
   }
 }
 
+function normalizeHexColor(input: string): string | null {
+  const v = input.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return v.toLowerCase();
+  return null;
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const a = Math.max(0, Math.min(1, alpha));
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+function makeVarsFromDraft(d: LookDraft): LookConfig | null {
+  const accent = normalizeHexColor(d.accent);
+  const secondary = normalizeHexColor(d.secondary);
+  if (!accent || !secondary) return null;
+  return {
+    '--accent': accent,
+    '--accent-hover': accent,
+    '--accent-secondary': secondary,
+    '--accent-glow': hexToRgba(accent, 0.28),
+    '--link': secondary,
+    '--link-hover': secondary,
+  };
+}
+
+function newLookId(): string {
+  const ts = Date.now().toString(36);
+  const rand = Math.random().toString(36).slice(2, 8);
+  return `custom-${ts}-${rand}`;
+}
+
 @Injectable({ providedIn: 'root' })
 export class LooksService {
   readonly looks = signal<readonly Look[]>(DEFAULT_LOOKS);
@@ -117,6 +160,63 @@ export class LooksService {
 
   getActive(): Look {
     return this.looks().find((l) => l.id === this.activeId()) ?? this.looks()[0]!;
+  }
+
+  isBuiltin(id: string): boolean {
+    return BUILTIN_IDS.has(id);
+  }
+
+  createFromDraft(d: LookDraft): { ok: true; id: string } | { ok: false; error: string } {
+    const name = d.name.trim();
+    if (!name) return { ok: false, error: 'Name is required' };
+    const vars = makeVarsFromDraft(d);
+    if (!vars) return { ok: false, error: 'Invalid colors' };
+
+    const id = newLookId();
+    const next: Look = { id, name, vars };
+    this.looks.set([next, ...this.looks()]);
+    this.setActive(id);
+    this.persist();
+    return { ok: true, id };
+  }
+
+  updateFromDraft(id: string, d: LookDraft): { ok: true } | { ok: false; error: string } {
+    const safeId = id.trim();
+    if (!safeId) return { ok: false, error: 'Bad id' };
+    const name = d.name.trim();
+    if (!name) return { ok: false, error: 'Name is required' };
+    const vars = makeVarsFromDraft(d);
+    if (!vars) return { ok: false, error: 'Invalid colors' };
+
+    const items = [...this.looks()];
+    const idx = items.findIndex((l) => l.id === safeId);
+    if (idx === -1) return { ok: false, error: 'Look not found' };
+    items[idx] = { id: safeId, name, vars };
+    this.looks.set(items);
+    this.persist();
+    this.applyActiveToDom();
+    return { ok: true };
+  }
+
+  delete(id: string): { ok: true } | { ok: false; error: string } {
+    const safeId = id.trim();
+    if (!safeId) return { ok: false, error: 'Bad id' };
+    if (this.isBuiltin(safeId)) return { ok: false, error: 'Cannot delete builtin look' };
+    const items = this.looks().filter((l) => l.id !== safeId);
+    if (!items.length) return { ok: false, error: 'Cannot delete last look' };
+    this.looks.set(items);
+    if (this.activeId() === safeId) {
+      this.activeId.set(items[0]!.id);
+    }
+    this.persist();
+    this.applyActiveToDom();
+    return { ok: true };
+  }
+
+  toDraft(l: Look): LookDraft {
+    const accent = l.vars['--accent'] ?? '#ff5a5f';
+    const secondary = l.vars['--accent-secondary'] ?? '#e8b86d';
+    return { name: l.name, accent, secondary };
   }
 
   private loadFromStorage(): void {
