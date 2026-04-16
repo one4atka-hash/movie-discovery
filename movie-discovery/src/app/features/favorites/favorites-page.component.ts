@@ -30,13 +30,9 @@ import { I18nService } from '@shared/i18n/i18n.service';
         <section class="series" *ngFor="let g of grouped(); trackBy: trackByGroupKey">
           <h2 class="series__title">{{ g.label }}</h2>
           <div class="grid">
-            <a
-              class="grid__item"
-              *ngFor="let m of g.items; trackBy: trackById"
-              [routerLink]="['/movie', m.id]"
-            >
-              <app-movie-card [movie]="m" />
-            </a>
+            <div class="grid__item" *ngFor="let m of g.items; trackBy: trackById">
+              <app-movie-card [movie]="m" [detailLink]="['/movie', m.id]" />
+            </div>
           </div>
         </section>
       </ng-container>

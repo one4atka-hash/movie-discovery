@@ -302,9 +302,11 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
               </div>
               <div class="grid grid--random" *ngIf="!recsLoading() && recsVisible().length">
                 <div class="grid__item" *ngFor="let m of recsPreview(); trackBy: trackById">
-                  <a class="grid__link" [routerLink]="['/movie', m.id]">
-                    <app-movie-card [movie]="m" [providers]="myProvidersFor(m.id)" />
-                  </a>
+                  <app-movie-card
+                    [movie]="m"
+                    [providers]="myProvidersFor(m.id)"
+                    [detailLink]="['/movie', m.id]"
+                  />
                   <div class="cardHud" aria-hidden="false">
                     <button
                       class="whyBtn"
@@ -376,9 +378,11 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
               </div>
               <div class="grid grid--random" *ngIf="!randomLoading() && randomVisible().length">
                 <div class="grid__item" *ngFor="let m of randomPreview(); trackBy: trackById">
-                  <a class="grid__link" [routerLink]="['/movie', m.id]">
-                    <app-movie-card [movie]="m" [providers]="myProvidersFor(m.id)" />
-                  </a>
+                  <app-movie-card
+                    [movie]="m"
+                    [providers]="myProvidersFor(m.id)"
+                    [detailLink]="['/movie', m.id]"
+                  />
                   <button
                     type="button"
                     class="whyBtn"
@@ -414,13 +418,13 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
       />
 
       <div class="grid" *ngIf="!showHero() && !loading() && !error() && moviesVisible().length">
-        <a
-          class="grid__item"
-          *ngFor="let m of moviesVisible(); trackBy: trackById"
-          [routerLink]="['/movie', m.id]"
-        >
-          <app-movie-card [movie]="m" [providers]="myProvidersFor(m.id)" />
-        </a>
+        <div class="grid__item" *ngFor="let m of moviesVisible(); trackBy: trackById">
+          <app-movie-card
+            [movie]="m"
+            [providers]="myProvidersFor(m.id)"
+            [detailLink]="['/movie', m.id]"
+          />
+        </div>
       </div>
 
       <div class="more" *ngIf="loadingMore()">

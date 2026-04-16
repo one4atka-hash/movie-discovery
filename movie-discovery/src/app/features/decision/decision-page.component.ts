@@ -148,13 +148,9 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
         </div>
 
         <div class="grid">
-          <a
-            class="grid__item"
-            *ngFor="let m of shortlist(); trackBy: trackByMovieId"
-            [routerLink]="['/movie', m.id]"
-          >
-            <app-movie-card [movie]="m" />
-          </a>
+          <div class="grid__item" *ngFor="let m of shortlist(); trackBy: trackByMovieId">
+            <app-movie-card [movie]="m" [detailLink]="['/movie', m.id]" />
+          </div>
         </div>
       </app-section>
 

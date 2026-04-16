@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 import { Movie } from '../../data-access/models/movie.model';
 import { FavoritesService } from '../../data-access/services/favorites.service';
@@ -16,7 +17,7 @@ import { WatchStateService } from '@features/watchlist/watch-state.service';
 @Component({
   selector: 'app-movie-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="card" [attr.data-tmdb-id]="movie().id" data-testid="movie-card">
@@ -36,7 +37,16 @@ import { WatchStateService } from '@features/watchlist/watch-state.service';
         <div class="card__overlay">
           <div class="card__overlayInner">
             <div class="card__titleWrap">
-              <div class="card__title">{{ movie().title }}</div>
+              <a
+                *ngIf="detailLink(); else plainTitle"
+                class="card__title card__titleLink"
+                [routerLink]="detailLink()"
+              >
+                {{ movie().title }}
+              </a>
+              <ng-template #plainTitle>
+                <div class="card__title">{{ movie().title }}</div>
+              </ng-template>
             </div>
             <div class="card__meta">
               <span class="card__muted">{{ movie().release_date || '—' }}</span>
@@ -319,6 +329,22 @@ import { WatchStateService } from '@features/watchlist/watch-state.service';
         overflow: hidden;
       }
 
+      .card__titleLink {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .card__titleLink:hover {
+        text-decoration: underline;
+        text-underline-offset: 0.14em;
+      }
+
+      .card__titleLink:focus-visible {
+        outline: var(--focus-ring);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+
       .card__meta {
         display: flex;
         justify-content: space-between;
@@ -444,6 +470,7 @@ export class MovieCardComponent {
   private readonly auth = inject(AuthService);
   private readonly watchState = inject(WatchStateService);
   readonly movie = input.required<Movie>();
+  readonly detailLink = input<readonly (string | number)[] | null>(null);
   /** Optional “my services” providers (already matched by caller). */
   readonly providers = input<readonly string[] | null>(null);
 

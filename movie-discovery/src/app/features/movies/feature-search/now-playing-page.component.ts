@@ -38,13 +38,9 @@ import { MovieCardComponent } from '@features/movies/ui/movie-card/movie-card.co
       <p class="muted" *ngIf="err()" role="status">{{ err() }}</p>
 
       <div class="grid" *ngIf="!loading() && items().length">
-        <a
-          class="grid__item"
-          *ngFor="let m of items(); trackBy: trackById"
-          [routerLink]="['/movie', m.id]"
-        >
-          <app-movie-card [movie]="m" />
-        </a>
+        <div class="grid__item" *ngFor="let m of items(); trackBy: trackById">
+          <app-movie-card [movie]="m" [detailLink]="['/movie', m.id]" />
+        </div>
       </div>
 
       <p class="muted" *ngIf="!loading() && !err() && !items().length" role="status">Пусто.</p>

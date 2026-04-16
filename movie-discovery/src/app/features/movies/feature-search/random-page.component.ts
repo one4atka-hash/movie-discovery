@@ -47,13 +47,9 @@ const EMPTY_SEARCH: MovieSearchResponse = {
       <p class="muted" *ngIf="err()" role="status">{{ err() }}</p>
 
       <div class="grid" *ngIf="!loading() && items().length">
-        <a
-          class="grid__item"
-          *ngFor="let m of items(); trackBy: trackById"
-          [routerLink]="['/movie', m.id]"
-        >
-          <app-movie-card [movie]="m" />
-        </a>
+        <div class="grid__item" *ngFor="let m of items(); trackBy: trackById">
+          <app-movie-card [movie]="m" [detailLink]="['/movie', m.id]" />
+        </div>
       </div>
     </section>
   `,

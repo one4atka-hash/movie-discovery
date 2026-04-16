@@ -788,13 +788,9 @@ import {
         </h2>
         <p class="muted" *ngIf="!favorites().length">{{ i18n.t('home.favoritesEmptySubtitle') }}</p>
         <div class="fav-grid" *ngIf="favorites().length">
-          <a
-            class="fav-grid__item"
-            *ngFor="let m of favorites(); trackBy: trackByMovieId"
-            [routerLink]="['/movie', m.id]"
-          >
-            <app-movie-card [movie]="m" />
-          </a>
+          <div class="fav-grid__item" *ngFor="let m of favorites(); trackBy: trackByMovieId">
+            <app-movie-card [movie]="m" [detailLink]="['/movie', m.id]" />
+          </div>
         </div>
       </section>
     </section>
