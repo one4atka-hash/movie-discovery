@@ -284,6 +284,15 @@ const RU: Dict = {
   'account.publicProfile.enabled': 'Включить публичную страницу',
   'account.publicProfile.visibility': 'Видимость',
   'account.publicProfile.sections': 'Какие секции показывать',
+  'account.publicProfile.contentTitle': 'Текст на странице',
+  'account.publicProfile.contentHint':
+    'Короткие блоки, чтобы странице было приятно делиться. Можно оставить пустым.',
+  'account.publicProfile.about': 'О себе',
+  'account.publicProfile.notes': 'Заметки',
+  'account.publicProfile.plans': 'Планы',
+  'account.looks.title': 'Оформление',
+  'account.looks.hint': 'Выберите внешний вид интерфейса. Сохраняется в браузере.',
+  'account.looks.aria': 'Выбор оформления',
   'account.publicProfile.needJwt':
     'Чтобы сохранить настройки, нужно подключение синхронизации (см. выше).',
   'account.publicProfile.loadFailed': 'Не удалось загрузить настройки.',
@@ -381,6 +390,12 @@ const RU: Dict = {
   'publicProfile.diary': 'Дневник',
   'publicProfile.entries': 'Записей',
   'publicProfile.watchlist': 'Смотреть позже',
+  'publicProfile.aboutTitle': 'О себе',
+  'publicProfile.aboutEmpty': 'Пока без описания.',
+  'publicProfile.notesTitle': 'Заметки',
+  'publicProfile.notesEmpty': 'Пока нет заметок.',
+  'publicProfile.plansTitle': 'Планы',
+  'publicProfile.plansEmpty': 'Пока без планов.',
 
   'share.title': 'Карточки для соцсетей',
   'share.subtitle':
@@ -838,6 +853,15 @@ const EN: Dict = {
   'account.publicProfile.enabled': 'Enable public page',
   'account.publicProfile.visibility': 'Visibility',
   'account.publicProfile.sections': 'Sections to show',
+  'account.publicProfile.contentTitle': 'Page text',
+  'account.publicProfile.contentHint':
+    'Short blocks to make the page share-friendly. You can leave them empty.',
+  'account.publicProfile.about': 'About',
+  'account.publicProfile.notes': 'Notes',
+  'account.publicProfile.plans': 'Plans',
+  'account.looks.title': 'Looks',
+  'account.looks.hint': 'Pick the interface look. Saved in your browser.',
+  'account.looks.aria': 'Look selector',
   'account.publicProfile.needJwt': 'To save settings, connect sync above first.',
   'account.publicProfile.loadFailed': 'Could not load settings.',
   'account.publicProfile.saveFailed': 'Could not save.',
@@ -930,6 +954,12 @@ const EN: Dict = {
   'publicProfile.diary': 'Diary',
   'publicProfile.entries': 'Entries',
   'publicProfile.watchlist': 'Watchlist',
+  'publicProfile.aboutTitle': 'About',
+  'publicProfile.aboutEmpty': 'No description yet.',
+  'publicProfile.notesTitle': 'Notes',
+  'publicProfile.notesEmpty': 'No notes yet.',
+  'publicProfile.plansTitle': 'Plans',
+  'publicProfile.plansEmpty': 'No plans yet.',
 
   'share.title': 'Share cards',
   'share.subtitle':

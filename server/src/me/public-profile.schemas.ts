@@ -23,6 +23,19 @@ const SectionsSchema = z
     watchlist: Boolean(s.watchlist),
   }));
 
+const ContentSchema = z
+  .object({
+    about: z.string().trim().max(800).optional().default(''),
+    notes: z.string().trim().max(800).optional().default(''),
+    plans: z.string().trim().max(800).optional().default(''),
+  })
+  .strict()
+  .transform((c) => ({
+    about: c.about.trim(),
+    notes: c.notes.trim(),
+    plans: c.plans.trim(),
+  }));
+
 export const PublicProfilePutSchema = zodSchema(
   z
     .object({
@@ -30,6 +43,11 @@ export const PublicProfilePutSchema = zodSchema(
       enabled: z.boolean(),
       visibility: z.enum(['private', 'unlisted', 'public']),
       sections: SectionsSchema,
+      content: ContentSchema.optional().default({
+        about: '',
+        notes: '',
+        plans: '',
+      }),
     })
     .strict()
     .superRefine((val, ctx) => {

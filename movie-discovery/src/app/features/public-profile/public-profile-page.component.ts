@@ -31,6 +31,35 @@ import { I18nService } from '@shared/i18n/i18n.service';
           <p class="muted">{{ d['visibility'] }}</p>
         </header>
 
+        @if (asContent(d); as c) {
+          <section class="block">
+            <h2 class="block__title">{{ i18n.t('publicProfile.aboutTitle') }}</h2>
+            @if (c.about) {
+              <p class="para">{{ c.about }}</p>
+            } @else {
+              <p class="muted">{{ i18n.t('publicProfile.aboutEmpty') }}</p>
+            }
+          </section>
+
+          <section class="block">
+            <h2 class="block__title">{{ i18n.t('publicProfile.notesTitle') }}</h2>
+            @if (c.notes) {
+              <p class="para">{{ c.notes }}</p>
+            } @else {
+              <p class="muted">{{ i18n.t('publicProfile.notesEmpty') }}</p>
+            }
+          </section>
+
+          <section class="block">
+            <h2 class="block__title">{{ i18n.t('publicProfile.plansTitle') }}</h2>
+            @if (c.plans) {
+              <p class="para">{{ c.plans }}</p>
+            } @else {
+              <p class="muted">{{ i18n.t('publicProfile.plansEmpty') }}</p>
+            }
+          </section>
+        }
+
         @if (d['favorites']; as fav) {
           <section class="block">
             <h2 class="block__title">{{ i18n.t('publicProfile.favorites') }}</h2>
@@ -103,6 +132,11 @@ import { I18nService } from '@shared/i18n/i18n.service';
         margin: 0;
         padding-left: 1.1rem;
       }
+      .para {
+        margin: 0;
+        line-height: 1.55;
+        white-space: pre-wrap;
+      }
     `,
   ],
 })
@@ -159,5 +193,15 @@ export class PublicProfilePageComponent {
     if (!block || typeof block !== 'object') return 0;
     const v = (block as Record<string, unknown>)[key];
     return typeof v === 'number' ? v : 0;
+  }
+
+  asContent(d: Record<string, unknown>): { about: string; notes: string; plans: string } | null {
+    const raw = d['content'];
+    if (!raw || typeof raw !== 'object') return null;
+    const o = raw as Record<string, unknown>;
+    const about = typeof o['about'] === 'string' ? o['about'] : '';
+    const notes = typeof o['notes'] === 'string' ? o['notes'] : '';
+    const plans = typeof o['plans'] === 'string' ? o['plans'] : '';
+    return { about: about.trim(), notes: notes.trim(), plans: plans.trim() };
   }
 }

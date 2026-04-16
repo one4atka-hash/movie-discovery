@@ -50,6 +50,11 @@ export interface MePublicProfile {
     readonly diary: boolean;
     readonly watchlist: boolean;
   };
+  readonly content: {
+    readonly about: string;
+    readonly notes: string;
+    readonly plans: string;
+  };
 }
 
 export interface RefreshMyMovieFeaturesResponse {

@@ -12,6 +12,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { readThemePreference, writeThemePreference } from '@core/browser-prefs';
 import { localeToFlagEmoji } from '@core/locale-flag.util';
+import { LooksService } from '@core/looks.service';
 import { ServerCinemaApiService } from '@core/server-cinema-api.service';
 import { ServerSessionService } from '@core/server-session.service';
 import { TmdbConfigurationService } from '@core/tmdb-configuration.service';
@@ -48,6 +49,7 @@ export class ShellComponent {
   readonly localeOptions = signal<readonly { code: string; label: string; flag: string }[]>([]);
 
   constructor() {
+    inject(LooksService);
     inject(ReleaseReminderService);
     if (this.cinemaApi.hasToken()) {
       this.serverSession.refreshMe({ silent: true });

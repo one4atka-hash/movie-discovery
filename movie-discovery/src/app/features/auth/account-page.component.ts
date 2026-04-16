@@ -26,6 +26,7 @@ import { ServerConnectComponent } from '@shared/ui/server-connect/server-connect
 import { StreamingCatalogService } from '@features/streaming/streaming-catalog.service';
 import { StorageService } from '@core/storage.service';
 import { PageIntroComponent } from '@shared/ui/page-intro/page-intro.component';
+import { LooksService, type Look } from '@core/looks.service';
 import {
   ServerCinemaApiService,
   type EmbeddingsJobItem,
@@ -373,8 +374,56 @@ import {
               <input type="checkbox" [formControl]="ppSecWatchlist" />
               <span>watchlist</span>
             </label>
+            <div style="margin-top: 0.75rem">
+              <p class="muted" style="margin: 0 0 0.5rem">
+                {{ i18n.t('account.publicProfile.contentTitle') }}
+              </p>
+              <p class="muted" style="margin: 0 0 0.65rem">
+                {{ i18n.t('account.publicProfile.contentHint') }}
+              </p>
+
+              <label class="field">
+                <span>{{ i18n.t('account.publicProfile.about') }}</span>
+                <textarea class="input" [formControl]="ppAbout" rows="3" maxlength="800"></textarea>
+              </label>
+              <label class="field">
+                <span>{{ i18n.t('account.publicProfile.notes') }}</span>
+                <textarea class="input" [formControl]="ppNotes" rows="3" maxlength="800"></textarea>
+              </label>
+              <label class="field" style="margin-bottom: 0">
+                <span>{{ i18n.t('account.publicProfile.plans') }}</span>
+                <textarea class="input" [formControl]="ppPlans" rows="3" maxlength="800"></textarea>
+              </label>
+            </div>
             <p class="err" *ngIf="ppErr()">{{ ppErr() }}</p>
             <p class="ok" *ngIf="ppOk()">{{ ppOk() }}</p>
+          </div>
+        </section>
+
+        <section class="account-block" id="account-looks" aria-labelledby="account-looks-title">
+          <h2 class="account-block__title" id="account-looks-title">
+            {{ i18n.t('account.looks.title') }}
+          </h2>
+          <p class="muted">{{ i18n.t('account.looks.hint') }}</p>
+          <div class="card">
+            <div
+              class="looks-grid"
+              role="radiogroup"
+              [attr.aria-label]="i18n.t('account.looks.aria')"
+            >
+              <button
+                class="lookCard"
+                type="button"
+                *ngFor="let l of looks(); trackBy: trackByLookId"
+                role="radio"
+                [attr.aria-checked]="activeLookId() === l.id"
+                [class.lookCard--active]="activeLookId() === l.id"
+                (click)="setActiveLook(l.id)"
+              >
+                <span class="lookCard__swatch" [style.background]="lookSwatchBg(l)"></span>
+                <span class="lookCard__name">{{ l.name }}</span>
+              </button>
+            </div>
           </div>
         </section>
 
@@ -824,6 +873,56 @@ import {
         transform: translateY(-2px);
         transition: transform 0.18s ease;
       }
+
+      .looks-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.65rem;
+      }
+
+      .lookCard {
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        align-items: center;
+        gap: 0.65rem;
+        width: 100%;
+        padding: 0.65rem 0.75rem;
+        border-radius: 14px;
+        border: 1px solid var(--border-subtle);
+        background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
+        color: var(--text);
+        cursor: pointer;
+        font: inherit;
+        text-align: left;
+        transition:
+          transform 0.15s ease,
+          border-color 0.15s ease,
+          background 0.15s ease;
+      }
+
+      .lookCard:hover {
+        transform: translateY(-1px);
+        border-color: var(--border-strong);
+        background: color-mix(in srgb, var(--bg-elevated) 78%, transparent);
+      }
+
+      .lookCard--active {
+        border-color: color-mix(in srgb, var(--accent-secondary) 45%, var(--border-subtle));
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+      }
+
+      .lookCard__swatch {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--shadow-xs);
+      }
+
+      .lookCard__name {
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
     `,
   ],
 })
@@ -837,6 +936,7 @@ export class AccountPageComponent {
   private readonly fav = inject(FavoritesService);
   private readonly storage = inject(StorageService);
   private readonly exportsApi = inject(ExportsApiService);
+  private readonly looksSvc = inject(LooksService);
   readonly cinemaApi = inject(ServerCinemaApiService);
   private readonly serverPushSync = inject(ServerPushSyncService);
   readonly serverSession = inject(ServerSessionService);
@@ -893,6 +993,9 @@ export class AccountPageComponent {
   readonly ppSecFavorites = new FormControl(false, { nonNullable: true });
   readonly ppSecDiary = new FormControl(false, { nonNullable: true });
   readonly ppSecWatchlist = new FormControl(false, { nonNullable: true });
+  readonly ppAbout = new FormControl('', { nonNullable: true });
+  readonly ppNotes = new FormControl('', { nonNullable: true });
+  readonly ppPlans = new FormControl('', { nonNullable: true });
   readonly ppErr = signal<string | null>(null);
   readonly ppOk = signal<string | null>(null);
 
@@ -904,6 +1007,8 @@ export class AccountPageComponent {
 
   readonly subsSorted = computed(() => sortSubscriptionsByRelease(this.subsSvc.mySubscriptions()));
   readonly favorites = computed(() => this.fav.favorites());
+  readonly looks = this.looksSvc.looks;
+  readonly activeLookId = this.looksSvc.activeId;
 
   constructor() {
     if (this.cinemaApi.hasToken()) {
@@ -1009,6 +1114,9 @@ export class AccountPageComponent {
         this.ppSecFavorites.setValue(p.sections.favorites);
         this.ppSecDiary.setValue(p.sections.diary);
         this.ppSecWatchlist.setValue(p.sections.watchlist);
+        this.ppAbout.setValue(p.content?.about ?? '');
+        this.ppNotes.setValue(p.content?.notes ?? '');
+        this.ppPlans.setValue(p.content?.plans ?? '');
       },
     });
   }
@@ -1031,6 +1139,11 @@ export class AccountPageComponent {
         favorites: this.ppSecFavorites.value,
         diary: this.ppSecDiary.value,
         watchlist: this.ppSecWatchlist.value,
+      },
+      content: {
+        about: this.ppAbout.value,
+        notes: this.ppNotes.value,
+        plans: this.ppPlans.value,
       },
     };
     this.cinemaApi.putMePublicProfile(body).subscribe({
@@ -1312,6 +1425,20 @@ export class AccountPageComponent {
 
   trackByJobId(_: number, j: { id: string }): string {
     return j.id;
+  }
+
+  trackByLookId(_: number, l: Look): string {
+    return l.id;
+  }
+
+  setActiveLook(id: string): void {
+    this.looksSvc.setActive(id);
+  }
+
+  lookSwatchBg(l: Look): string {
+    const a = l.vars['--accent'] ?? '#999';
+    const b = l.vars['--accent-secondary'] ?? a;
+    return `linear-gradient(145deg, ${a} 0%, ${b} 100%)`;
   }
 
   removeSub(id: string): void {

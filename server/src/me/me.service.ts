@@ -14,6 +14,9 @@ type ProfileRow = {
   enabled: boolean;
   visibility: 'private' | 'unlisted' | 'public';
   sections: unknown;
+  about: string | null;
+  notes: string | null;
+  plans: string | null;
 };
 
 export type PublicProfilePayload = {
@@ -24,6 +27,11 @@ export type PublicProfilePayload = {
     favorites: boolean;
     diary: boolean;
     watchlist: boolean;
+  };
+  content: {
+    about: string;
+    notes: string;
+    plans: string;
   };
 };
 
@@ -107,7 +115,7 @@ export class MeService {
 
   async getPublicProfile(userId: string): Promise<PublicProfilePayload> {
     const rows = await this.db.query<ProfileRow>(
-      `select slug, enabled, visibility, sections
+      `select slug, enabled, visibility, sections, about, notes, plans
        from public_profiles
        where user_id = $1`,
       [userId],
@@ -119,6 +127,7 @@ export class MeService {
         enabled: false,
         visibility: 'private',
         sections: { favorites: false, diary: false, watchlist: false },
+        content: { about: '', notes: '', plans: '' },
       };
     }
     const sec = this.normalizeSections(r.sections);
@@ -127,6 +136,11 @@ export class MeService {
       enabled: r.enabled,
       visibility: r.visibility,
       sections: sec,
+      content: {
+        about: (r.about ?? '').trim(),
+        notes: (r.notes ?? '').trim(),
+        plans: (r.plans ?? '').trim(),
+      },
     };
   }
 
@@ -141,19 +155,30 @@ export class MeService {
         diary: boolean;
         watchlist: boolean;
       };
+      content?: {
+        about?: string;
+        notes?: string;
+        plans?: string;
+      };
     },
   ): Promise<void> {
     const slug = input.slug === null ? null : input.slug.trim().toLowerCase();
+    const about = (input.content?.about ?? '').trim();
+    const notes = (input.content?.notes ?? '').trim();
+    const plans = (input.content?.plans ?? '').trim();
     try {
       await this.db.exec(
-        `insert into public_profiles(user_id, slug, enabled, visibility, sections, updated_at)
-         values ($1, $2, $3, $4, $5::jsonb, now())
+        `insert into public_profiles(user_id, slug, enabled, visibility, sections, about, notes, plans, updated_at)
+         values ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, now())
          on conflict (user_id)
          do update set
            slug = excluded.slug,
            enabled = excluded.enabled,
            visibility = excluded.visibility,
            sections = excluded.sections,
+           about = excluded.about,
+           notes = excluded.notes,
+           plans = excluded.plans,
            updated_at = now()`,
         [
           userId,
@@ -161,6 +186,9 @@ export class MeService {
           input.enabled,
           input.visibility,
           JSON.stringify(input.sections),
+          about || null,
+          notes || null,
+          plans || null,
         ],
       );
     } catch (e) {
@@ -173,7 +201,7 @@ export class MeService {
 
   async getPublicViewBySlug(slug: string): Promise<Record<string, unknown>> {
     const rows = await this.db.query<ProfileRow & { user_id: string }>(
-      `select user_id, slug, enabled, visibility, sections
+      `select user_id, slug, enabled, visibility, sections, about, notes, plans
        from public_profiles
        where lower(slug) = lower($1)
          and enabled = true
@@ -189,6 +217,11 @@ export class MeService {
     const out: Record<string, unknown> = {
       slug: row.slug,
       visibility: row.visibility,
+      content: {
+        about: (row.about ?? '').trim(),
+        notes: (row.notes ?? '').trim(),
+        plans: (row.plans ?? '').trim(),
+      },
     };
 
     if (sec.favorites) {
