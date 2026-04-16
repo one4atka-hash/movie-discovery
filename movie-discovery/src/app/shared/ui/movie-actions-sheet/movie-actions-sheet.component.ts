@@ -96,7 +96,7 @@ const DEFAULT_RELEASE_CHANNELS = {
         <div class="row">
           <app-button
             variant="primary"
-            [routerLink]="['/diary']"
+            [routerLink]="['/account/diary']"
             [queryParams]="{ logTitle: m.title, logTmdbId: m.id }"
             (click)="closed.emit()"
           >
@@ -106,7 +106,7 @@ const DEFAULT_RELEASE_CHANNELS = {
         <div class="row">
           <app-button
             variant="secondary"
-            [routerLink]="['/collections']"
+            [routerLink]="['/account/lists']"
             [queryParams]="{ addTitle: m.title, addTmdbId: m.id }"
             (click)="closed.emit()"
           >

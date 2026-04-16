@@ -161,9 +161,13 @@ const EMPTY_SEARCH: MovieSearchResponse = {
           {{ i18n.t('me.inboxRulesPrefix') }}
           <strong>{{ rulesCount() }}</strong>
         </p>
-        <a *ngIf="isAuthed()" class="link" routerLink="/account" fragment="account-subs">{{
-          i18n.t('me.releaseSubs')
-        }}</a>
+        <a
+          *ngIf="isAuthed()"
+          class="link"
+          routerLink="/account/settings"
+          [queryParams]="{ tab: 'subs' }"
+          >{{ i18n.t('me.releaseSubs') }}</a
+        >
       </app-section>
 
       <app-section [title]="i18n.t('me.sectionRecs')">

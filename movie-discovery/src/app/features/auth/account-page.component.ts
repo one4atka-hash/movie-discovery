@@ -39,6 +39,7 @@ import {
   type ExportFormat,
   type ExportKind,
 } from '@features/exports/exports-api.service';
+import { AccountSettingsTab, normalizeAccountSettingsTab } from './account-settings-tab.util';
 
 @Component({
   selector: 'app-account-page',
@@ -62,7 +63,7 @@ import {
           class="tabBtn"
           type="button"
           [class.is-active]="settingsTab() === 'overview'"
-          (click)="settingsTab.set('overview')"
+          (click)="selectSettingsTab('overview')"
         >
           {{ i18n.t('common.overview') }}
         </button>
@@ -70,7 +71,7 @@ import {
           class="tabBtn"
           type="button"
           [class.is-active]="settingsTab() === 'profile'"
-          (click)="settingsTab.set('profile')"
+          (click)="selectSettingsTab('profile')"
         >
           {{ i18n.t('account.publicProfile.title') }}
         </button>
@@ -78,7 +79,7 @@ import {
           class="tabBtn"
           type="button"
           [class.is-active]="settingsTab() === 'looks'"
-          (click)="settingsTab.set('looks')"
+          (click)="selectSettingsTab('looks')"
         >
           {{ i18n.t('account.looks.title') }}
         </button>
@@ -86,7 +87,7 @@ import {
           class="tabBtn"
           type="button"
           [class.is-active]="settingsTab() === 'server'"
-          (click)="settingsTab.set('server')"
+          (click)="selectSettingsTab('server')"
         >
           {{ i18n.t('account.section.connections') }}
         </button>
@@ -94,7 +95,7 @@ import {
           class="tabBtn"
           type="button"
           [class.is-active]="settingsTab() === 'data'"
-          (click)="settingsTab.set('data')"
+          (click)="selectSettingsTab('data')"
         >
           {{ i18n.t('account.section.data') }}
         </button>
@@ -102,7 +103,7 @@ import {
           class="tabBtn"
           type="button"
           [class.is-active]="settingsTab() === 'subs'"
-          (click)="settingsTab.set('subs')"
+          (click)="selectSettingsTab('subs')"
         >
           {{ i18n.t('account.section.subscriptions') }}
         </button>
@@ -110,7 +111,7 @@ import {
           class="tabBtn"
           type="button"
           [class.is-active]="settingsTab() === 'streaming'"
-          (click)="settingsTab.set('streaming')"
+          (click)="selectSettingsTab('streaming')"
         >
           Мои сервисы
         </button>
@@ -118,7 +119,7 @@ import {
           class="tabBtn"
           type="button"
           [class.is-active]="settingsTab() === 'favorites'"
-          (click)="settingsTab.set('favorites')"
+          (click)="selectSettingsTab('favorites')"
         >
           {{ i18n.t('account.section.favorites') }}
         </button>
@@ -1133,9 +1134,7 @@ export class AccountPageComponent {
   readonly serverSession = inject(ServerSessionService);
   readonly i18n = inject(I18nService);
 
-  readonly settingsTab = signal<
-    'overview' | 'profile' | 'looks' | 'server' | 'data' | 'subs' | 'streaming' | 'favorites'
-  >('overview');
+  readonly settingsTab = signal<AccountSettingsTab>('overview');
 
   readonly user = this.auth.user;
 
@@ -1223,6 +1222,10 @@ export class AccountPageComponent {
   readonly lookUnlockErr = signal<string | null>(null);
 
   constructor() {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      this.settingsTab.set(normalizeAccountSettingsTab(params.get('tab')));
+    });
+
     if (this.cinemaApi.hasToken()) {
       this.serverSession.refreshMe({ silent: true });
       this.loadEmbeddingsJobs({ silent: true });
@@ -1839,6 +1842,14 @@ export class AccountPageComponent {
 
   logout(): void {
     this.auth.logout();
+  }
+
+  selectSettingsTab(tab: AccountSettingsTab): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab },
+      queryParamsHandling: 'merge',
+    });
   }
 
   private async navigateAfterAuth(): Promise<void> {

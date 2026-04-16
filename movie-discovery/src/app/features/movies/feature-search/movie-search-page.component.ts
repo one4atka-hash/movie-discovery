@@ -92,7 +92,9 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
         <app-chip [selected]="onlyMyServices()" (clicked)="toggleOnlyMyServices()">
           Только на моих сервисах
         </app-chip>
-        <a class="filters__link" routerLink="/account" fragment="account-streaming">Настроить</a>
+        <a class="filters__link" routerLink="/account/settings" [queryParams]="{ tab: 'streaming' }"
+          >Настроить</a
+        >
       </div>
 
       <div class="dashboard" *ngIf="showHero()">
@@ -106,8 +108,8 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                 <a
                   *ngIf="showSubsSeeAll()"
                   class="railBlock__more"
-                  routerLink="/account"
-                  fragment="account-subs"
+                  routerLink="/account/settings"
+                  [queryParams]="{ tab: 'subs' }"
                   >{{ i18n.t('home.subsSeeAll') }}</a
                 >
               </div>
@@ -166,8 +168,8 @@ import { filterOnlyMyServices } from '@features/streaming/only-my-services.util'
                 <a
                   *ngIf="showFavSeeAll()"
                   class="railBlock__more"
-                  routerLink="/account"
-                  fragment="account-favorites"
+                  routerLink="/account/settings"
+                  [queryParams]="{ tab: 'favorites' }"
                   >{{ i18n.t('home.favoritesSeeAll') }}</a
                 >
               </div>

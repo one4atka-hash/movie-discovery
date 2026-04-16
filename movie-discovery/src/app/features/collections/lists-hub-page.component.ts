@@ -17,8 +17,7 @@ import { SectionComponent } from '@shared/ui/section/section.component';
 import { SegmentedControlComponent } from '@shared/ui/segmented-control/segmented-control.component';
 import { WatchlistPageComponent } from '@features/watchlist/watchlist-page.component';
 import { CollectionsPageComponent } from './collections-page.component';
-
-type ListsTab = 'statuses' | 'collections';
+import { deriveListsTabFromUrl, isAccountListsUrl, type ListsTab } from './lists-hub-route.util';
 
 @Component({
   selector: 'app-lists-hub-page',
@@ -92,15 +91,11 @@ export class ListsHubPageComponent {
   }
 
   setTab(t: ListsTab): void {
-    const base = this.isAccountScoped(this.router.url) ? '/account/lists' : '/collections';
+    const base = isAccountListsUrl(this.router.url) ? '/account/lists' : '/collections';
     void this.router.navigateByUrl(t === 'statuses' ? `${base}/statuses` : base);
   }
 
   private syncTabFromUrl(url: string): void {
-    this._tab.set(url.includes('/statuses') ? 'statuses' : 'collections');
-  }
-
-  private isAccountScoped(url: string): boolean {
-    return url.includes('/account/lists');
+    this._tab.set(deriveListsTabFromUrl(url));
   }
 }

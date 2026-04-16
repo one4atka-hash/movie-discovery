@@ -64,7 +64,7 @@ import { StreamingPrefsService } from '@features/streaming/streaming-prefs.servi
           <app-chip [selected]="onlyMyServices()" (clicked)="toggleOnlyMyServices()">
             {{ i18n.t('decide.constraints.onlyMyServices') }}
           </app-chip>
-          <a class="link" routerLink="/account" fragment="account-streaming">{{
+          <a class="link" routerLink="/account/settings" [queryParams]="{ tab: 'streaming' }">{{
             i18n.t('decide.constraints.configure')
           }}</a>
         </div>
