@@ -134,6 +134,7 @@ let nextSheetTitleId = 0;
 })
 export class BottomSheetComponent {
   private readonly doc = inject(DOCUMENT);
+  private readonly hostRef = inject(ElementRef<HTMLElement>);
   private readonly i18n = inject(I18nService);
   private readonly panelRef = viewChild<ElementRef<HTMLElement>>('panel');
   private readonly closeButtonRef = viewChild<ElementRef<HTMLButtonElement>>('closeButton');
@@ -152,6 +153,10 @@ export class BottomSheetComponent {
 
   private previousFocused: HTMLElement | null = null;
   private previousBodyOverflow = '';
+  private readonly hiddenBackgroundState = new Map<
+    HTMLElement,
+    { ariaHidden: string | null; hadInert: boolean }
+  >();
 
   constructor() {
     effect(() => {
@@ -215,6 +220,7 @@ export class BottomSheetComponent {
       this.doc.body.style.overflow = 'hidden';
     }
 
+    this.hideBackgroundFromAssistiveTech();
     queueMicrotask(() => this.focusInitialElement());
   }
 
@@ -223,6 +229,7 @@ export class BottomSheetComponent {
       this.doc.body.style.overflow = this.previousBodyOverflow;
     }
 
+    this.restoreBackgroundFromAssistiveTech();
     const target = this.returnFocusTo() ?? this.previousFocused;
     if (target && this.doc.contains(target)) {
       queueMicrotask(() => target.focus());
@@ -267,5 +274,44 @@ export class BottomSheetComponent {
     return [...panel.querySelectorAll<HTMLElement>(selectors)].filter(
       (el) => !el.hasAttribute('disabled') && el.tabIndex !== -1,
     );
+  }
+
+  private hideBackgroundFromAssistiveTech(): void {
+    let current: HTMLElement | null = this.hostRef.nativeElement;
+
+    while (current?.parentElement) {
+      const parent = current.parentElement;
+      for (const sibling of Array.from(parent.children)) {
+        if (!(sibling instanceof HTMLElement) || sibling === current) continue;
+        if (!this.hiddenBackgroundState.has(sibling)) {
+          this.hiddenBackgroundState.set(sibling, {
+            ariaHidden: sibling.getAttribute('aria-hidden'),
+            hadInert: sibling.hasAttribute('inert'),
+          });
+        }
+        sibling.setAttribute('aria-hidden', 'true');
+        sibling.setAttribute('inert', '');
+      }
+
+      current = parent;
+    }
+  }
+
+  private restoreBackgroundFromAssistiveTech(): void {
+    for (const [element, previous] of this.hiddenBackgroundState) {
+      if (previous.ariaHidden == null) {
+        element.removeAttribute('aria-hidden');
+      } else {
+        element.setAttribute('aria-hidden', previous.ariaHidden);
+      }
+
+      if (previous.hadInert) {
+        element.setAttribute('inert', '');
+      } else {
+        element.removeAttribute('inert');
+      }
+    }
+
+    this.hiddenBackgroundState.clear();
   }
 }

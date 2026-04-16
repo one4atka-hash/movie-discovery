@@ -43,6 +43,29 @@ describe('BottomSheetComponent', () => {
     return fixture;
   }
 
+  function mountShellBackground(): HTMLElement[] {
+    const selectors = [
+      ['a', 'skip-link'],
+      ['header', 'shell__header'],
+      ['app-error-banner', ''],
+      ['app-toast-viewport', ''],
+      ['main', ''],
+    ] as const;
+
+    return selectors.map(([tag, className], index) => {
+      const el = document.createElement(tag);
+      if (className) {
+        el.className = className;
+      }
+      if (tag === 'main') {
+        el.id = 'main-content';
+      }
+      el.setAttribute('data-testid', `background-${index}`);
+      document.body.appendChild(el);
+      return el;
+    });
+  }
+
   it('closes on Escape and restores focus to opener', async () => {
     const fixture = await setup();
     const opener = fixture.nativeElement.querySelector(
@@ -94,5 +117,29 @@ describe('BottomSheetComponent', () => {
 
     expect(fixture.componentInstance.closedCount).toBe(0);
     expect(fixture.componentInstance.open()).toBe(true);
+  });
+
+  it('hides shell background from assistive tech while open and restores it on close', async () => {
+    const backgroundElements = mountShellBackground();
+    const fixture = await setup();
+
+    fixture.componentInstance.open.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    for (const element of backgroundElements) {
+      expect(element.getAttribute('aria-hidden')).toBe('true');
+      expect(element.hasAttribute('inert')).toBe(true);
+    }
+
+    fixture.componentInstance.open.set(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    for (const element of backgroundElements) {
+      expect(element.hasAttribute('aria-hidden')).toBe(false);
+      expect(element.hasAttribute('inert')).toBe(false);
+      element.remove();
+    }
   });
 });

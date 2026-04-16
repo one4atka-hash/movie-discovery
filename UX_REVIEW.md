@@ -323,7 +323,7 @@ Letterboxd, Trakt, TV Time, JustWatch, Reelgood, IMDb, TMDB, Rotten Tomatoes, Me
      - [x] Добавить закрытие по `Escape`.
      - [x] Реализовать focus trap (Tab/Shift+Tab циклятся внутри) и возврат фокуса на элемент‑инициатор.
      - [x] Связать заголовок с диалогом через `aria-labelledby` (или `aria-label` только если заголовка нет).
-     - [ ] Сделать фон недоступным во время открытия (минимум: скрыть основной контент от AT; лучше: `inert` на app‑root).
+    - [x] Сделать фон недоступным во время открытия (минимум: скрыть основной контент от AT; лучше: `inert` на app‑root).
    - **Scroll‑lock**
      - [x] Блокировать прокрутку body при открытом sheet (и корректно восстанавливать).
    - **API контракты**
@@ -333,7 +333,7 @@ Letterboxd, Trakt, TV Time, JustWatch, Reelgood, IMDb, TMDB, Rotten Tomatoes, Me
      - [x] Локализовать label кнопки закрытия и дефолтные подписи.
    - **Тесты**
      - [x] Компонентные тесты: trap, Esc, restore focus, backdrop click.
-     - e2e smoke: открыть sheet в ключевых местах (MovieActionsSheet/Diary/Import) и проверить закрытие/фокус.
+    - [x] e2e smoke: открыть sheet в ключевых местах (MovieActionsSheet/Diary/Import) и проверить закрытие/фокус.
 
 6. **Как должно быть (идеальный UX)**
    - Любая шторка ведёт себя одинаково: открылась → фокус внутри → Esc/крестик/фон закрывают (если разрешено) → фокус возвращается на “кнопку открытия”.

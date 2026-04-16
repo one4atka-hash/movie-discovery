@@ -45,7 +45,9 @@ import { DiaryService } from './diary.service';
 
       <app-section [title]="i18n.t('diary.section.entries')">
         <div sectionActions>
-          <app-button (click)="openCreate()">{{ i18n.t('diary.actions.addEntry') }}</app-button>
+          <app-button data-testid="diary-open-create" (click)="openCreate()">{{
+            i18n.t('diary.actions.addEntry')
+          }}</app-button>
         </div>
 
         <div class="stats" *ngIf="stats() as s">
@@ -68,9 +70,12 @@ import { DiaryService } from './diary.service';
           [title]="i18n.t('diary.empty.title')"
           [subtitle]="i18n.t('diary.empty.subtitle')"
         >
-          <app-button variant="secondary" (click)="openCreate()">{{
-            i18n.t('diary.actions.addEntry')
-          }}</app-button>
+          <app-button
+            data-testid="diary-open-create-empty"
+            variant="secondary"
+            (click)="openCreate()"
+            >{{ i18n.t('diary.actions.addEntry') }}</app-button
+          >
           <app-button variant="ghost" routerLink="/">{{
             i18n.t('diary.actions.findMovie')
           }}</app-button>
