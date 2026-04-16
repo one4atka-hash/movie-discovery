@@ -11,10 +11,14 @@ import { Component, computed, input } from '@angular/core';
       [class.app-button--ghost]="variant() === 'ghost'"
       [class.app-button--danger]="variant() === 'danger'"
       [class.app-button--icon]="variant() === 'icon'"
+      [class.app-button--sm]="size() === 'sm'"
+      [class.app-button--lg]="size() === 'lg'"
       [disabled]="disabled() || loading()"
       [attr.aria-disabled]="disabled() || loading()"
       [attr.aria-busy]="loading()"
       [attr.type]="type()"
+      [attr.data-variant]="variant()"
+      [attr.data-size]="size()"
     >
       @if (loading()) {
         <span class="spinner" aria-hidden="true"></span>
@@ -27,11 +31,12 @@ import { Component, computed, input } from '@angular/core';
       .app-button {
         border: 1px solid transparent;
         border-radius: var(--radius-full);
+        min-height: var(--touch-target-min);
         padding: 0.52rem 1.2rem;
         cursor: pointer;
         font-family: inherit;
         font-weight: 600;
-        font-size: 0.95rem;
+        font-size: var(--font-size-body);
         letter-spacing: -0.02em;
         transition:
           transform var(--duration-fast) var(--ease-out),
@@ -44,6 +49,17 @@ import { Component, computed, input } from '@angular/core';
         align-items: center;
         justify-content: center;
         gap: 0.55rem;
+      }
+
+      .app-button--sm {
+        min-height: 36px;
+        padding: 0.4rem 0.9rem;
+        font-size: var(--font-size-caption);
+      }
+
+      .app-button--lg {
+        min-height: 48px;
+        padding: 0.72rem 1.35rem;
       }
 
       .app-button--primary {
@@ -101,8 +117,9 @@ import { Component, computed, input } from '@angular/core';
       }
 
       .app-button--icon {
-        width: 40px;
-        height: 40px;
+        width: var(--touch-target-min);
+        height: var(--touch-target-min);
+        min-height: var(--touch-target-min);
         padding: 0;
         border-color: var(--border-subtle);
         background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
@@ -147,6 +164,7 @@ import { Component, computed, input } from '@angular/core';
 })
 export class ButtonComponent {
   readonly variant = input<'primary' | 'secondary' | 'ghost' | 'danger' | 'icon'>('primary');
+  readonly size = input<'sm' | 'md' | 'lg'>('md');
   readonly type = input<'button' | 'submit' | 'reset'>('button');
   readonly disabled = input<boolean>(false);
   readonly loading = input<boolean>(false);

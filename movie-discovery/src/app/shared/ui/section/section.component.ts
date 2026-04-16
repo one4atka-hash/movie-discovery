@@ -22,26 +22,26 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   styles: [
     `
       .sec {
-        margin: 0 0 1rem;
+        margin: 0 0 var(--space-4);
       }
 
       .sec__head {
         display: flex;
         align-items: baseline;
         justify-content: space-between;
-        gap: 0.75rem;
-        margin-bottom: 0.65rem;
+        gap: var(--space-3);
+        margin-bottom: var(--space-2);
       }
 
       .sec__title {
         margin: 0;
-        font-size: 1.12rem;
+        font-size: var(--font-size-title-md);
         letter-spacing: -0.02em;
       }
 
       .sec__actions {
         display: flex;
-        gap: 0.5rem;
+        gap: var(--space-2);
         flex-wrap: wrap;
         justify-content: flex-end;
       }

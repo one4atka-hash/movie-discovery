@@ -17,7 +17,7 @@ import { Component, input } from '@angular/core';
   styles: [
     `
       .empty {
-        padding: 2.75rem 1.5rem;
+        padding: calc(var(--space-6) + var(--space-3)) var(--space-5);
         text-align: center;
         border-radius: var(--radius-lg);
         border: 1px dashed var(--border-subtle);
@@ -26,26 +26,26 @@ import { Component, input } from '@angular/core';
       }
 
       .empty__title {
-        font-size: 1.08rem;
+        font-size: var(--font-size-title-sm);
         font-weight: 600;
         letter-spacing: -0.02em;
-        margin: 0 0 0.35rem;
+        margin: 0 0 var(--space-1);
         color: var(--text);
       }
 
       .empty__subtitle {
-        font-size: 0.9rem;
+        font-size: var(--font-size-body);
         max-width: 44rem;
-        margin: 0.5rem auto 0;
+        margin: var(--space-2) auto 0;
         line-height: 1.5;
         text-align: left;
         color: var(--text-muted);
       }
 
       .empty__actions {
-        margin-top: 1.1rem;
+        margin-top: var(--space-4);
         display: flex;
-        gap: 0.6rem;
+        gap: var(--space-2);
         justify-content: center;
         flex-wrap: wrap;
       }

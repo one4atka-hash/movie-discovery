@@ -24,19 +24,20 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     `
       .field {
         display: grid;
-        gap: 0.35rem;
+        gap: var(--space-1);
         margin: 0;
       }
 
       .field__label {
-        font-size: 0.9rem;
+        font-size: var(--font-size-caption);
         color: var(--text-muted);
         font-weight: 600;
       }
 
       .field__control :where(input, select, textarea) {
         width: 100%;
-        padding: 0.75rem 0.85rem;
+        min-height: var(--touch-target-min);
+        padding: var(--space-3) calc(var(--space-3) + var(--space-1));
         border-radius: var(--radius-md);
         border: 1px solid var(--border-subtle);
         background: var(--bg-elevated);
@@ -52,14 +53,14 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       .field__hint {
         margin: 0;
         color: var(--text-muted);
-        font-size: 0.88rem;
+        font-size: var(--font-size-caption);
         line-height: 1.4;
       }
 
       .field__err {
         margin: 0;
         color: var(--accent);
-        font-size: 0.92rem;
+        font-size: var(--font-size-caption);
         line-height: 1.4;
       }
     `,
