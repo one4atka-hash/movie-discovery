@@ -91,6 +91,17 @@
           {{ isDark() ? i18n.t('theme.light') : i18n.t('theme.dark') }}
         </button>
         <select
+          class="look-select"
+          [value]="activeLookId()"
+          (change)="onLookChange($event)"
+          [attr.aria-label]="i18n.t('looks.selectAria')"
+          [attr.title]="i18n.t('looks.selectHint')"
+        >
+          <option *ngFor="let l of looks(); trackBy: trackByLookId" [value]="l.id">
+            {{ l.name }}
+          </option>
+        </select>
+        <select
           class="lang-select"
           [value]="i18n.tmdbLocale()"
           (change)="onLocaleChange($event)"

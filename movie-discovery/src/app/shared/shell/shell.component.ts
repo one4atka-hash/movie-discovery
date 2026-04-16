@@ -13,6 +13,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { readThemePreference, writeThemePreference } from '@core/browser-prefs';
 import { localeToFlagEmoji } from '@core/locale-flag.util';
 import { LooksService } from '@core/looks.service';
+import type { Look } from '@core/looks.service';
 import { ServerCinemaApiService } from '@core/server-cinema-api.service';
 import { ServerSessionService } from '@core/server-session.service';
 import { TmdbConfigurationService } from '@core/tmdb-configuration.service';
@@ -41,15 +42,17 @@ export class ShellComponent {
   readonly i18n = inject(I18nService);
   readonly serverSession = inject(ServerSessionService);
   private readonly cinemaApi = inject(ServerCinemaApiService);
+  private readonly looksSvc = inject(LooksService);
 
   readonly isDark = signal(true);
   readonly serverConnected = computed(() => Boolean(this.serverSession.me()));
+  readonly looks = this.looksSvc.looks;
+  readonly activeLookId = this.looksSvc.activeId;
 
   /** Подписи локалей для `<select>` (как список primary_translations на TMDB). */
   readonly localeOptions = signal<readonly { code: string; label: string; flag: string }[]>([]);
 
   constructor() {
-    inject(LooksService);
     inject(ReleaseReminderService);
     if (this.cinemaApi.hasToken()) {
       this.serverSession.refreshMe({ silent: true });
@@ -91,6 +94,15 @@ export class ShellComponent {
   onLocaleChange(ev: Event): void {
     const val = (ev.target as HTMLSelectElement).value;
     this.i18n.setTmdbLocale(val, this.tmdbCfg.primaryTranslations());
+  }
+
+  onLookChange(ev: Event): void {
+    const val = (ev.target as HTMLSelectElement).value;
+    this.looksSvc.setActive(val);
+  }
+
+  trackByLookId(_: number, l: Look): string {
+    return l.id;
   }
 
   private ensureValidLocale(codes: readonly string[]): void {

@@ -31,6 +31,8 @@ const RU: Dict = {
   'lang.selectAria': 'Язык интерфейса и данные TMDB',
   'lang.tmdbDataHint':
     'Запросы к TMDB передают параметр language: названия и описания приходят на выбранном языке, если перевод есть в базе TMDB (иначе — на английском).',
+  'looks.selectAria': 'Выбор оформления интерфейса',
+  'looks.selectHint': 'Выберите внешний вид (лук). Сохраняется в браузере.',
   'common.retry': 'Повторить',
   'common.expand': 'Развернуть',
   'common.collapse': 'Свернуть',
@@ -625,6 +627,8 @@ const EN: Dict = {
   'lang.selectAria': 'Interface language and TMDB data language',
   'lang.tmdbDataHint':
     'TMDB requests include the language parameter: titles and overviews use that locale when a translation exists in TMDB (otherwise English).',
+  'looks.selectAria': 'Interface look selector',
+  'looks.selectHint': 'Pick a look. Saved in your browser.',
   'common.retry': 'Retry',
   'common.expand': 'Expand',
   'common.collapse': 'Collapse',
