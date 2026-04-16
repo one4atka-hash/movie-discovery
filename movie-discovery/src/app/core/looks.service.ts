@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 
 const LOOKS_STORAGE_KEY = 'app.looks.v1';
 const LOOKS_ACTIVE_KEY = 'app.looks.active.v1';
+const LOOKS_UNLOCK_KEY = 'app.looks.unlocked.v1';
 
 export type LookVarKey =
   | '--accent'
@@ -75,10 +76,10 @@ function safeParseLooks(raw: string | null): Look[] | null {
     for (const it of parsed) {
       if (!it || typeof it !== 'object') continue;
       const o = it as Record<string, unknown>;
-      const id = typeof o.id === 'string' ? o.id.trim() : '';
-      const name = typeof o.name === 'string' ? o.name.trim() : '';
+      const id = typeof o['id'] === 'string' ? o['id'].trim() : '';
+      const name = typeof o['name'] === 'string' ? o['name'].trim() : '';
       const vars =
-        o.vars && typeof o.vars === 'object' ? (o.vars as Record<string, unknown>) : null;
+        o['vars'] && typeof o['vars'] === 'object' ? (o['vars'] as Record<string, unknown>) : null;
       if (!id || !name || !vars) continue;
       const cfg: LookConfig = {};
       for (const k of Object.keys(vars)) {
@@ -143,6 +144,7 @@ function newLookId(): string {
 export class LooksService {
   readonly looks = signal<readonly Look[]>(DEFAULT_LOOKS);
   readonly activeId = signal<string>(DEFAULT_LOOKS[0]!.id);
+  readonly unlocked = signal<boolean>(false);
 
   constructor() {
     this.loadFromStorage();
@@ -166,7 +168,20 @@ export class LooksService {
     return BUILTIN_IDS.has(id);
   }
 
+  canCreateCustomLooks(): boolean {
+    return this.unlocked();
+  }
+
+  unlock(code: string): { ok: true } | { ok: false; error: string } {
+    const c = code.trim();
+    if (c.length < 6) return { ok: false, error: 'Code is too short' };
+    this.unlocked.set(true);
+    this.safeSet(LOOKS_UNLOCK_KEY, '1');
+    return { ok: true };
+  }
+
   createFromDraft(d: LookDraft): { ok: true; id: string } | { ok: false; error: string } {
+    if (!this.canCreateCustomLooks()) return { ok: false, error: 'Locked' };
     const name = d.name.trim();
     if (!name) return { ok: false, error: 'Name is required' };
     const vars = makeVarsFromDraft(d);
@@ -220,6 +235,8 @@ export class LooksService {
   }
 
   private loadFromStorage(): void {
+    const unlocked = (this.safeGet(LOOKS_UNLOCK_KEY) ?? '').trim();
+    this.unlocked.set(unlocked === '1' || unlocked === 'true');
     const storedLooks = safeParseLooks(this.safeGet(LOOKS_STORAGE_KEY));
     if (storedLooks) this.looks.set(storedLooks);
     const active = (this.safeGet(LOOKS_ACTIVE_KEY) ?? '').trim();

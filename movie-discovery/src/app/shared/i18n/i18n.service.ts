@@ -303,6 +303,13 @@ const RU: Dict = {
   'account.looks.accent': 'Акцент',
   'account.looks.secondary': 'Второй цвет',
   'account.looks.save': 'Сохранить лук',
+  'account.looks.unlockTitle': 'Создание своих луков',
+  'account.looks.unlockHint':
+    'Это MVP‑функция: после символического доната вы получите код для разблокировки редактора.',
+  'account.looks.unlockPlaceholder': 'Код разблокировки…',
+  'account.looks.unlockCta': 'Разблокировать',
+  'account.looks.unlockFailed': 'Не удалось разблокировать. Проверьте код.',
+  'account.looks.locked': 'Редактор пока заблокирован. Введите код ниже.',
   'account.publicProfile.needJwt':
     'Чтобы сохранить настройки, нужно подключение синхронизации (см. выше).',
   'account.publicProfile.loadFailed': 'Не удалось загрузить настройки.',
@@ -882,6 +889,13 @@ const EN: Dict = {
   'account.looks.accent': 'Accent',
   'account.looks.secondary': 'Secondary',
   'account.looks.save': 'Save look',
+  'account.looks.unlockTitle': 'Custom looks',
+  'account.looks.unlockHint':
+    'MVP feature: after a small donation you’ll receive a code to unlock the editor.',
+  'account.looks.unlockPlaceholder': 'Unlock code…',
+  'account.looks.unlockCta': 'Unlock',
+  'account.looks.unlockFailed': 'Could not unlock. Check the code.',
+  'account.looks.locked': 'The editor is locked. Enter the code below.',
   'account.publicProfile.needJwt': 'To save settings, connect sync above first.',
   'account.publicProfile.loadFailed': 'Could not load settings.',
   'account.publicProfile.saveFailed': 'Could not save.',

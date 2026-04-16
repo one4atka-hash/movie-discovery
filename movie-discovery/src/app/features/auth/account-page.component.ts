@@ -407,7 +407,12 @@ import {
           <p class="muted">{{ i18n.t('account.looks.hint') }}</p>
           <div class="card">
             <div class="actions" style="margin-top: 0">
-              <button class="btn btn--primary" type="button" (click)="openNewLookEditor()">
+              <button
+                class="btn btn--primary"
+                type="button"
+                (click)="openNewLookEditor()"
+                [disabled]="!looksUnlocked()"
+              >
                 {{ i18n.t('account.looks.new') }}
               </button>
               <button
@@ -427,6 +432,28 @@ import {
                 {{ i18n.t('account.looks.delete') }}
               </button>
             </div>
+            @if (!looksUnlocked()) {
+              <div class="field" style="margin-top: 0.65rem">
+                <span>{{ i18n.t('account.looks.unlockTitle') }}</span>
+                <p class="muted" style="margin: 0.35rem 0 0.65rem">
+                  {{ i18n.t('account.looks.unlockHint') }}
+                </p>
+                <div class="actions" style="margin-top: 0">
+                  <input
+                    class="input"
+                    [formControl]="lookUnlockCode"
+                    [placeholder]="i18n.t('account.looks.unlockPlaceholder')"
+                    style="flex: 1 1 220px; max-width: 320px"
+                  />
+                  <button class="btn btn--primary" type="button" (click)="unlockLooks()">
+                    {{ i18n.t('account.looks.unlockCta') }}
+                  </button>
+                </div>
+                <p class="err" *ngIf="lookUnlockErr()" style="margin-top: 0.65rem">
+                  {{ lookUnlockErr() }}
+                </p>
+              </div>
+            }
             <p class="err" *ngIf="looksErr()">{{ looksErr() }}</p>
             <div
               class="looks-grid"
@@ -1074,6 +1101,7 @@ export class AccountPageComponent {
     this.activeLookId() ? this.looksSvc.isBuiltin(this.activeLookId()) : true,
   );
   readonly looksErr = signal<string | null>(null);
+  readonly looksUnlocked = this.looksSvc.unlocked;
 
   readonly looksEditorOpen = signal(false);
   readonly looksEditorErr = signal<string | null>(null);
@@ -1081,6 +1109,8 @@ export class AccountPageComponent {
   readonly lookName = new FormControl('', { nonNullable: true });
   readonly lookAccent = new FormControl('#ff5a5f', { nonNullable: true });
   readonly lookSecondary = new FormControl('#e8b86d', { nonNullable: true });
+  readonly lookUnlockCode = new FormControl('', { nonNullable: true });
+  readonly lookUnlockErr = signal<string | null>(null);
 
   constructor() {
     if (this.cinemaApi.hasToken()) {
@@ -1517,6 +1547,11 @@ export class AccountPageComponent {
   openNewLookEditor(): void {
     this.looksErr.set(null);
     this.looksEditorErr.set(null);
+    this.lookUnlockErr.set(null);
+    if (!this.looksUnlocked()) {
+      this.lookUnlockErr.set(this.i18n.t('account.looks.locked'));
+      return;
+    }
     this.looksEditingId.set(null);
     this.lookName.setValue('');
     this.lookAccent.setValue('#ff5a5f');
@@ -1576,6 +1611,17 @@ export class AccountPageComponent {
     if (!r.ok) {
       this.looksErr.set(r.error);
     }
+  }
+
+  unlockLooks(): void {
+    this.lookUnlockErr.set(null);
+    const code = this.lookUnlockCode.value;
+    const r = this.looksSvc.unlock(code);
+    if (!r.ok) {
+      this.lookUnlockErr.set(this.i18n.t('account.looks.unlockFailed'));
+      return;
+    }
+    this.lookUnlockCode.setValue('');
   }
 
   removeSub(id: string): void {
