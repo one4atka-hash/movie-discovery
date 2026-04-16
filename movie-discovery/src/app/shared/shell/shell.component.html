@@ -1,5 +1,7 @@
 <div class="shell">
-  <a class="skip-link" href="#main-content">{{ i18n.t('a11y.skipToContent') }}</a>
+  <a class="skip-link" href="#main-content" data-testid="skip-link">{{
+    i18n.t('a11y.skipToContent')
+  }}</a>
   <header class="shell__header">
     <a class="brand" routerLink="/" [attr.aria-label]="i18n.t('app.brand')">
       <span class="brand__mark" aria-hidden="true">▶</span>
@@ -13,6 +15,7 @@
         #homeRla="routerLinkActive"
         [routerLinkActiveOptions]="{ exact: true }"
         [attr.aria-current]="homeRla.isActive ? 'page' : null"
+        data-testid="nav-home"
       >
         <span class="nav__icon" aria-hidden="true">🏠</span>
         <span class="nav__label">{{ i18n.t('nav.home') }}</span>
@@ -22,6 +25,7 @@
         routerLinkActive="is-active"
         #accountRla="routerLinkActive"
         [attr.aria-current]="accountRla.isActive ? 'page' : null"
+        data-testid="nav-account"
       >
         <span class="nav__icon" aria-hidden="true">👤</span>
         <span class="nav__label">{{ i18n.t('nav.account') }}</span>
@@ -119,7 +123,7 @@
   <app-error-banner />
   <app-toast-viewport />
 
-  <main id="main-content" class="shell__main" tabindex="-1">
+  <main id="main-content" class="shell__main" tabindex="-1" data-testid="app-main">
     <router-outlet />
   </main>
 </div>

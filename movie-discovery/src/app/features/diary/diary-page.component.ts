@@ -112,11 +112,12 @@ import { DiaryService } from './diary.service';
         [open]="sheetOpen()"
         [title]="editing() ? i18n.t('diary.sheet.editTitle') : i18n.t('diary.sheet.newTitle')"
         [ariaLabel]="i18n.t('diary.sheet.aria')"
+        data-testid="diary-sheet"
         (closed)="closeSheet()"
       >
         <form class="form" (submit)="save($event)">
           <app-form-field [label]="i18n.t('diary.field.title')">
-            <input [(ngModel)]="draftTitle" name="title" required />
+            <input [(ngModel)]="draftTitle" name="title" required data-testid="diary-title-input" />
           </app-form-field>
 
           <app-form-field

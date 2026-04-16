@@ -16,22 +16,52 @@ import { I18nService } from '@shared/i18n/i18n.service';
         <p class="accountShellHint">{{ i18n.t('account.subtitle') }}</p>
       </div>
 
-      <nav class="tabs" [attr.aria-label]="i18n.t('nav.account')">
-        <a class="tab" routerLink="/account/today" routerLinkActive="is-active">{{
-          i18n.t('nav.tonight')
-        }}</a>
-        <a class="tab" routerLink="/account/diary" routerLinkActive="is-active">{{
-          i18n.t('nav.diary')
-        }}</a>
-        <a class="tab" routerLink="/account/lists" routerLinkActive="is-active">{{
-          i18n.t('nav.lists')
-        }}</a>
-        <a class="tab" routerLink="/account/inbox" routerLinkActive="is-active">{{
-          i18n.t('nav.inbox')
-        }}</a>
-        <a class="tab" routerLink="/account/settings" routerLinkActive="is-active">{{
-          i18n.t('account.title')
-        }}</a>
+      <nav class="tabs" [attr.aria-label]="i18n.t('nav.account')" data-testid="account-tabs">
+        <a
+          class="tab"
+          routerLink="/account/today"
+          routerLinkActive="is-active"
+          #todayRla="routerLinkActive"
+          [attr.aria-current]="todayRla.isActive ? 'page' : null"
+          data-testid="account-tab-today"
+          >{{ i18n.t('nav.tonight') }}</a
+        >
+        <a
+          class="tab"
+          routerLink="/account/diary"
+          routerLinkActive="is-active"
+          #diaryRla="routerLinkActive"
+          [attr.aria-current]="diaryRla.isActive ? 'page' : null"
+          data-testid="account-tab-diary"
+          >{{ i18n.t('nav.diary') }}</a
+        >
+        <a
+          class="tab"
+          routerLink="/account/lists"
+          routerLinkActive="is-active"
+          #listsRla="routerLinkActive"
+          [attr.aria-current]="listsRla.isActive ? 'page' : null"
+          data-testid="account-tab-lists"
+          >{{ i18n.t('nav.lists') }}</a
+        >
+        <a
+          class="tab"
+          routerLink="/account/inbox"
+          routerLinkActive="is-active"
+          #inboxRla="routerLinkActive"
+          [attr.aria-current]="inboxRla.isActive ? 'page' : null"
+          data-testid="account-tab-inbox"
+          >{{ i18n.t('nav.inbox') }}</a
+        >
+        <a
+          class="tab"
+          routerLink="/account/settings"
+          routerLinkActive="is-active"
+          #settingsRla="routerLinkActive"
+          [attr.aria-current]="settingsRla.isActive ? 'page' : null"
+          data-testid="account-tab-settings"
+          >{{ i18n.t('account.title') }}</a
+        >
       </nav>
 
       <router-outlet />
