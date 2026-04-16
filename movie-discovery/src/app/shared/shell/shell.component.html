@@ -1,4 +1,5 @@
 <div class="shell">
+  <a class="skip-link" href="#main-content">{{ i18n.t('a11y.skipToContent') }}</a>
   <header class="shell__header">
     <a class="brand" routerLink="/" [attr.aria-label]="i18n.t('app.brand')">
       <span class="brand__mark" aria-hidden="true">▶</span>
@@ -6,11 +7,22 @@
     </a>
 
     <nav class="nav" [attr.aria-label]="i18n.t('nav.primaryAria')">
-      <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
+      <a
+        routerLink="/"
+        routerLinkActive="is-active"
+        #homeRla="routerLinkActive"
+        [routerLinkActiveOptions]="{ exact: true }"
+        [attr.aria-current]="homeRla.isActive ? 'page' : null"
+      >
         <span class="nav__icon" aria-hidden="true">🏠</span>
         <span class="nav__label">{{ i18n.t('nav.home') }}</span>
       </a>
-      <a routerLink="/account" routerLinkActive="is-active">
+      <a
+        routerLink="/account"
+        routerLinkActive="is-active"
+        #accountRla="routerLinkActive"
+        [attr.aria-current]="accountRla.isActive ? 'page' : null"
+      >
         <span class="nav__icon" aria-hidden="true">👤</span>
         <span class="nav__label">{{ i18n.t('nav.account') }}</span>
       </a>
@@ -107,7 +119,7 @@
   <app-error-banner />
   <app-toast-viewport />
 
-  <main class="shell__main">
+  <main id="main-content" class="shell__main" tabindex="-1">
     <router-outlet />
   </main>
 </div>

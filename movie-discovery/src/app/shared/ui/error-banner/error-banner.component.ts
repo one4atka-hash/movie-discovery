@@ -9,7 +9,7 @@ import { ErrorNotifierService } from '@core/error-notifier.service';
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="banner" *ngIf="notifier.message() as msg">
+    <section class="banner" *ngIf="notifier.message() as msg" role="alert" aria-live="assertive">
       <span>{{ msg }}</span>
       <div class="actions">
         <button type="button" (click)="notifier.retry()">Повторить</button>

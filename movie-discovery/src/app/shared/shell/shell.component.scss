@@ -5,6 +5,28 @@
   padding: 0 clamp(1rem, 3.5vw, 1.75rem) 2.5rem;
 }
 
+.skip-link {
+  position: absolute;
+  top: 0.75rem;
+  left: 1rem;
+  z-index: 80;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  color: var(--text);
+  text-decoration: none;
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-160%);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
 .shell__header {
   position: sticky;
   top: 0;
@@ -339,6 +361,10 @@
 .shell__main {
   padding-top: 0.25rem;
   animation: shellFadeIn var(--duration-normal) var(--ease-out);
+}
+
+.shell__main:focus {
+  outline: none;
 }
 
 @keyframes shellFadeIn {

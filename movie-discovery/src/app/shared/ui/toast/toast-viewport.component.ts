@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { ToastService } from './toast.service';
+import { I18nService } from '@shared/i18n/i18n.service';
+import { ToastItem, ToastService } from './toast.service';
 
 @Component({
   selector: 'app-toast-viewport',
@@ -9,7 +10,7 @@ import { ToastService } from './toast.service';
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="toasts" aria-label="Notifications">
+    <section class="toasts" [attr.aria-label]="i18n.t('a11y.notifications')" aria-live="polite">
       <article
         class="toast"
         *ngFor="let t of toast.items(); trackBy: trackById"
@@ -17,12 +18,19 @@ import { ToastService } from './toast.service';
         [class.toast--success]="t.kind === 'success'"
         [class.toast--warning]="t.kind === 'warning'"
         [class.toast--error]="t.kind === 'error'"
+        [attr.role]="toastRole(t)"
+        aria-atomic="true"
       >
         <div class="toast__body">
           <strong class="toast__title">{{ t.title }}</strong>
           <p class="toast__msg" *ngIf="t.message">{{ t.message }}</p>
         </div>
-        <button class="toast__x" type="button" (click)="toast.dismiss(t.id)" aria-label="Dismiss">
+        <button
+          class="toast__x"
+          type="button"
+          (click)="toast.dismiss(t.id)"
+          [attr.aria-label]="i18n.t('a11y.dismissNotification')"
+        >
           ✕
         </button>
       </article>
@@ -115,9 +123,14 @@ import { ToastService } from './toast.service';
   ],
 })
 export class ToastViewportComponent {
+  readonly i18n = inject(I18nService);
   readonly toast = inject(ToastService);
 
   trackById(_: number, t: { id: string }): string {
     return t.id;
+  }
+
+  toastRole(t: ToastItem): 'alert' | 'status' {
+    return t.kind === 'error' || t.kind === 'warning' ? 'alert' : 'status';
   }
 }
