@@ -8,7 +8,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { NavigationEnd, RouterLink, Router } from '@angular/router';
+import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import { StorageService } from '@core/storage.service';
@@ -40,11 +40,11 @@ import { ServerSessionService } from '@core/server-session.service';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { MovieService } from '@features/movies/data-access/services/movie.service';
 import type { Movie } from '@features/movies/data-access/models/movie.model';
-import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '@features/auth/auth.service';
 import { ReleaseSubscriptionsService } from '@features/notifications/release-subscriptions.service';
 import { sortSubscriptionsByRelease } from '@core/release-list.util';
+import { InboxTab, normalizeInboxTab } from './inbox-tab.util';
 
 @Component({
   selector: 'app-inbox-page',
@@ -149,7 +149,7 @@ import { sortSubscriptionsByRelease } from '@core/release-list.util';
           <app-button variant="secondary" (click)="svc.addSample()">{{
             i18n.t('inbox.actions.addSample')
           }}</app-button>
-          <app-button variant="ghost" routerLink="/inbox/subscriptions">{{
+          <app-button variant="ghost" routerLink="/account/inbox" [queryParams]="{ tab: 'subs' }">{{
             i18n.t('inbox.actions.releaseSubscriptions')
           }}</app-button>
         </app-empty-state>
@@ -648,6 +648,7 @@ export class InboxPageComponent {
   private readonly auth = inject(AuthService);
   private readonly subsSvc = inject(ReleaseSubscriptionsService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly _serverRows = signal<ServerNotificationItem[]>([]);
@@ -661,7 +662,7 @@ export class InboxPageComponent {
   private readonly _serverErr = signal<string | null>(null);
   readonly serverErr = this._serverErr.asReadonly();
 
-  readonly tab = signal<'feed' | 'rules' | 'subs'>('feed');
+  readonly tab = signal<InboxTab>('feed');
   readonly tabOptions = computed(() => [
     { value: 'feed' as const, label: this.i18n.t('inbox.tabs.feed') },
     { value: 'rules' as const, label: this.i18n.t('inbox.tabs.rules') },
@@ -675,33 +676,17 @@ export class InboxPageComponent {
   readonly subsSorted = computed(() => sortSubscriptionsByRelease(this.subsSvc.mySubscriptions()));
 
   constructor() {
-    this.syncTabFromUrl(this.router.url);
-    this.router.events
-      .pipe(
-        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({ next: (e) => this.syncTabFromUrl(e.urlAfterRedirects) });
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      this.tab.set(normalizeInboxTab(params.get('tab')));
+    });
   }
 
-  setTab(t: 'feed' | 'rules' | 'subs'): void {
-    if (t === 'subs') {
-      void this.router.navigateByUrl('/inbox/subscriptions');
-      return;
-    }
-    if (this.router.url.includes('/inbox/subscriptions')) {
-      void this.router.navigateByUrl('/inbox');
-      return;
-    }
-    this.tab.set(t);
-  }
-
-  private syncTabFromUrl(url: string): void {
-    if (url.includes('/inbox/subscriptions')) {
-      this.tab.set('subs');
-      return;
-    }
-    if (this.tab() === 'subs') this.tab.set('feed');
+  setTab(tab: InboxTab): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: tab === 'feed' ? null : tab },
+      queryParamsHandling: 'merge',
+    });
   }
 
   trackBySubId(_: number, s: { id: string }): string {

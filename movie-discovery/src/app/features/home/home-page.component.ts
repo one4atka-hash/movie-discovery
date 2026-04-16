@@ -30,7 +30,7 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
         <p class="hero__subtitle hero__subtitle--muted">{{ i18n.t('home.instruction') }}</p>
 
         <div class="hero__actions">
-          <a class="btn btn--primary" routerLink="/search">{{ i18n.t('home.cta.search') }}</a>
+          <a class="btn btn--primary" routerLink="/">{{ i18n.t('home.cta.search') }}</a>
           <a class="btn" routerLink="/" fragment="home-favorites">{{ i18n.t('nav.favorites') }}</a>
         </div>
 
@@ -42,7 +42,7 @@ import { tmdbImg, tmdbPosterSrcSet } from '@core/tmdb-images';
       <section class="showcase">
         <div class="showcase__head">
           <h2 class="sectionTitle">{{ i18n.t('home.showcaseTitle') }}</h2>
-          <a class="link" routerLink="/search">{{ i18n.t('home.showcaseLink') }}</a>
+          <a class="link" routerLink="/">{{ i18n.t('home.showcaseLink') }}</a>
         </div>
 
         <div class="tiles" *ngIf="movies().length; else tilesSkeleton">

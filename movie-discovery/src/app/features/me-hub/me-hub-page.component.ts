@@ -84,7 +84,7 @@ const EMPTY_SEARCH: MovieSearchResponse = {
 
       <app-section [title]="i18n.t('me.sectionWatchlist')">
         <div sectionActions>
-          <a class="link" routerLink="/collections/statuses">{{ i18n.t('me.seeAll') }}</a>
+          <a class="link" routerLink="/account/lists/statuses">{{ i18n.t('me.seeAll') }}</a>
         </div>
         <app-empty-state
           *ngIf="!watchPreview().length"
@@ -92,7 +92,7 @@ const EMPTY_SEARCH: MovieSearchResponse = {
           [subtitle]="i18n.t('me.emptyWatchlist')"
         >
           <app-button variant="primary" routerLink="/">{{ i18n.t('home.cta.search') }}</app-button>
-          <app-button variant="secondary" routerLink="/collections/statuses">{{
+          <app-button variant="secondary" routerLink="/account/lists/statuses">{{
             i18n.t('me.seeAll')
           }}</app-button>
         </app-empty-state>
@@ -119,14 +119,16 @@ const EMPTY_SEARCH: MovieSearchResponse = {
 
       <app-section [title]="i18n.t('me.sectionDiary')">
         <div sectionActions>
-          <a class="link" routerLink="/diary">{{ i18n.t('me.seeAll') }}</a>
+          <a class="link" routerLink="/account/diary">{{ i18n.t('me.seeAll') }}</a>
         </div>
         <app-empty-state
           *ngIf="!diaryPreview().length"
           [title]="i18n.t('me.sectionDiary')"
           [subtitle]="i18n.t('me.emptyDiary')"
         >
-          <app-button variant="primary" routerLink="/diary">{{ i18n.t('me.seeAll') }}</app-button>
+          <app-button variant="primary" routerLink="/account/diary">{{
+            i18n.t('me.seeAll')
+          }}</app-button>
         </app-empty-state>
         <ul class="rows" *ngIf="diaryPreview().length">
           @for (e of diaryPreview(); track e.id) {
@@ -140,7 +142,7 @@ const EMPTY_SEARCH: MovieSearchResponse = {
                   </div>
                 </button>
               } @else {
-                <a class="row__main row__main--link" routerLink="/diary">
+                <a class="row__main row__main--link" routerLink="/account/diary">
                   <div class="thumb thumb--empty"></div>
                   <div class="row__text">
                     <span class="row__title">{{ e.title }}</span>
@@ -155,7 +157,7 @@ const EMPTY_SEARCH: MovieSearchResponse = {
 
       <app-section [title]="i18n.t('me.sectionInbox')">
         <div sectionActions>
-          <a class="link" routerLink="/inbox">{{ i18n.t('me.seeAll') }}</a>
+          <a class="link" routerLink="/account/inbox">{{ i18n.t('me.seeAll') }}</a>
         </div>
         <p class="muted">
           {{ i18n.t('me.inboxRulesPrefix') }}

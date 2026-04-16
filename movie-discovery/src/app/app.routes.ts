@@ -9,32 +9,56 @@ export const routes: Routes = [
   {
     path: 'decide',
     pathMatch: 'full',
-    redirectTo: 'account/today',
+    loadComponent: () =>
+      import('./shared/routing/legacy-redirect-page.component').then(
+        (c) => c.LegacyRedirectPageComponent,
+      ),
+    data: { target: '/account/today' },
   },
   {
     path: 'diary',
     pathMatch: 'full',
-    redirectTo: 'account/diary',
+    loadComponent: () =>
+      import('./shared/routing/legacy-redirect-page.component').then(
+        (c) => c.LegacyRedirectPageComponent,
+      ),
+    data: { target: '/account/diary' },
   },
   {
     path: 'collections',
     pathMatch: 'full',
-    redirectTo: 'account/lists',
+    loadComponent: () =>
+      import('./shared/routing/legacy-redirect-page.component').then(
+        (c) => c.LegacyRedirectPageComponent,
+      ),
+    data: { target: '/account/lists' },
   },
   {
     path: 'collections/statuses',
     pathMatch: 'full',
-    redirectTo: 'account/lists/statuses',
+    loadComponent: () =>
+      import('./shared/routing/legacy-redirect-page.component').then(
+        (c) => c.LegacyRedirectPageComponent,
+      ),
+    data: { target: '/account/lists/statuses' },
   },
   {
     path: 'watchlist',
     pathMatch: 'full',
-    redirectTo: 'account/lists/statuses',
+    loadComponent: () =>
+      import('./shared/routing/legacy-redirect-page.component').then(
+        (c) => c.LegacyRedirectPageComponent,
+      ),
+    data: { target: '/account/lists/statuses' },
   },
   {
     path: 'inbox',
     pathMatch: 'full',
-    redirectTo: 'account/inbox',
+    loadComponent: () =>
+      import('./shared/routing/legacy-redirect-page.component').then(
+        (c) => c.LegacyRedirectPageComponent,
+      ),
+    data: { target: '/account/inbox' },
   },
   {
     path: 'account',
@@ -88,7 +112,11 @@ export const routes: Routes = [
   {
     path: 'search',
     pathMatch: 'full',
-    redirectTo: '',
+    loadComponent: () =>
+      import('./shared/routing/legacy-redirect-page.component').then(
+        (c) => c.LegacyRedirectPageComponent,
+      ),
+    data: { target: '/' },
   },
   {
     path: 'movie/:id',
@@ -98,12 +126,20 @@ export const routes: Routes = [
   {
     path: 'notifications',
     pathMatch: 'full',
-    redirectTo: 'inbox/subscriptions',
+    loadComponent: () =>
+      import('./shared/routing/legacy-redirect-page.component').then(
+        (c) => c.LegacyRedirectPageComponent,
+      ),
+    data: { target: '/account/inbox', queryParams: { tab: 'subs' } },
   },
   {
     path: 'inbox/subscriptions',
     pathMatch: 'full',
-    redirectTo: 'account/inbox',
+    loadComponent: () =>
+      import('./shared/routing/legacy-redirect-page.component').then(
+        (c) => c.LegacyRedirectPageComponent,
+      ),
+    data: { target: '/account/inbox', queryParams: { tab: 'subs' } },
   },
   {
     path: 'favorites',
